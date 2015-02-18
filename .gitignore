@@ -1,0 +1,7 @@
+node_modules/
+bower_components
+tmp/
+*.log
+.idea
+gjslint.xml
+jshint.xml
