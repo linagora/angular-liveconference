@@ -116,10 +116,10 @@ angular.module('op.live-conference')
           $scope.videoMuted = !$scope.videoMuted;
         };
 
-        $scope.toggleInviteRightBar = function() {
+        $scope.showInvitationPanel = function() {
           $aside({
             scope: $scope,
-            template: 'templates/invite-members-aside.jade'
+            template: 'templates/invite-members.jade'
           });
         };
 
