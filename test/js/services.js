@@ -16,6 +16,12 @@ describe('The live-conference Angular module', function() {
         debug: function() {}
       };
       session = {
+        getUsername: function() {
+          return 'Wooot';
+        },
+        getUserId: function() {
+          return 2;
+        },
         user: {
           _id: 2,
           emails: ['test@openpaas.io']
