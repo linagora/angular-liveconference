@@ -99,9 +99,10 @@ angular.module('op.live-conference')
       scope: {
         users: '=',
         easyrtc: '=',
-        inviteCall: '='
+        inviteCall: '=',
+        showInvitation: '&'
       },
-      controller: function($scope, $window, $aside, easyRTCService) {
+      controller: function($scope, $window, $log, easyRTCService) {
         $scope.muted = false;
         $scope.videoMuted = false;
 
@@ -117,10 +118,8 @@ angular.module('op.live-conference')
         };
 
         $scope.showInvitationPanel = function() {
-          $aside({
-            scope: $scope,
-            template: 'templates/invite-members.jade'
-          });
+          $log('Show invitation panel');
+          $scope.showInvitation();
         };
 
         $scope.leaveConference = function() {
