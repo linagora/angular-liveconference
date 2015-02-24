@@ -100,9 +100,10 @@ angular.module('op.live-conference')
         users: '=',
         easyrtc: '=',
         inviteCall: '=',
-        showInvitation: '&'
+        showInvitation: '&',
+        onLeave: '&'
       },
-      controller: function($scope, $window, $log, easyRTCService) {
+      controller: function($scope, $log, easyRTCService) {
         $scope.muted = false;
         $scope.videoMuted = false;
 
@@ -123,7 +124,7 @@ angular.module('op.live-conference')
         };
 
         $scope.leaveConference = function() {
-          $window.close();
+          $scope.onLeave();
         };
       }
     };
