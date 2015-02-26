@@ -3,7 +3,7 @@ div.conference-video#multiparty-conference
     conference-user-video(video-id="{{mainVideoId}}")
   .row
     conference-user-control-bar(users="users", easyrtc='easyrtc', invite-call='invite')
-  .row.row-attendees-bar
+  .row.conference-row-attendees-bar
     .conference-attendees-bar
       ul.content
         li(ng-repeat="id in attendeeVideoIds", ng-hide="!attendees[$index]")
