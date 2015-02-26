@@ -100,8 +100,8 @@ angular.module('op.live-conference')
         users: '=',
         easyrtc: '=',
         inviteCall: '=',
-        showInvitation: '&',
-        onLeave: '&'
+        showInvitation: '=',
+        onLeave: '='
       },
       controller: function($scope, $log, easyRTCService) {
         $scope.muted = false;
@@ -119,7 +119,6 @@ angular.module('op.live-conference')
         };
 
         $scope.showInvitationPanel = function() {
-          $log('Show invitation panel');
           $scope.showInvitation();
         };
 
