@@ -2,7 +2,7 @@ div.conference-video#multiparty-conference
   .row
     conference-user-video(video-id="{{mainVideoId}}")
   .row
-    conference-user-control-bar(users="users", easyrtc='easyrtc', invite-call='invite')
+    conference-user-control-bar(users="users", easyrtc='easyrtc', invite-call='invite', show-invitation='showInvitation', on-leave='onLeave')
   .row.conference-row-attendees-bar
     .conference-attendees-bar
       ul.content
