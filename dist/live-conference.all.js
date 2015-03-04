@@ -131,10 +131,22 @@ angular.module('op.live-conference')
 'use strict';
 
 angular.module('op.live-conference')
+  .constant('easyRTCBitRates', {
+    low: {
+      audio: 20,
+      video: 30
+    },
+    medium: {
+      audio: 40,
+      video: 60
+    },
+    nolimit: null
+  })
   .factory('easyRTCService', ['$rootScope', '$log', 'webrtcFactory', 'tokenAPI', 'session',
-    'ioSocketConnection', 'ioConnectionManager', '$timeout',
-    function($rootScope, $log, webrtcFactory, tokenAPI, session, ioSocketConnection, ioConnectionManager, $timeout) {
+    'ioSocketConnection', 'ioConnectionManager', '$timeout', 'easyRTCBitRates',
+    function($rootScope, $log, webrtcFactory, tokenAPI, session, ioSocketConnection, ioConnectionManager, $timeout, easyRTCBitRates) {
       var easyrtc = webrtcFactory.get();
+      var bitRates;
 
       function leaveRoom(conference) {
         easyrtc.leaveRoom(conference._id, function() {
@@ -188,6 +200,12 @@ angular.module('op.live-conference')
             $log.debug('Calling: ' + easyrtc.idToName(easyrtcid));
             easyrtc.call(easyrtcid, onSuccess, onFailure);
           }
+        }
+
+        if (bitRates) {
+          var localFilter = easyrtc.buildLocalSdpFilter({audioRecvBitrate: bitRates.audio, videoRecvBitrate: bitRates.video});
+          var remoteFilter = easyrtc.buildRemoteSdpFilter({audioSendBitrate: bitRates.audio, videoSendBitrate: bitRates.video});
+          easyrtc.setSdpFilters(localFilter, remoteFilter);
         }
 
         easyrtc.setRoomOccupantListener(roomOccupantListener);
@@ -275,13 +293,23 @@ angular.module('op.live-conference')
         easyrtc.enableVideo(videoMuted);
       }
 
+      function configureBandwidth(rate) {
+        if (rate) {
+          bitRates = easyRTCBitRates[rate];
+        }
+        else {
+          bitRates = null;
+        }
+      }
+
       return {
         leaveRoom: leaveRoom,
         performCall: performCall,
         connect: connect,
         enableMicrophone: enableMicrophone,
         enableCamera: enableCamera,
-        enableVideo: enableVideo
+        enableVideo: enableVideo,
+        configureBandwidth: configureBandwidth
       };
     }])
 
