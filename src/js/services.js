@@ -94,7 +94,7 @@ angular.module('op.live-conference')
           }
         );
 
-        easyrtc.username = session.getUsername() || session.getUserId();
+        easyrtc.username = session.getUserId();
         attendees[0] = session.getUserId();
 
         easyrtc.debugPrinter = function(message) {
