@@ -67,19 +67,31 @@ angular.module('op.live-conference')
       templateUrl: 'templates/attendee-video.jade',
       scope: {
         attendee: '=',
-        videoId: '@'
-      },
-      controller: function($scope) {
-        $scope.muted = false;
-        $scope.mute = function() {
-          $scope.muted = !$scope.muted;
-        };
+        videoId: '@',
+        onVideoClick: '=',
+        videoIndex: '='
       },
       link: function(scope, element) {
+        scope.muted = false;
+        scope.mute = function() {
+          scope.muted = !scope.muted;
+        };
+        scope.videoMuted = false;
+        scope.muteVideo = function() {
+          scope.videoMuted = !scope.videoMuted;
+        };
+
         scope.$watch('muted', function() {
           var video = element.find('video');
           video[0].muted = scope.muted;
         });
+
+        scope.$watch('videoMuted', function() {
+          var video = element.find('video');
+          video[0].videoMuted = scope.videoMuted;
+        });
+
+        scope.showReportPopup = function() {}
       }
     };
   })

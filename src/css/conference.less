@@ -97,10 +97,55 @@
       list-style: none;
       padding-right: 5px;
     }
-    .conference-mute-button {
-      position: absolute;
-      top: 10px;
-      right: 10px;
+  }
+}
+
+.attendee-video {
+  ul {
+    min-width: 120px;
+  }
+
+  a {
+    padding: 3px 10px;
+  }
+
+  .conference-settings-button:hover, .conference-secondary-mute-button, .conference-secondary-toggle-video-button {
+    color: @overActionColor !important;
+  }
+
+  .conference-settings-button {
+    color: white;
+  }
+
+  li {
+    display: list-item !important;
+    list-style: none;
+    text-align: left;
+  }
+
+  .conference-settings-button {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+  }
+
+  .conference-secondary-mute-button {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    @media (min-width: 768px) {
+      bottom: 35px;
+      left: 10px;
+    }
+  }
+
+  .conference-secondary-toggle-video-button {
+    position: absolute;
+    bottom: 10px;
+    left: 35px;
+    @media (min-width: 768px) {
+      bottom: 35px;
+      left: 10px;
     }
   }
 }
