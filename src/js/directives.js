@@ -62,14 +62,19 @@ angular.module('op.live-conference')
       replace: true,
       templateUrl: 'templates/attendee-video.jade',
       scope: {
+        videoId: '@',
         attendee: '=',
-        videoId: '@'
+        showReport: '='
       },
       controller: function($scope) {
         $scope.muted = false;
         $scope.mute = function() {
           $scope.muted = !$scope.muted;
         };
+        $scope.report = function(attendee) {
+          $scope.showReport(attendee);
+        };
+
       },
       link: function(scope, element) {
         scope.$watch('muted', function() {
