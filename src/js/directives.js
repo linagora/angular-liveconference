@@ -96,16 +96,46 @@ angular.module('op.live-conference')
     };
   })
 
-  .directive('conferenceUserVideo', function() {
+  .directive('conferenceUserVideo', ['$modal', function($modal) {
     return {
       restrict: 'E',
       replace: true,
       templateUrl: 'templates/user-video.jade',
       scope: {
         videoId: '@'
+      },
+      link: function(scope, element) {
+        var modal = $modal({
+          scope: scope,
+          animation: 'am-fade-and-scale',
+          placement: 'center',
+          template: 'templates/mobile-user-video-quadrant-control.jade',
+          container: 'div.user-video',
+          backdrop: 'static',
+          show: false
+        });
+
+        scope.onMobileToggleControls = function() {
+          modal.$promise.then(modal.toggle);
+        };
+
+        scope.muted = false;
+        scope.mute = function() {
+          scope.muted = !scope.muted;
+          scope.onMobileToggleControls();
+        };
+
+        scope.$watch('muted', function() {
+          var video = element.find('video');
+          video[0].muted = scope.muted;
+        });
+
+        scope.showReportPopup = function() {
+          scope.onMobileToggleControls();
+        };
       }
     };
-  })
+  }])
 
   .directive('conferenceUserControlBar', function() {
     return {
