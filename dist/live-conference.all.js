@@ -1,7 +1,7 @@
 'use strict';
 
 angular.module('op.live-conference')
-  .directive('conferenceVideo', ['$timeout', '$window', 'drawVideo', function($timeout, $window, drawVideo) {
+  .directive('conferenceVideo', ['$timeout', '$window', 'drawVideo', 'conferenceHelpers', function($timeout, $window, drawVideo, conferenceHelpers) {
     return {
       restrict: 'E',
       replace: true,
@@ -45,6 +45,10 @@ angular.module('op.live-conference')
           canvas[0].height = mainVideo[0].videoHeight;
           drawVideo(context, mainVideo[0], canvas[0].width, canvas[0].height);
         });
+
+        scope.getDisplayName = function(userId) {
+          return conferenceHelpers.getUserDisplayName(userId);
+        };
       }
     };
   }])
@@ -314,13 +318,28 @@ angular.module('op.live-conference')
     }])
 
   .factory('conferenceHelpers', function() {
+    var map = {};
+
     function mapUserIdToName(users) {
-      var map = {};
-      users.forEach(function(user) {
-        var name = user.firstname || user.lastname || user.emails[0] || 'No name';
-        map[user._id] = name;
-      });
-      return map;
+      if (!users) {
+        return map;
+      }
+
+      if (users instanceof Array) {
+        users.forEach(function(user) {
+          var name = user.displayName || 'No name';
+          map[user._id] = name;
+        });
+        return map;
+      }
+      else {
+        map[users._id] = users.displayName;
+        return map;
+      }
+    }
+
+    function getUserDisplayName(userId) {
+      return userId ? map[userId] : null;
     }
 
     function getMainVideoAttendeeIndexFrom(videoId) {
@@ -334,7 +353,8 @@ angular.module('op.live-conference')
     return {
       mapUserIdToName: mapUserIdToName,
       getMainVideoAttendeeIndexFrom: getMainVideoAttendeeIndexFrom,
-      isMainVideo: isMainVideo
+      isMainVideo: isMainVideo,
+      getUserDisplayName: getUserDisplayName
     };
   })
 
@@ -383,7 +403,7 @@ angular.module('op.liveconference-templates', []).run(['$templateCache', functio
   $templateCache.put("templates/attendee.jade",
     "<div class=\"col-xs-12 media nopadding conference-attendee\"><a href=\"#\" class=\"pull-left\"><img src=\"/images/user.png\" ng-src=\"/api/users/{{user._id}}/profile/avatar\" class=\"media-object thumbnail\"></a><div class=\"media-body\"><h6 class=\"media-heading\">{{user.firstname}} {{user.lastname}}</h6><button type=\"submit\" ng-disabled=\"invited\" ng-click=\"inviteCall(user); invited=true\" class=\"btn btn-primary nopadding\">Invite</button></div><div class=\"horiz-space\"></div></div>");
   $templateCache.put("templates/conference-video.jade",
-    "<div id=\"multiparty-conference\" class=\"conference-video\"><div class=\"row\"><conference-user-video video-id=\"{{mainVideoId}}\"></conference-user-video></div><div class=\"row\"><conference-user-control-bar users=\"users\" easyrtc=\"easyrtc\" invite-call=\"invite\" show-invitation=\"showInvitation\" on-leave=\"onLeave\"></conference-user-control-bar></div><div class=\"row conference-row-attendees-bar\"><div class=\"conference-attendees-bar\"><ul class=\"content\"><li ng-repeat=\"id in attendeeVideoIds\" ng-hide=\"!attendees[$index]\"><conference-attendee-video ng-click=\"streamToMainCanvas($index)\" video-id=\"{{id}}\" attendee=\"idToAttendeeNameMap[attendees[$index]]\"></conference-attendee-video></li></ul></div></div></div>");
+    "<div id=\"multiparty-conference\" class=\"conference-video\"><div class=\"row\"><conference-user-video video-id=\"{{mainVideoId}}\"></conference-user-video></div><div class=\"row\"><conference-user-control-bar users=\"users\" easyrtc=\"easyrtc\" invite-call=\"invite\" show-invitation=\"showInvitation\" on-leave=\"onLeave\"></conference-user-control-bar></div><div class=\"row conference-row-attendees-bar\"><div class=\"conference-attendees-bar\"><ul class=\"content\"><li ng-repeat=\"id in attendeeVideoIds\" ng-hide=\"!attendees[$index]\"><conference-attendee-video ng-click=\"streamToMainCanvas($index)\" video-id=\"{{id}}\" attendee=\"getDisplayName(attendees[$index])\"></conference-attendee-video></li></ul></div></div></div>");
   $templateCache.put("templates/invite-members.jade",
     "<div class=\"aside\"><div class=\"aside-dialog\"><div class=\"aside-content\"><div class=\"aside-header\"><h4>Members</h4></div><div class=\"aside-body\"><div ng-repeat=\"user in users\" class=\"row\"><conference-attendee></conference-attendee></div></div></div></div></div>");
   $templateCache.put("templates/live.jade",

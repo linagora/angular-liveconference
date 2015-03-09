@@ -1,7 +1,7 @@
 'use strict';
 
 angular.module('op.live-conference')
-  .directive('conferenceVideo', ['$timeout', '$window', 'drawVideo', function($timeout, $window, drawVideo) {
+  .directive('conferenceVideo', ['$timeout', '$window', 'drawVideo', 'conferenceHelpers', function($timeout, $window, drawVideo, conferenceHelpers) {
     return {
       restrict: 'E',
       replace: true,
@@ -45,6 +45,10 @@ angular.module('op.live-conference')
           canvas[0].height = mainVideo[0].videoHeight;
           drawVideo(context, mainVideo[0], canvas[0].width, canvas[0].height);
         });
+
+        scope.getDisplayName = function(userId) {
+          return conferenceHelpers.getUserDisplayName(userId);
+        };
       }
     };
   }])
