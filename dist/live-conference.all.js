@@ -125,8 +125,14 @@ angular.module('op.live-conference')
 
         var mainVideo = {};
         var videoElement = {};
+        var watcher = {};
 
         scope.$on('mainvideo', function(event, videoId) {
+          if (watcher instanceof Function) {
+            // we must unregister previous watcher
+            // if it has been initialized first
+            watcher();
+          }
           mainVideo = $('video#' + videoId);
           videoElement = mainVideo[0];
           scope.muted = videoElement.muted;
@@ -136,7 +142,7 @@ angular.module('op.live-conference')
             scope.onMobileToggleControls();
           };
 
-          scope.$watch(function() {
+          watcher = scope.$watch(function() {
             return videoElement.muted;
           }, function() {
             scope.muted = videoElement.muted;
