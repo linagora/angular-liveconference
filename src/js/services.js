@@ -184,13 +184,28 @@ angular.module('op.live-conference')
     }])
 
   .factory('conferenceHelpers', function() {
+    var map = {};
+
     function mapUserIdToName(users) {
-      var map = {};
-      users.forEach(function(user) {
-        var name = user.firstname || user.lastname || user.emails[0] || 'No name';
-        map[user._id] = name;
-      });
-      return map;
+      if (!users) {
+        return map;
+      }
+
+      if (users instanceof Array) {
+        users.forEach(function(user) {
+          var name = user.displayName || 'No name';
+          map[user._id] = name;
+        });
+        return map;
+      }
+      else {
+        map[users._id] = users.displayName;
+        return map;
+      }
+    }
+
+    function getUserDisplayName(userId) {
+      return userId ? map[userId] : null;
     }
 
     function getMainVideoAttendeeIndexFrom(videoId) {
@@ -204,7 +219,8 @@ angular.module('op.live-conference')
     return {
       mapUserIdToName: mapUserIdToName,
       getMainVideoAttendeeIndexFrom: getMainVideoAttendeeIndexFrom,
-      isMainVideo: isMainVideo
+      isMainVideo: isMainVideo,
+      getUserDisplayName: getUserDisplayName
     };
   })
 
