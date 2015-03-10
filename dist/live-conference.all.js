@@ -1,7 +1,7 @@
 'use strict';
 
 angular.module('op.live-conference')
-  .directive('conferenceVideo', ['$timeout', '$window', 'drawVideo', 'conferenceHelpers', function($timeout, $window, drawVideo, conferenceHelpers) {
+  .directive('conferenceVideo', ['$timeout', '$window', '$rootScope', 'drawVideo', 'conferenceHelpers', function($timeout, $window, $rootScope, drawVideo, conferenceHelpers) {
     return {
       restrict: 'E',
       replace: true,
@@ -30,6 +30,7 @@ angular.module('op.live-conference')
             } else {
               drawVideoInCancas();
             }
+            $rootScope.$broadcast('mainvideo', 'video-thumb0');
           });
         }, 1000);
 
@@ -44,6 +45,9 @@ angular.module('op.live-conference')
           canvas[0].width = mainVideo[0].videoWidth;
           canvas[0].height = mainVideo[0].videoHeight;
           drawVideo(context, mainVideo[0], canvas[0].width, canvas[0].height);
+          console.log('DRAW');
+          console.log(newVideoId);
+          $rootScope.$broadcast('mainvideo', newVideoId);
         });
 
         scope.getDisplayName = function(userId) {
@@ -101,10 +105,7 @@ angular.module('op.live-conference')
       restrict: 'E',
       replace: true,
       templateUrl: 'templates/user-video.jade',
-      scope: {
-        videoId: '@'
-      },
-      link: function(scope, element) {
+      link: function(scope) {
         var modal = $modal({
           scope: scope,
           animation: 'am-fade-and-scale',
@@ -119,20 +120,24 @@ angular.module('op.live-conference')
           modal.$promise.then(modal.toggle);
         };
 
-        scope.muted = false;
-        scope.mute = function() {
-          scope.muted = !scope.muted;
-          scope.onMobileToggleControls();
-        };
-
-        scope.$watch('muted', function() {
-          var video = element.find('video');
-          video[0].muted = scope.muted;
-        });
-
         scope.showReportPopup = function() {
           scope.onMobileToggleControls();
         };
+
+        var mainVideo = {};
+        var videoElement = {};
+
+        scope.$on('mainvideo', function(event, videoId) {
+          mainVideo = $('video#' + videoId);
+          videoElement = mainVideo[0];
+          scope.muted = videoElement.muted;
+
+          scope.mute = function() {
+            videoElement.muted = !videoElement.muted;
+            scope.muted = videoElement.muted;
+            scope.onMobileToggleControls();
+          };
+        });
       }
     };
   }])
