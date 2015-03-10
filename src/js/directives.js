@@ -188,4 +188,58 @@ angular.module('op.live-conference')
         };
       }
     };
-  });
+  })
+  .directive('scaleToCanvas', ['$interval', '$window', 'cropDimensions', function($interval, $window, cropDimensions) {
+
+    var requestAnimationFrame =
+      $window.requestAnimationFrame ||
+      $window.mozRequestAnimationFrame ||
+      $window.msRequestAnimationFrame ||
+      $window.webkitRequestAnimationFrame;
+
+    function link(scope, element, attrs) {
+
+      var widgets = [];
+      var toggleAnim = false;
+
+      function videoToCanvas(widget) {
+        var canvas = widget.canvas,
+            ctx = widget.context,
+            vid = widget.video,
+            width = canvas.width,
+            height = canvas.height,
+            vHeight = vid.videoHeight,
+            vWidth = vid.videoWidth;
+        if (!height || !width || !vHeight || !vWidth) {
+          return;
+        }
+        var cropDims = cropDimensions(width, height, vWidth, vHeight);
+        ctx.drawImage(vid, cropDims[0], cropDims[1], cropDims[2], cropDims[2], 0, 0, width, height);
+      }
+
+      $interval(function cacheWidgets() {
+        element.find('video').each(function(index, vid) {
+          var canvas = element.find('canvas[data-video-id=' + vid.id + ']').get(0);
+          widgets.push({
+            video: vid,
+            canvas: canvas,
+            context: canvas.getContext('2d')
+          });
+        });
+      }, 100, 1, false);
+
+      function onAnimationFrame() {
+        if ((toggleAnim = !toggleAnim)) {
+          widgets.forEach(videoToCanvas);
+        }
+        requestAnimationFrame(onAnimationFrame);
+      }
+
+      onAnimationFrame();
+    }
+
+    return {
+      restrict: 'A',
+      link: link
+    };
+  }]);

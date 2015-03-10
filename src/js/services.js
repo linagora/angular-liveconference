@@ -259,4 +259,46 @@ angular.module('op.live-conference')
         });
       }, VIDEO_FRAME_RATE, 0, false);
     };
+  })
+  .factory('cropDimensions', function() {
+    var valuesCache = {};
+
+    function cropSide(cSide, vSide, vReferenceSide) {
+      var diff = vSide - vReferenceSide;
+      var start = Math.round(diff / 2);
+      return start;
+    }
+
+    /*
+      The goal of this function is to get the coordinate to crop the
+      camera image to a square.
+      width & height are the target canvas width & height
+      vWidth & vHeight are the video width and height
+
+      Read  https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial/Using_images
+      the "Slicing" part
+
+      This method sends back an array, where:
+      the first element of the array is sx , the second element is sy,
+      and the third element is sWidth & sHeight (yeah, bc it's a square)
+    */
+    function cropDimensions(width, height, vWidth, vHeight) {
+      var key = width + ':' + height + ':' + vWidth + ':' + vHeight;
+      if ( valuesCache[key] ) {
+        return valuesCache[key];
+      }
+      var back = [0, 0, 0];
+      if ( vWidth < vHeight ) {
+        back[1] = cropSide(height, vHeight, vWidth);
+        back[2] = vWidth;
+      } else {
+        back[0] = cropSide(width, vWidth, vHeight);
+        back[2] = vHeight;
+      }
+      valuesCache[key] = back;
+      return back;
+    }
+
+    return cropDimensions;
+
   });

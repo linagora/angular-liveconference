@@ -237,4 +237,42 @@ describe('The live-conference Angular module', function() {
       this.ioSocketConnection.connectCallback();
     });
   });
+
+  describe('cropDimensions services', function() {
+    beforeEach(function() {
+      var self = this;
+      inject(function(cropDimensions) {
+        self.service = cropDimensions;
+      });
+    });
+
+    it('should return a function', function() {
+      expect(this.service).to.be.a('function');
+    });
+    describe('when video width is greater than video height', function() {
+      it('should send an sx > 0, an sy=0', function() {
+        var result = [100, 0, 200];
+        var dimensions = this.service(100, 100, 400, 200);
+        expect(dimensions).to.be.an('array');
+        expect(dimensions).to.deep.equal(result);
+      });
+    });
+    describe('when video height is greater than video width', function() {
+      it('should send an sy > 0, an sx=0', function() {
+        var result = [0, 100, 200];
+        var dimensions = this.service(100, 100, 200, 400);
+        expect(dimensions).to.be.an('array');
+        expect(dimensions).to.deep.equal(result);
+      });
+    });
+    describe('when video height equals video width', function() {
+      it('should send an sy=0, an sx=0', function() {
+        var result = [0, 0, 200];
+        var dimensions = this.service(100, 100, 200, 200);
+        expect(dimensions).to.be.an('array');
+        expect(dimensions).to.deep.equal(result);
+      });
+    });
+
+  });
 });
