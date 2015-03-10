@@ -92,12 +92,16 @@ angular.module('op.live-conference')
     };
   })
 
-  .directive('conferenceUserVideo', ['$modal', function($modal) {
+  .directive('conferenceUserVideo', ['$modal', 'matchmedia', function($modal, matchmedia) {
     return {
       restrict: 'E',
       replace: true,
       templateUrl: 'templates/user-video.jade',
       link: function(scope) {
+        if (matchmedia.isDesktop()) {
+          return;
+        }
+
         var modal = $modal({
           scope: scope,
           animation: 'am-fade-and-scale',
@@ -109,6 +113,9 @@ angular.module('op.live-conference')
         });
 
         scope.onMobileToggleControls = function() {
+          if (scope.mainVideoId === 'video-thumb0') {
+            return;
+          }
           modal.$promise.then(modal.toggle);
         };
 
