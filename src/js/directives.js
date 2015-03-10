@@ -45,8 +45,6 @@ angular.module('op.live-conference')
           canvas[0].width = mainVideo[0].videoWidth;
           canvas[0].height = mainVideo[0].videoHeight;
           drawVideo(context, mainVideo[0], canvas[0].width, canvas[0].height);
-          console.log('DRAW');
-          console.log(newVideoId);
           $rootScope.$broadcast('mainvideo', newVideoId);
         });
 
@@ -76,23 +74,17 @@ angular.module('op.live-conference')
         videoIndex: '='
       },
       link: function(scope, element) {
-        scope.muted = false;
+        var video = element.find('video');
+        scope.muted = video[0].muted;
+
         scope.mute = function() {
-          scope.muted = !scope.muted;
-        };
-        scope.videoMuted = false;
-        scope.muteVideo = function() {
-          scope.videoMuted = !scope.videoMuted;
+          video[0].muted = !video[0].muted;
         };
 
-        scope.$watch('muted', function() {
-          var video = element.find('video');
-          video[0].muted = scope.muted;
-        });
-
-        scope.$watch('videoMuted', function() {
-          var video = element.find('video');
-          video[0].videoMuted = scope.videoMuted;
+        scope.$watch(function() {
+          return video[0].muted;
+        }, function() {
+          scope.muted = video[0].muted;
         });
 
         scope.showReportPopup = function() {}
@@ -134,9 +126,14 @@ angular.module('op.live-conference')
 
           scope.mute = function() {
             videoElement.muted = !videoElement.muted;
-            scope.muted = videoElement.muted;
             scope.onMobileToggleControls();
           };
+
+          scope.$watch(function() {
+            return videoElement.muted;
+          }, function() {
+            scope.muted = videoElement.muted;
+          });
         });
       }
     };
