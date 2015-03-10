@@ -1,0 +1,9 @@
+ul.dropdown-menu.attendee-settings-dropdown(role='menu')
+  li(role='presentation')
+    a(href='', ng-click='mute()', role='menuitem', target='_blank')
+      i.fa.fa-fw.conference-mute-button(ng-class="{'fa-microphone': !muted, 'fa-microphone-slash': muted}")
+      | &nbsp;Mute
+  li(role='presentation')
+    a(href='', ng-click='showReportPopup()', role='menuitem', target='_blank')
+      i.fa.fa-fw.fa-exclamation-triangle.conference-report-button
+      |&nbsp;Report
