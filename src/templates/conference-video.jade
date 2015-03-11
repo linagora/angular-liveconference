@@ -5,6 +5,6 @@ div.conference-video#multiparty-conference
     conference-user-control-bar(users="users", easyrtc='easyrtc', invite-call='invite', show-invitation='showInvitation', on-leave='onLeave')
   .row.conference-row-attendees-bar
     .conference-attendees-bar
-      ul.content
+      ul.content(scale-to-canvas)
         li(ng-repeat="id in attendeeVideoIds", ng-hide="!attendees[$index]")
           conference-attendee-video(video-index="$index", on-video-click="streamToMainCanvas", video-id="{{id}}", attendee="getDisplayName(attendees[$index])")
