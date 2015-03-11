@@ -59,19 +59,19 @@
 
 .conference-row-attendees-bar {
   width: 100%;
-  height: 135px;
+  height: 110px;
   z-index: 3;
 
   @media (min-width: 768px) {
     position: absolute;
     bottom: 55px;
-    height: 140px;
+    height: 115px;
   }
   @media (min-width: 992px) {
-    height: 155px;
+    height: 130px;
   }
   @media (min-width: 1200px) {
-    height: 185px;
+    height: 160px;
   }
 
 }
@@ -81,8 +81,6 @@
   @media (min-width: 768px) {
     top: 0px;
   }
-  background-color: @attendeeBarColor;
-  background-color: rgba(27, 27, 27, 0.1);
   width: auto;
   height: 100%;
   padding: 0px;
@@ -93,23 +91,29 @@
   overflow-y: hidden;
   .content {
     width: auto !important;
-    padding-left: 10px;
-    padding-top: 5px;
     margin: 0;
+    padding: 0;
     @media (min-width: 768px) {
       position: absolute;
       bottom: 0px;
+      padding-left: 10px;
+      padding-top: 5px;
     }
     li {
       display: table-cell;
       position: relative;
       list-style: none;
       padding-right: 5px;
+      @media (min-width: 768px) {
+        padding-right: 10px;
+      }
     }
   }
 }
 
 .attendee-video {
+  position: relative;
+
   video { display: none }
 
   ul {
@@ -151,6 +155,44 @@
     bottom: 10px;
     left: 35px;
   }
+
+  .conference-attendee-video-multi {
+    height: 100px;
+    width: 100px;
+    box-shadow: 0 0 6px;
+    @media (min-width: 768px) {
+      height: 105px;
+      width: 105px;
+    }
+    @media (min-width: 992px) {
+      height: 120px;
+      width: 120px;
+    }
+    @media (min-width: 1200px) {
+      height: 150px;
+      width: 150px;
+    }
+  }
+
+  .conference-attendee-name {
+    position: absolute;
+    bottom: 2px;
+    text-shadow: 0 0 0.1em @gray-darkest, 0 0 0.1em @gray-darkest;
+    white-space: nowrap;
+    color: white;
+    margin: 0;
+    width: 100px;
+    @media (min-width: 768px) {
+      width: 105px;
+    }
+    @media (min-width: 992px) {
+      width: 120px;
+    }
+    @media (min-width: 1200px) {
+      width: 150px;
+    }
+  }
+
 }
 
 .conference-video {
@@ -167,38 +209,6 @@
   z-index: 2;
   width: 100%;
   height: 100%;
-}
-
-.conference-attendee-video-multi {
-  height: 100px;
-  width: 100px;
-  @media (min-width: 768px) {
-    height: 105px;
-    width: 105px;
-  }
-  @media (min-width: 992px) {
-    height: 120px;
-    width: 120px;
-  }
-  @media (min-width: 1200px) {
-    height: 150px;
-    width: 150px;
-  }
-}
-
-.conference-attendee-name {
-  white-space: nowrap;
-  color: white;
-  margin: 0;
-  @media (min-width: 768px) {
-    width: 105px;
-  }
-  @media (min-width: 992px) {
-    width: 120px;
-  }
-  @media (min-width: 1200px) {
-    width: 150px;
-  }
 }
 
 .ResizeImage(@width, @height) {
