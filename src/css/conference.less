@@ -133,20 +133,12 @@
     position: absolute;
     bottom: 10px;
     left: 10px;
-    @media (min-width: 768px) {
-      bottom: 35px;
-      left: 10px;
-    }
   }
 
   .conference-secondary-toggle-video-button {
     position: absolute;
     bottom: 10px;
     left: 35px;
-    @media (min-width: 768px) {
-      bottom: 35px;
-      left: 10px;
-    }
   }
 }
 
@@ -210,4 +202,61 @@
 .ellipsis {
   overflow-x: hidden;
   text-overflow: ellipsis;
+}
+
+
+.quadrant-control {
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  list-style: outside none none;
+  z-index: 1041;
+  position: absolute;
+
+  .fa-microphone-slash {
+    color: @overActionColor !important;
+  }
+
+  li {
+    width: 50%;
+    height: 50%;
+    float: left;
+    text-align: center;
+    a {
+      .vertical-align();
+    }
+  }
+}
+
+.mobile-user-video-control {
+  z-index: 1041;
+  text-align: center;
+  top: 50%;
+  left: 0;
+  right: 0;
+  position: absolute;
+
+  .fa-microphone-slash {
+    color: @overActionColor !important;
+  }
+
+  li {
+    padding: 0;
+  }
+}
+
+@media (min-width: 768px) {
+  .mobile-user-video-control {
+    li {
+      padding: 0 3em;
+    }
+  }
+}
+
+.vertical-align() {
+  position: relative;
+  top: 50%;
+  -webkit-transform: translateY(-50%);
+  -ms-transform: translateY(-50%);
+  transform: translateY(-50%);
 }

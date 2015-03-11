@@ -1,7 +1,7 @@
 'use strict';
 
 angular.module('op.live-conference')
-  .directive('conferenceVideo', ['$timeout', '$window', 'drawVideo', 'conferenceHelpers', function($timeout, $window, drawVideo, conferenceHelpers) {
+  .directive('conferenceVideo', ['$timeout', '$window', '$rootScope', 'drawVideo', 'conferenceHelpers', function($timeout, $window, $rootScope, drawVideo, conferenceHelpers) {
     return {
       restrict: 'E',
       replace: true,
@@ -30,6 +30,7 @@ angular.module('op.live-conference')
             } else {
               drawVideoInCancas();
             }
+            $rootScope.$broadcast('mainvideo', 'video-thumb0');
           });
         }, 1000);
 
@@ -44,6 +45,7 @@ angular.module('op.live-conference')
           canvas[0].width = mainVideo[0].videoWidth;
           canvas[0].height = mainVideo[0].videoHeight;
           drawVideo(context, mainVideo[0], canvas[0].width, canvas[0].height);
+          $rootScope.$broadcast('mainvideo', newVideoId);
         });
 
         scope.getDisplayName = function(userId) {
@@ -72,23 +74,17 @@ angular.module('op.live-conference')
         videoIndex: '='
       },
       link: function(scope, element) {
-        scope.muted = false;
+        var video = element.find('video');
+        scope.muted = video[0].muted;
+
         scope.mute = function() {
-          scope.muted = !scope.muted;
-        };
-        scope.videoMuted = false;
-        scope.muteVideo = function() {
-          scope.videoMuted = !scope.videoMuted;
+          video[0].muted = !video[0].muted;
         };
 
-        scope.$watch('muted', function() {
-          var video = element.find('video');
-          video[0].muted = scope.muted;
-        });
-
-        scope.$watch('videoMuted', function() {
-          var video = element.find('video');
-          video[0].videoMuted = scope.videoMuted;
+        scope.$watch(function() {
+          return video[0].muted;
+        }, function() {
+          scope.muted = video[0].muted;
         });
 
         scope.showReportPopup = function() {}
@@ -96,16 +92,65 @@ angular.module('op.live-conference')
     };
   })
 
-  .directive('conferenceUserVideo', function() {
+  .directive('conferenceUserVideo', ['$modal', 'matchmedia', function($modal, matchmedia) {
     return {
       restrict: 'E',
       replace: true,
       templateUrl: 'templates/user-video.jade',
-      scope: {
-        videoId: '@'
+      link: function(scope) {
+        if (matchmedia.isDesktop()) {
+          return;
+        }
+
+        var modal = $modal({
+          scope: scope,
+          animation: 'am-fade-and-scale',
+          placement: 'center',
+          template: 'templates/mobile-user-video-quadrant-control.jade',
+          container: 'div.user-video',
+          backdrop: 'static',
+          show: false
+        });
+
+        scope.onMobileToggleControls = function() {
+          if (scope.mainVideoId === 'video-thumb0') {
+            return;
+          }
+          modal.$promise.then(modal.toggle);
+        };
+
+        scope.showReportPopup = function() {
+          scope.onMobileToggleControls();
+        };
+
+        var mainVideo = {};
+        var videoElement = {};
+        var watcher = {};
+
+        scope.$on('mainvideo', function(event, videoId) {
+          if (watcher instanceof Function) {
+            // we must unregister previous watcher
+            // if it has been initialized first
+            watcher();
+          }
+          mainVideo = $('video#' + videoId);
+          videoElement = mainVideo[0];
+          scope.muted = videoElement.muted;
+
+          scope.mute = function() {
+            videoElement.muted = !videoElement.muted;
+            scope.onMobileToggleControls();
+          };
+
+          watcher = scope.$watch(function() {
+            return videoElement.muted;
+          }, function() {
+            scope.muted = videoElement.muted;
+          });
+        });
       }
     };
-  })
+  }])
 
   .directive('conferenceUserControlBar', function() {
     return {
