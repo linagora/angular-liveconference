@@ -787,6 +787,56 @@ angular.module('op.live-conference')
       };
     }])
 
+  .factory('ConferenceState', ['$rootScope', function($rootScope) {
+    function ConferenceState(conference) {
+      this.conference = conference;
+      this.videoIds = [
+        'video-thumb0',
+        'video-thumb1',
+        'video-thumb2',
+        'video-thumb3',
+        'video-thumb4',
+        'video-thumb5',
+        'video-thumb6',
+        'video-thumb7',
+        'video-thumb8'
+      ];
+      this.attendees = [];
+      this.state = [];
+    }
+
+    ConferenceState.prototype.pushAttendee = function(index, attendee) {
+      this.attendees[index] = attendee;
+    };
+
+    ConferenceState.prototype.removeAttendee = function(index) {
+      this.attendees[index] = null;
+    };
+
+    ConferenceState.prototype.updateState = function(conference) {
+      var self = this;
+      this.conference = conference;
+
+      function _state(index) {
+        return {
+          member: (function() {
+            return self.conference.members.filter(function(member) {
+              return member._id === self.attendees[index];
+            })[0];
+          }) (),
+          videoId: self.videoIds[index],
+          videoIndex: i
+        }
+      }
+
+      for(var i = 0; i < this.attendees.length; i++) {
+        this.state[i] = (this.attendees[i] === null) ? null : _state(i);
+      }
+    };
+
+    return ConferenceState;
+  }])
+
   .factory('conferenceHelpers', function() {
     var map = {};
 

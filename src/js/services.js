@@ -191,6 +191,85 @@ angular.module('op.live-conference')
       };
     }])
 
+  .factory('ConferenceState', ['$rootScope', function($rootScope) {
+    function ConferenceState(conference) {
+      this.conference = conference;
+      this.videoIds = [
+        'video-thumb0',
+        'video-thumb1',
+        'video-thumb2',
+        'video-thumb3',
+        'video-thumb4',
+        'video-thumb5',
+        'video-thumb6',
+        'video-thumb7',
+        'video-thumb8'
+      ];
+      this.attendees = [];
+      this.positions = [];
+      this.mainVideoId = 'video-thumb0';
+    }
+
+    ConferenceState.prototype.pushAttendee = function(index, attendee) {
+      this.attendees[index] = attendee;
+      $rootScope.$broadcast('conferencestate:attendees:push', attendee)
+    };
+
+    ConferenceState.prototype.removeAttendee = function(index) {
+      var attendee = this.attendees[index];
+      var position = this.positions.filter(function(position) {
+        return position && position.member._id === attendee;
+      })[0];
+      this.attendees[index] = null;
+      $rootScope.$broadcast('conferencestate:attendees:remove', {attendee: attendee, position: position})
+    };
+
+    ConferenceState.prototype.updatePositions = function(conference) {
+      var self = this;
+      this.conference = conference;
+
+      function _position(index) {
+        return {
+          member: (function() {
+            return self.conference.members.filter(function(member) {
+              return member._id === self.attendees[index];
+            })[0];
+          }) (),
+          videoId: self.videoIds[index],
+          videoIndex: i
+        }
+      }
+
+      for(var i = 0; i < this.attendees.length; i++) {
+        this.positions[i] = (this.attendees[i] === null) ? null : _position(i);
+      }
+    };
+
+    ConferenceState.prototype.updateMainVideoId = function(mainVideoId) {
+      this.mainVideoId = mainVideoId;
+    };
+
+    ConferenceState.prototype.getMemberOfIndex = function(index) {
+      var position = this.positions[index];
+      return position ? position.member : null;
+    };
+
+    ConferenceState.prototype.getMemberOfVideoId = function(videoId) {
+      var position = this.positions.filter(function(position) {
+        return position && position.videoId === videoId;
+      })[0];
+      return position ? position.member : null;
+    };
+
+    ConferenceState.prototype.getMainVideoIdAsMember = function() {
+      return this.positions.filter(function(position) {
+        return position && position.videoId === this.mainVideoId
+      }.bind(this))[0].member;
+    };
+
+    return ConferenceState;
+  }])
+
   .factory('conferenceHelpers', function() {
     var map = {};
 
