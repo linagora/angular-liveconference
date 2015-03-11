@@ -188,7 +188,61 @@ angular.module('op.live-conference')
         };
       }
     };
-  });
+  })
+  .directive('scaleToCanvas', ['$interval', '$window', 'cropDimensions', function($interval, $window, cropDimensions) {
+
+    var requestAnimationFrame =
+      $window.requestAnimationFrame ||
+      $window.mozRequestAnimationFrame ||
+      $window.msRequestAnimationFrame ||
+      $window.webkitRequestAnimationFrame;
+
+    function link(scope, element, attrs) {
+
+      var widgets = [];
+      var toggleAnim = false;
+
+      function videoToCanvas(widget) {
+        var canvas = widget.canvas,
+            ctx = widget.context,
+            vid = widget.video,
+            width = canvas.width,
+            height = canvas.height,
+            vHeight = vid.videoHeight,
+            vWidth = vid.videoWidth;
+        if (!height || !width || !vHeight || !vWidth) {
+          return;
+        }
+        var cropDims = cropDimensions(width, height, vWidth, vHeight);
+        ctx.drawImage(vid, cropDims[0], cropDims[1], cropDims[2], cropDims[2], 0, 0, width, height);
+      }
+
+      $interval(function cacheWidgets() {
+        element.find('video').each(function(index, vid) {
+          var canvas = element.find('canvas[data-video-id=' + vid.id + ']').get(0);
+          widgets.push({
+            video: vid,
+            canvas: canvas,
+            context: canvas.getContext('2d')
+          });
+        });
+      }, 100, 1, false);
+
+      function onAnimationFrame() {
+        if ((toggleAnim = !toggleAnim)) {
+          widgets.forEach(videoToCanvas);
+        }
+        requestAnimationFrame(onAnimationFrame);
+      }
+
+      onAnimationFrame();
+    }
+
+    return {
+      restrict: 'A',
+      link: link
+    };
+  }]);
 'use strict';
 
 angular.module('op.live-conference')
@@ -450,6 +504,48 @@ angular.module('op.live-conference')
         });
       }, VIDEO_FRAME_RATE, 0, false);
     };
+  })
+  .factory('cropDimensions', function() {
+    var valuesCache = {};
+
+    function cropSide(cSide, vSide, vReferenceSide) {
+      var diff = vSide - vReferenceSide;
+      var start = Math.round(diff / 2);
+      return start;
+    }
+
+    /*
+      The goal of this function is to get the coordinate to crop the
+      camera image to a square.
+      width & height are the target canvas width & height
+      vWidth & vHeight are the video width and height
+
+      Read  https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial/Using_images
+      the "Slicing" part
+
+      This method sends back an array, where:
+      the first element of the array is sx , the second element is sy,
+      and the third element is sWidth & sHeight (yeah, bc it's a square)
+    */
+    function cropDimensions(width, height, vWidth, vHeight) {
+      var key = width + ':' + height + ':' + vWidth + ':' + vHeight;
+      if ( valuesCache[key] ) {
+        return valuesCache[key];
+      }
+      var back = [0, 0, 0];
+      if ( vWidth < vHeight ) {
+        back[1] = cropSide(height, vHeight, vWidth);
+        back[2] = vWidth;
+      } else {
+        back[0] = cropSide(width, vWidth, vHeight);
+        back[2] = vHeight;
+      }
+      valuesCache[key] = back;
+      return back;
+    }
+
+    return cropDimensions;
+
   });
 angular.module('op.liveconference-templates', []).run(['$templateCache', function($templateCache) {
   "use strict";
@@ -458,11 +554,11 @@ angular.module('op.liveconference-templates', []).run(['$templateCache', functio
   $templateCache.put("templates/attendee-settings-dropdown.jade",
     "<ul role=\"menu\" class=\"dropdown-menu attendee-settings-dropdown\"><li role=\"presentation\"><a href=\"\" ng-click=\"mute()\" role=\"menuitem\" target=\"_blank\"><i ng-class=\"{'fa-microphone': !muted, 'fa-microphone-slash': muted}\" class=\"fa fa-fw conference-mute-button\"></i>&nbsp;Mute</a></li><li role=\"presentation\"><a href=\"\" ng-click=\"showReportPopup()\" role=\"menuitem\" target=\"_blank\"><i class=\"fa fa-fw fa-exclamation-triangle conference-report-button\"></i>&nbsp;Report</a></li></ul>");
   $templateCache.put("templates/attendee-video.jade",
-    "<div class=\"attendee-video\"><video ng-click=\"onVideoClick(videoIndex)\" id=\"{{videoId}}\" autoplay=\"autoplay\" ng-class=\"{thumbhover: thumbhover}\" ng-mouseenter=\"thumbhover = true\" ng-mouseleave=\"thumbhover = false\" ng-init=\"count=0\" class=\"conference-attendee-video-multi\"></video><a href=\"\" target=\"_blank\" ng-show=\"videoId !== 'video-thumb0' &amp;&amp; thumbhover\" ng-mouseenter=\"thumbhover = true\" ng-mouseleave=\"thumbhover = true\" class=\"hidden-xs hidden-sm\"><i data-placement=\"right-bottom\" data-html=\"true\" data-animation=\"am-flip-x\" bs-dropdown template=\"templates/attendee-settings-dropdown.jade\" class=\"fa fa-2x fa-cog conference-settings-button\"></i></a><i ng-show=\"muted &amp;&amp; videoId !== 'video-thumb0'\" class=\"fa fa-2x fa-microphone-slash conference-secondary-mute-button\"></i><i ng-show=\"videoMuted\" class=\"fa fa-2x fa-eye-slash conference-secondary-toggle-video-button\"></i><p class=\"hidden-xs text-center conference-attendee-name ellipsis\">{{attendee}}</p></div>");
+    "<div class=\"attendee-video\"><canvas data-video-id=\"{{videoId}}\" width=\"150\" height=\"150\" ng-click=\"onVideoClick(videoIndex)\" ng-mouseenter=\"thumbhover = true\" ng-mouseleave=\"thumbhover = false\" ng-init=\"count=0\" ng-class=\"{thumbhover: thumbhover}\" class=\"conference-attendee-video-multi\"></canvas><video style=\"display: none\" id=\"{{videoId}}\" autoplay=\"autoplay\"></video><a href=\"\" target=\"_blank\" ng-show=\"videoId !== 'video-thumb0' &amp;&amp; thumbhover\" ng-mouseenter=\"thumbhover = true\" ng-mouseleave=\"thumbhover = true\" class=\"hidden-xs hidden-sm\"><i data-placement=\"right-bottom\" data-html=\"true\" data-animation=\"am-flip-x\" bs-dropdown template=\"templates/attendee-settings-dropdown.jade\" class=\"fa fa-2x fa-cog conference-settings-button\"></i></a><i ng-show=\"muted\" class=\"fa fa-2x fa-microphone-slash conference-secondary-mute-button\"></i><i ng-show=\"videoMuted\" class=\"fa fa-2x fa-eye-slash conference-secondary-toggle-video-button\"></i><p class=\"hidden-xs text-center conference-attendee-name ellipsis\">{{attendee}}</p></div>");
   $templateCache.put("templates/attendee.jade",
     "<div class=\"col-xs-12 media nopadding conference-attendee\"><a href=\"#\" class=\"pull-left\"><img src=\"/images/user.png\" ng-src=\"/api/users/{{user._id}}/profile/avatar\" class=\"media-object thumbnail\"></a><div class=\"media-body\"><h6 class=\"media-heading\">{{user.firstname}} {{user.lastname}}</h6><button type=\"submit\" ng-disabled=\"invited\" ng-click=\"inviteCall(user); invited=true\" class=\"btn btn-primary nopadding\">Invite</button></div><div class=\"horiz-space\"></div></div>");
   $templateCache.put("templates/conference-video.jade",
-    "<div id=\"multiparty-conference\" class=\"conference-video\"><div class=\"row\"><conference-user-video video-id=\"{{mainVideoId}}\"></conference-user-video></div><div class=\"row\"><conference-user-control-bar users=\"users\" easyrtc=\"easyrtc\" invite-call=\"invite\" show-invitation=\"showInvitation\" on-leave=\"onLeave\"></conference-user-control-bar></div><div class=\"row conference-row-attendees-bar\"><div class=\"conference-attendees-bar\"><ul class=\"content\"><li ng-repeat=\"id in attendeeVideoIds\" ng-hide=\"!attendees[$index]\"><conference-attendee-video video-index=\"$index\" on-video-click=\"streamToMainCanvas\" video-id=\"{{id}}\" attendee=\"getDisplayName(attendees[$index])\"></conference-attendee-video></li></ul></div></div></div>");
+    "<div id=\"multiparty-conference\" class=\"conference-video\"><div class=\"row\"><conference-user-video video-id=\"{{mainVideoId}}\"></conference-user-video></div><div class=\"row\"><conference-user-control-bar users=\"users\" easyrtc=\"easyrtc\" invite-call=\"invite\" show-invitation=\"showInvitation\" on-leave=\"onLeave\"></conference-user-control-bar></div><div class=\"row conference-row-attendees-bar\"><div class=\"conference-attendees-bar\"><ul scale-to-canvas class=\"content\"><li ng-repeat=\"id in attendeeVideoIds\" ng-hide=\"!attendees[$index]\"><conference-attendee-video video-index=\"$index\" on-video-click=\"streamToMainCanvas\" video-id=\"{{id}}\" attendee=\"getDisplayName(attendees[$index])\"></conference-attendee-video></li></ul></div></div></div>");
   $templateCache.put("templates/invite-members.jade",
     "<div class=\"aside\"><div class=\"aside-dialog\"><div class=\"aside-content\"><div class=\"aside-header\"><h4>Members</h4></div><div class=\"aside-body\"><div ng-repeat=\"user in users\" class=\"row\"><conference-attendee></conference-attendee></div></div></div></div></div>");
   $templateCache.put("templates/live.jade",
