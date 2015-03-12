@@ -273,6 +273,32 @@ describe('The live-conference Angular module', function() {
         expect(dimensions).to.deep.equal(result);
       });
     });
+  });
 
+  describe('drawVideo service', function() {
+    it('should return a function', function() {
+      inject(function(drawVideo) {
+        var test = drawVideo();
+        expect(test).to.be.a('function');
+      });
+    });
+    it('should call $interval.cancel() when executing function', function(done) {
+      module(function($provide) {
+        function intervalMock() {
+          return 'identifier';
+        }
+
+        intervalMock.cancel = function(id) {
+          expect(id).to.equal('identifier');
+          done();
+        };
+
+        $provide.value('$interval', intervalMock);
+      });
+      inject(function(drawVideo) {
+        var test = drawVideo();
+        test();
+      });
+    });
   });
 });

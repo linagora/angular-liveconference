@@ -256,15 +256,21 @@ angular.module('op.live-conference')
     }
 
     return function(context, video, width, height) {
-      if (promise) {
-        $interval.cancel(promise);
+      function stopCurrentAnimation() {
+        if (promise) {
+          $interval.cancel(promise);
+        }
       }
+
+      stopCurrentAnimation();
 
       promise = $interval(function() {
         requestAnimationFrame(function() {
           draw(context, video, width, height);
         });
       }, VIDEO_FRAME_RATE, 0, false);
+
+      return stopCurrentAnimation;
     };
   })
   .factory('cropDimensions', function() {
