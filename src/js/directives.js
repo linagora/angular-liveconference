@@ -201,6 +201,7 @@ angular.module('op.live-conference')
 
       var widgets = [];
       var toggleAnim = false;
+      var stopScaling = false;
 
       function videoToCanvas(widget) {
         var canvas = widget.canvas,
@@ -232,8 +233,18 @@ angular.module('op.live-conference')
         if ((toggleAnim = !toggleAnim)) {
           widgets.forEach(videoToCanvas);
         }
+        if (stopScaling) {
+          return;
+        }
         requestAnimationFrame(onAnimationFrame);
       }
+
+      function garbage() {
+        stopScaling = true;
+        widgets = [];
+      }
+
+      scope.$on('$destroy', garbage);
 
       onAnimationFrame();
     }
