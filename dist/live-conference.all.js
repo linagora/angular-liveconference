@@ -263,11 +263,18 @@ angular.module('op.live-conference')
       var easyrtc = webrtcFactory.get();
       var bitRates;
 
+      function stopLocalStream() {
+        var stream = easyrtc.getLocalStream();
+        if (stream) {
+          stream.stop();
+        }
+      }
+
       function leaveRoom(conference) {
+        stopLocalStream();
         easyrtc.leaveRoom(conference._id, function() {
           $log.debug('Left the conference ' + conference._id);
           $rootScope.$emit('conference:left', {conference_id: conference._id});
-          easyrtc.getLocalStream().stop();
         }, function() {
           $log.error('Error while leaving conference');
         });
