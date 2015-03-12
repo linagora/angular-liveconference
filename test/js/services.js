@@ -155,7 +155,11 @@ describe('The live-conference Angular module', function() {
         $rootScope = _$rootScope_;
       });
 
-      service.connect({ _id: 123 }, {}, []);
+      var conferenceState = {
+        pushAttendee: function() {},
+        removeAttendee: function() {}
+      };
+      service.connect({ _id: 123 }, {}, [], conferenceState);
       expect(this.ioSocketConnection.connectCallback).to.be.a('function');
       this.ioSocketConnection.connectCallback();
     });
@@ -194,7 +198,11 @@ describe('The live-conference Angular module', function() {
         $rootScope = _$rootScope_;
       });
 
-      service.connect({ _id: 123 }, {}, []);
+      var conferenceState = {
+        pushAttendee: function() {},
+        removeAttendee: function() {}
+      };
+      service.connect({ _id: 123 }, {}, [], conferenceState);
     });
 
     it('$scope.connect should create the easyRTC app if the socketIO connection is available', function(done) {
@@ -232,7 +240,11 @@ describe('The live-conference Angular module', function() {
         $rootScope = _$rootScope_;
       });
 
-      service.connect({ _id: 123 }, {}, []);
+      var conferenceState = {
+        pushAttendee: function() {},
+        removeAttendee: function() {}
+      };
+      service.connect({ _id: 123 }, {}, [], conferenceState);
       expect(this.ioSocketConnection.connectCallback).to.be.a('function');
       this.ioSocketConnection.connectCallback();
     });

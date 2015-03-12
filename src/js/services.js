@@ -51,7 +51,7 @@ angular.module('op.live-conference')
         easyrtc.call(otherEasyrtcid, onSuccess, onFailure);
       }
 
-      function connect(conference, mainVideoId, attendees) {
+      function connect(conference, mainVideoId, attendees, conferenceState) {
 
         function entryListener(entry, roomName) {
           if (entry) {
@@ -103,6 +103,7 @@ angular.module('op.live-conference')
         );
 
         easyrtc.username = session.getUserId();
+        conferenceState.pushAttendee(0, session.getUserId());
         attendees[0] = session.getUserId();
 
         easyrtc.debugPrinter = function(message) {
@@ -140,6 +141,7 @@ angular.module('op.live-conference')
 
           easyrtc.setOnCall(function(easyrtcid, slot) {
             attendees[slot + 1] = easyrtc.idToName(easyrtcid);
+            conferenceState.pushAttendee(slot + 1, easyrtc.idToName(easyrtcid));
             $log.debug('SetOnCall', easyrtcid);
             $rootScope.$apply();
           });
@@ -147,6 +149,7 @@ angular.module('op.live-conference')
           easyrtc.setOnHangup(function(easyrtcid, slot) {
             $log.debug('setOnHangup', easyrtcid);
             attendees[slot + 1] = null;
+            conferenceState.removeAttendee(slot + 1);
             $rootScope.$apply();
           });
         }
