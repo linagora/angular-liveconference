@@ -10,6 +10,15 @@ angular.module('op.live-conference')
         var canvas = {};
         var context = {};
         var mainVideo = {};
+        var stopAnimation = function() {};
+
+        function garbage() {
+          stopAnimation();
+          canvas = {};
+          context = {};
+          mainVideo = {};
+          stopAnimation = function() {};
+        }
 
         $timeout(function() {
           canvas = element.find('canvas#mainVideoCanvas');
@@ -19,7 +28,7 @@ angular.module('op.live-conference')
             function drawVideoInCancas() {
               canvas[0].width = mainVideo[0].videoWidth;
               canvas[0].height = mainVideo[0].videoHeight;
-              drawVideo(context, mainVideo[0], canvas[0].width, canvas[0].height);
+              stopAnimation = drawVideo(context, mainVideo[0], canvas[0].width, canvas[0].height);
             }
             if ($window.mozRequestAnimationFrame) {
               // see https://bugzilla.mozilla.org/show_bug.cgi?id=926753
@@ -44,13 +53,15 @@ angular.module('op.live-conference')
           mainVideo = element.find('video#' + newVideoId);
           canvas[0].width = mainVideo[0].videoWidth;
           canvas[0].height = mainVideo[0].videoHeight;
-          drawVideo(context, mainVideo[0], canvas[0].width, canvas[0].height);
+          stopAnimation = drawVideo(context, mainVideo[0], canvas[0].width, canvas[0].height);
           $rootScope.$broadcast('mainvideo', newVideoId);
         });
 
         scope.getDisplayName = function(userId) {
           return conferenceHelpers.getUserDisplayName(userId);
         };
+
+        scope.$on('$destroy', garbage);
       }
     };
   }])
