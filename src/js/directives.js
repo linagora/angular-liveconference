@@ -293,4 +293,30 @@ angular.module('op.live-conference')
       restrict: 'A',
       link: link
     };
+  }])
+  .directive('conferenceSpeakViewer', ['$rootScope', 'LOCAL_VIDEO_ID', 'session', function($rootScope, LOCAL_VIDEO_ID, session) {
+    // this has to be updated when ConferenceState is be ready
+    // the id is to lookup the videoId of the user._id,
+    // and then to react or not
+    function link(scope, element, attrs) {
+      if (attrs.videoId !== LOCAL_VIDEO_ID) {
+        return ;
+      }
+      scope.$on('speaking', function(evt, data) {
+        if (data.id === session.getUserId()) {
+          element.show();
+        }
+      });
+      scope.$on('stopped_speaking', function(evt, data) {
+        if (data.id === session.getUserId()) {
+          element.hide();
+        }
+      });
+    }
+
+    return {
+      restrict: 'E',
+      templateUrl: 'templates/conference-speak-viewer.jade',
+      link: link
+    };
   }]);
