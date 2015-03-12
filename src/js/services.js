@@ -314,4 +314,24 @@ angular.module('op.live-conference')
 
     return cropDimensions;
 
-  });
+  })
+  .factory('speechDetector', function() {
+  /**
+  * https://github.com/otalk/hark
+  *
+  * returns a hark instance
+  *
+  * detector.on('speaking', function() {...});
+  * detector.on('stopped_speaking', function() {...});
+  *
+  * don't forget to call detector.stop();
+  */
+  /* global hark */
+  return function(stream, options) {
+    options = options || {};
+    options.play = false;
+    var speechEvents = hark(stream, options);
+    stream = null;
+    return speechEvents;
+  };
+});
