@@ -2,7 +2,9 @@
   "name": "angular-liveconference",
   "version": "0.0.0",
   "description": "Angular Live Conference",
-  "dependencies": {},
+  "dependencies": {
+    "hark": "^1.1.2"
+  },
   "devDependencies": {
     "async": "~0.8.0",
     "bower": "~1.3.3",
