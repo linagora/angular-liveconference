@@ -264,4 +264,32 @@ angular.module('op.live-conference')
       restrict: 'A',
       link: link
     };
+  }])
+  .directive('localSpeakEmitter', ['$rootScope', 'session', 'speechDetector', function($rootScope, session, speechDetector) {
+    function link(scope) {
+      function createLocalEmitter(stream) {
+        var detector = speechDetector(stream);
+        var id = session.getUserId();
+        scope.$on('$destroy', function() {
+          detector.stop();
+          detector = null;
+        });
+        detector.on('speaking', function() {
+          $rootScope.$broadcast('speaking', {id: id});
+        });
+        detector.on('stopped_speaking', function() {
+          $rootScope.$broadcast('stopped_speaking', {id: id});
+        });
+      }
+
+      var unreg = $rootScope.$on('localMediaStream', function(event, stream) {
+        unreg();
+        createLocalEmitter(stream);
+      });
+    }
+
+    return {
+      restrict: 'A',
+      link: link
+    };
   }]);
