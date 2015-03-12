@@ -12,6 +12,7 @@ angular.module('op.live-conference')
     },
     nolimit: null
   })
+  .constant('LOCAL_VIDEO_ID', 'video-thumb0')
   .factory('easyRTCService', ['$rootScope', '$log', 'webrtcFactory', 'tokenAPI', 'session',
     'ioSocketConnection', 'ioConnectionManager', '$timeout', 'easyRTCBitRates',
     function($rootScope, $log, webrtcFactory, tokenAPI, session, ioSocketConnection, ioConnectionManager, $timeout, easyRTCBitRates) {

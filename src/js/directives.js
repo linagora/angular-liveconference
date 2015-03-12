@@ -1,7 +1,8 @@
 'use strict';
 
 angular.module('op.live-conference')
-  .directive('conferenceVideo', ['$timeout', '$window', '$rootScope', 'drawVideo', 'conferenceHelpers', function($timeout, $window, $rootScope, drawVideo, conferenceHelpers) {
+  .directive('conferenceVideo', ['$timeout', '$window', '$rootScope', 'drawVideo', 'conferenceHelpers', 'LOCAL_VIDEO_ID',
+  function($timeout, $window, $rootScope, drawVideo, conferenceHelpers, LOCAL_VIDEO_ID) {
     return {
       restrict: 'E',
       replace: true,
@@ -23,7 +24,7 @@ angular.module('op.live-conference')
         $timeout(function() {
           canvas = element.find('canvas#mainVideoCanvas');
           context = canvas[0].getContext('2d');
-          mainVideo = element.find('video#video-thumb0');
+          mainVideo = element.find('video#' + LOCAL_VIDEO_ID);
           mainVideo.on('loadedmetadata', function() {
             function drawVideoInCancas() {
               canvas[0].width = mainVideo[0].videoWidth;
@@ -39,7 +40,7 @@ angular.module('op.live-conference')
             } else {
               drawVideoInCancas();
             }
-            $rootScope.$broadcast('mainvideo', 'video-thumb0');
+            $rootScope.$broadcast('mainvideo', LOCAL_VIDEO_ID);
           });
         }, 1000);
 
@@ -103,7 +104,7 @@ angular.module('op.live-conference')
     };
   })
 
-  .directive('conferenceUserVideo', ['$modal', 'matchmedia', function($modal, matchmedia) {
+  .directive('conferenceUserVideo', ['$modal', 'matchmedia', 'LOCAL_VIDEO_ID', function($modal, matchmedia, LOCAL_VIDEO_ID) {
     return {
       restrict: 'E',
       replace: true,
@@ -124,7 +125,7 @@ angular.module('op.live-conference')
         });
 
         scope.onMobileToggleControls = function() {
-          if (scope.mainVideoId === 'video-thumb0') {
+          if (scope.mainVideoId === LOCAL_VIDEO_ID) {
             return;
           }
           modal.$promise.then(modal.toggle);
