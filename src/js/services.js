@@ -17,6 +17,8 @@ angular.module('op.live-conference')
     'ioSocketConnection', 'ioConnectionManager', '$timeout', 'easyRTCBitRates',
     function($rootScope, $log, webrtcFactory, tokenAPI, session, ioSocketConnection, ioConnectionManager, $timeout, easyRTCBitRates) {
       var easyrtc = webrtcFactory.get();
+      easyrtc.enableDataChannels(true);
+
       var bitRates;
 
       function stopLocalStream() {
@@ -145,11 +147,20 @@ angular.module('op.live-conference')
             $rootScope.$apply();
           });
 
+          easyrtc.setDataChannelOpenListener( function(easyrtcid) {
+            easyrtc.sendData(easyrtcid, 'easyrtcid:myusername', { username: easyrtc.username, displayName: session.user.displayName });
+          });
+
           easyrtc.setOnHangup(function(easyrtcid, slot) {
             $log.debug('setOnHangup', easyrtcid);
             conferenceState.removeAttendee(slot + 1);
             $rootScope.$apply();
           });
+
+          easyrtc.setPeerListener(function(easyrtcid, msgType, msgData) {
+            $log.debug('Username and displayName received from %s: %s (%s)', easyrtcid, msgData.username, msgData.displayName);
+            conferenceState.updateAttendee(easyrtcid, msgData);
+          }, 'easyrtcid:myusername');
         }
 
         if (ioSocketConnection.isConnected()) {
@@ -210,6 +221,19 @@ angular.module('op.live-conference')
       this.positions = [];
       this.mainVideoId = 'video-thumb0';
     }
+
+    ConferenceState.prototype.updateAttendee = function(easyrtcid, message) {
+      var index = this.attendees.indexOf(easyrtcid);
+      if (index === -1) {
+        return;
+      }
+      this.attendees[index] = message.username;
+      if (!this.positions[index].member) {
+        this.positions[index].member = {};
+      }
+      this.positions[index].member.displayName = message.displayName;
+      this.positions[index].member._id = message.username;
+    };
 
     ConferenceState.prototype.pushAttendee = function(index, attendee) {
       this.attendees[index] = attendee;

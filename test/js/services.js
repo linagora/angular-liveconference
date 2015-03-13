@@ -42,7 +42,9 @@ describe('The live-conference Angular module', function() {
             hangupAll: function() {},
             setOnCall: function() {},
             setOnHangup: function() {},
-            useThisSocketConnection: function() {}
+            useThisSocketConnection: function() {},
+            enableDataChannels: function() {},
+            setPeerListener: function() {}
           };
         }
       };
@@ -81,7 +83,9 @@ describe('The live-conference Angular module', function() {
           return {
             hangupAll: function() {
               done();
-            }
+            },
+            enableDataChannels: function() {},
+            setPeerListener: function() {}
           };
         }
       };
@@ -107,7 +111,9 @@ describe('The live-conference Angular module', function() {
             call: function(id) {
               expect(id).to.equal(user_id);
               done();
-            }
+            },
+            enableDataChannels: function() {},
+            setPeerListener: function() {}
           };
 
         }
@@ -140,7 +146,9 @@ describe('The live-conference Angular module', function() {
             useThisSocketConnection: function() {},
             easyApp: function() {
               done();
-            }
+            },
+            enableDataChannels: function() {},
+            setPeerListener: function() {}
           };
         }
       };
@@ -186,7 +194,9 @@ describe('The live-conference Angular module', function() {
               done();
             },
             easyApp: function() {
-            }
+            },
+            enableDataChannels: function() {},
+            setPeerListener: function() {}
           };
         }
       };
@@ -231,7 +241,9 @@ describe('The live-conference Angular module', function() {
             useThisSocketConnection: function() {},
             easyApp: function() {
               done();
-            }
+            },
+            enableDataChannels: function() {},
+            setPeerListener: function() {}
           };
         }
       };
