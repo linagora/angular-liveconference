@@ -1,3 +1,14 @@
+@screen-sm: 768px;
+@screen-md: 992px;
+@screen-lg: 1200px;
+
+@user-control-bar-height: 50px;
+
+@attendee-bar-height-xs: 110px;
+@attendee-bar-height-sm: 115px;
+@attendee-bar-height-md: 130px;
+@attendee-bar-height-lg: 160px;
+
 .conference-container {
   .container-fluid {
     padding: 0;
@@ -18,7 +29,7 @@
     margin-top: 20px;
     margin-bottom: 10px;
   }
-  @media (min-width: 992px) {
+  @media (min-width: @screen-md) {
     .ResizeImage(@defaultImageSizeMedium, auto);
     .btn {
       margin-top: 0px;
@@ -31,7 +42,16 @@
   background-color: #1b1b1b;
   z-index: 3;
   padding: 0.8em;
-  top: -5px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: @user-control-bar-height;
+  margin: 0 auto;
+
+  bottom: @attendee-bar-height-xs;
+  @media (min-width: @screen-sm) {
+    bottom: 0;
+  }
 
   ul {
     margin:auto;
@@ -55,56 +75,48 @@
   .fa {
     margin-right: 15px;
   }
-}
-
-.conference-row-attendees-bar {
-  width: 100%;
-  height: 110px;
-  z-index: 3;
-
-  @media (min-width: 768px) {
-    position: absolute;
-    bottom: 55px;
-    height: 115px;
-  }
-  @media (min-width: 992px) {
-    height: 130px;
-  }
-  @media (min-width: 1200px) {
-    height: 160px;
-  }
 
 }
 
 .conference-attendees-bar {
-  top: -5px;
-  @media (min-width: 768px) {
-    top: 0px;
-  }
-  width: auto;
-  height: 100%;
+  bottom: 0;
   padding: 0px;
+  z-index: 4;
+
+  width: 100%;
+  height: @attendee-bar-height-xs;
   margin: 0px;
   white-space: pre-line;
-  position: relative;
+  position: absolute;
   overflow-x: auto;
   overflow-y: hidden;
+  background-color: #1b1b1b;
+
+  @media (min-width: @screen-sm) {
+    bottom: @user-control-bar-height;
+    background-color: transparent;
+    height: @attendee-bar-height-sm;
+  }
+
+  @media (min-width: @screen-md) {
+    height: @attendee-bar-height-md;
+  }
+
+  @media (min-width: @screen-lg) {
+    height: @attendee-bar-height-lg;
+  }
+
   .content {
     width: auto !important;
     margin: 0;
-    padding: 0;
-    @media (min-width: 768px) {
-      position: absolute;
-      bottom: 0px;
-      padding-left: 10px;
-      padding-top: 5px;
-    }
+    padding: 0px 10px;
+
     li {
       display: table-cell;
       position: relative;
       list-style: none;
       padding-right: 5px;
-      @media (min-width: 768px) {
+      @media (min-width: @screen-sm) {
         padding-right: 10px;
       }
     }
@@ -112,8 +124,6 @@
 }
 
 .attendee-video {
-  position: relative;
-
   video { display: none }
 
   ul {
@@ -160,15 +170,15 @@
     height: 100px;
     width: 100px;
     box-shadow: 0 0 6px;
-    @media (min-width: 768px) {
+    @media (min-width: @screen-sm) {
       height: 105px;
       width: 105px;
     }
-    @media (min-width: 992px) {
+    @media (min-width: @screen-md) {
       height: 120px;
       width: 120px;
     }
-    @media (min-width: 1200px) {
+    @media (min-width: @screen-lg) {
       height: 150px;
       width: 150px;
     }
@@ -176,19 +186,19 @@
 
   .conference-attendee-name {
     position: absolute;
-    bottom: 2px;
+    bottom: 5px;
     text-shadow: 0 0 0.1em @gray-darkest, 0 0 0.1em @gray-darkest;
     white-space: nowrap;
     color: white;
     margin: 0;
     width: 100px;
-    @media (min-width: 768px) {
+    @media (min-width: @screen-sm) {
       width: 105px;
     }
-    @media (min-width: 992px) {
+    @media (min-width: @screen-md) {
       width: 120px;
     }
-    @media (min-width: 1200px) {
+    @media (min-width: @screen-lg) {
       width: 150px;
     }
   }
@@ -203,12 +213,82 @@
     filter: url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\'><filter id=\'grayscale\'><feColorMatrix type=\'matrix\' values=\'0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0 0 0 1 0\'/></filter></svg>#grayscale");
     opacity: 0.5;
   }
+
+  &.fullscreen {
+    position: absolute;
+    height: 100%;
+    top: 0;
+    left: 0;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .user-video {
+    height: 100%;
+  }
+
+  @media all and (orientation:portrait) {
+    .conference-main-video-multi {
+      margin: auto 0;
+      width: 100%;
+      height: auto;
+    }
+  }
+  @media all and (orientation:landscape) {
+    .conference-main-video-multi {
+      margin: 0 auto;
+      height: 100%;
+      width: auto;
+    }
+  }
 }
+
 
 .conference-main-video-multi {
   z-index: 2;
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+
+  padding-bottom: @attendee-bar-height-xs + @user-control-bar-height;
+  @media (min-width: @screen-sm) {
+    padding-bottom: @user-control-bar-height;
+  }
+}
+
+.conference-attendee-video-multi {
+  height: 100px;
+  width: 100px;
+  @media (min-width: @screen-sm) {
+    height: 105px;
+    width: 105px;
+  }
+  @media (min-width: @screen-md) {
+    height: 120px;
+    width: 120px;
+  }
+  @media (min-width: @screen-lg) {
+    height: 150px;
+    width: 150px;
+  }
+}
+
+.conference-attendee-name {
+  line-height: 1.2;
+  white-space: nowrap;
+  color: white;
+  margin: 0;
+  @media (min-width: @screen-sm) {
+    width: 105px;
+  }
+  @media (min-width: @screen-md) {
+    width: 120px;
+  }
+  @media (min-width: @screen-lg) {
+    width: 150px;
+  }
 }
 
 .ResizeImage(@width, @height) {
@@ -270,7 +350,7 @@
   }
 }
 
-@media (min-width: 768px) {
+@media (min-width: @screen-sm) {
   .mobile-user-video-control {
     li {
       padding: 0 3em;

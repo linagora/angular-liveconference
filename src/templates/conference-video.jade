@@ -1,10 +1,7 @@
-div.conference-video#multiparty-conference
-  .row
+div.conference-video.fullscreen#multiparty-conference
     conference-user-video(video-id="{{mainVideoId}}")
-  .row
-    conference-user-control-bar(users="users", easyrtc='easyrtc', invite-call='invite', show-invitation='showInvitation', on-leave='onLeave')
-  .row.conference-row-attendees-bar
     .conference-attendees-bar
       ul.content(scale-to-canvas)
         li(ng-repeat="id in attendeeVideoIds", ng-hide="!attendees[$index]")
           conference-attendee-video(video-index="$index", on-video-click="streamToMainCanvas", video-id="{{id}}", attendee="getDisplayName(attendees[$index])")
+    conference-user-control-bar(users="users", easyrtc='easyrtc', invite-call='invite', show-invitation='showInvitation', on-leave='onLeave')
