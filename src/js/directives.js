@@ -44,7 +44,7 @@ angular.module('op.live-conference')
           });
         }, 1000);
 
-        scope.$on('conferencestate:mainvideoid:update', function(newVideoId) {
+        scope.$on('conferencestate:mainvideoid:update', function(event, newVideoId) {
           // Reject the first watch of the mainVideoId
           // when clicking on a new video, loadedmetadata event is not
           // fired.
@@ -57,6 +57,10 @@ angular.module('op.live-conference')
           stopAnimation = drawVideo(context, mainVideo[0], canvas[0].width, canvas[0].height);
           $rootScope.$broadcast('mainvideo', newVideoId);
         });
+
+        scope.streamToMainCanvas = function(index) {
+          return scope.conferenceState.updateMainVideoIdByIndex(index);
+        };
 
         scope.getDisplayName = function(userId) {
           return conferenceHelpers.getUserDisplayName(userId);
@@ -170,9 +174,6 @@ angular.module('op.live-conference')
       replace: true,
       templateUrl: 'templates/user-control-bar.jade',
       scope: {
-        users: '=',
-        easyrtc: '=',
-        inviteCall: '=',
         showInvitation: '=',
         onLeave: '='
       },

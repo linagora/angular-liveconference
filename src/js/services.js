@@ -51,7 +51,7 @@ angular.module('op.live-conference')
         easyrtc.call(otherEasyrtcid, onSuccess, onFailure);
       }
 
-      function connect(conference, mainVideoId, attendees, conferenceState) {
+      function connect(conferenceState) {
 
         function entryListener(entry, roomName) {
           if (entry) {
@@ -93,6 +93,7 @@ angular.module('op.live-conference')
           $log.info('Lost connection to signaling server');
         });
 
+        var conference = conferenceState.conference;
         easyrtc.joinRoom(conference._id, null,
           function() {
             $log.debug('Joined room ' + conference._id);
@@ -104,7 +105,6 @@ angular.module('op.live-conference')
 
         easyrtc.username = session.getUserId();
         conferenceState.pushAttendee(0, session.getUserId());
-        attendees[0] = session.getUserId();
 
         easyrtc.debugPrinter = function(message) {
           $log.debug(message);
@@ -125,7 +125,7 @@ angular.module('op.live-conference')
 
           easyrtc.easyApp(
             'LiveConference',
-            mainVideoId,
+            'video-thumb0',
             [
               'video-thumb1',
               'video-thumb2',
@@ -140,7 +140,6 @@ angular.module('op.live-conference')
             onLoginFailure);
 
           easyrtc.setOnCall(function(easyrtcid, slot) {
-            attendees[slot + 1] = easyrtc.idToName(easyrtcid);
             conferenceState.pushAttendee(slot + 1, easyrtc.idToName(easyrtcid));
             $log.debug('SetOnCall', easyrtcid);
             $rootScope.$apply();
@@ -148,7 +147,6 @@ angular.module('op.live-conference')
 
           easyrtc.setOnHangup(function(easyrtcid, slot) {
             $log.debug('setOnHangup', easyrtcid);
-            attendees[slot + 1] = null;
             conferenceState.removeAttendee(slot + 1);
             $rootScope.$apply();
           });
