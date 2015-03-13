@@ -140,8 +140,8 @@ angular.module('op.live-conference')
             onLoginFailure);
 
           easyrtc.setOnCall(function(easyrtcid, slot) {
-            conferenceState.pushAttendee(slot + 1, easyrtc.idToName(easyrtcid));
             $log.debug('SetOnCall', easyrtcid);
+            conferenceState.pushAttendee(slot + 1, easyrtc.idToName(easyrtcid));
             $rootScope.$apply();
           });
 
@@ -251,7 +251,7 @@ angular.module('op.live-conference')
       $rootScope.$broadcast('conferencestate:mainvideoid:update', this.mainVideoId);
     };
 
-    ConferenceState.prototype.updateMainVideoIdByIndex = function(index) {
+    ConferenceState.prototype.updateMainVideoIdToIndex = function(index) {
       this.mainVideoId = this.videoIds[index];
       $rootScope.$broadcast('conferencestate:mainvideoid:update', this.mainVideoId);
     };
@@ -272,6 +272,11 @@ angular.module('op.live-conference')
       return this.positions.filter(function(position) {
         return position && position.videoId === this.mainVideoId
       }.bind(this))[0].member;
+    };
+
+    ConferenceState.prototype.getUserDisplayNameOfIndex = function(index) {
+      var position = this.positions[index];
+      return position && position.member ? position.member.displayName : '';
     };
 
     return ConferenceState;

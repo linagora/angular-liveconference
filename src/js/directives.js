@@ -59,11 +59,11 @@ angular.module('op.live-conference')
         });
 
         scope.streamToMainCanvas = function(index) {
-          return scope.conferenceState.updateMainVideoIdByIndex(index);
+          return scope.conferenceState.updateMainVideoIdToIndex(index);
         };
 
         scope.getDisplayName = function(userId) {
-          return conferenceHelpers.getUserDisplayName(userId);
+          return scope.conferenceState.getUserDisplayNameOfIndex(userId);
         };
 
         scope.$on('$destroy', garbage);
