@@ -250,6 +250,12 @@ angular.module('op.live-conference')
 
     ConferenceState.prototype.updateMainVideoId = function(mainVideoId) {
       this.mainVideoId = mainVideoId;
+      $rootScope.$broadcast('conferencestate:mainvideoid:update', this.mainVideoId);
+    };
+
+    ConferenceState.prototype.updateMainVideoIdByIndex = function(index) {
+      this.mainVideoId = this.videoIds[index];
+      $rootScope.$broadcast('conferencestate:mainvideoid:update', this.mainVideoId);
     };
 
     ConferenceState.prototype.getMemberOfIndex = function(index) {

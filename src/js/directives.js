@@ -44,7 +44,7 @@ angular.module('op.live-conference')
           });
         }, 1000);
 
-        scope.$watch('mainVideoId', function(newVideoId) {
+        scope.$on('conferencestate:mainvideoid:update', function(newVideoId) {
           // Reject the first watch of the mainVideoId
           // when clicking on a new video, loadedmetadata event is not
           // fired.
