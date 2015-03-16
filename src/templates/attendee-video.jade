@@ -5,5 +5,5 @@ div.attendee-video
     i.fa.fa-2x.fa-cog.conference-settings-button(data-placement="right-bottom", data-html="true", data-animation="am-flip-x", bs-dropdown, template="templates/attendee-settings-dropdown.jade")
   i.fa.fa-2x.fa-microphone-slash.conference-secondary-mute-button(ng-show="muted && videoId !== 'video-thumb0'")
   i.fa.fa-2x.fa-eye-slash.conference-secondary-toggle-video-button(ng-show="videoMuted")
-  p.text-center.conference-attendee-name.ellipsis {{attendee}}
+  p.text-center.conference-attendee-name.ellipsis {{attendee.displayName}}
   conference-speak-viewer(video-id="{{videoId}}")

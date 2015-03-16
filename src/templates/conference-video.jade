@@ -3,5 +3,5 @@ div.conference-video.fullscreen#multiparty-conference(local-speak-emitter)
   .conference-attendees-bar
     ul.content(scale-to-canvas)
       li(ng-repeat="id in conferenceState.videoIds", ng-hide="!conferenceState.attendees[$index]")
-        conference-attendee-video(video-index="$index", on-video-click="streamToMainCanvas", video-id="{{id}}", attendee="getDisplayName($index)")
+        conference-attendee-video(video-index="$index", on-video-click="streamToMainCanvas", video-id="{{id}}", attendee="conferenceState.attendees[$index]")
   conference-user-control-bar(show-invitation='showInvitation', on-leave='onLeave')
