@@ -218,7 +218,6 @@ angular.module('op.live-conference')
     /*
      * Store a snapshot of current conference status and an array of attendees describing
      * current visible attendees of the conference by their index as position.
-     * conference :
      * attendees : [{
      *   videoId:
      *   id:
@@ -276,7 +275,7 @@ angular.module('op.live-conference')
     ConferenceState.prototype.getAttendeesByVideoIds = function() {
       var hash = {};
       this.attendees.forEach(function(attendee) {
-        hash[attendee.videoIds] = attendee;
+        hash[attendee.videoId] = attendee;
       });
       return hash;
     };
