@@ -12,10 +12,21 @@ angular.module('op.live-conference')
     },
     nolimit: null
   })
+  .constant('EASYRTC_APPLICATION_NAME', 'LiveConference')
   .constant('LOCAL_VIDEO_ID', 'video-thumb0')
+  .constant('REMOTE_VIDEO_IDS', [
+    'video-thumb1',
+    'video-thumb2',
+    'video-thumb3',
+    'video-thumb4',
+    'video-thumb5',
+    'video-thumb6',
+    'video-thumb7',
+    'video-thumb8'
+  ])
   .factory('easyRTCService', ['$rootScope', '$log', 'webrtcFactory', 'tokenAPI', 'session',
-    'ioSocketConnection', 'ioConnectionManager', '$timeout', 'easyRTCBitRates',
-    function($rootScope, $log, webrtcFactory, tokenAPI, session, ioSocketConnection, ioConnectionManager, $timeout, easyRTCBitRates) {
+    'ioSocketConnection', 'ioConnectionManager', '$timeout', 'easyRTCBitRates', 'LOCAL_VIDEO_ID', 'REMOTE_VIDEO_IDS', 'EASYRTC_APPLICATION_NAME',
+    function($rootScope, $log, webrtcFactory, tokenAPI, session, ioSocketConnection, ioConnectionManager, $timeout, easyRTCBitRates, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, EASYRTC_APPLICATION_NAME) {
       var easyrtc = webrtcFactory.get();
       easyrtc.enableDataChannels(true);
 
@@ -126,18 +137,9 @@ angular.module('op.live-conference')
           }
 
           easyrtc.easyApp(
-            'LiveConference',
-            'video-thumb0',
-            [
-              'video-thumb1',
-              'video-thumb2',
-              'video-thumb3',
-              'video-thumb4',
-              'video-thumb5',
-              'video-thumb6',
-              'video-thumb7',
-              'video-thumb8'
-            ],
+            EASYRTC_APPLICATION_NAME,
+            LOCAL_VIDEO_ID,
+            REMOTE_VIDEO_IDS,
             onLoginSuccess,
             onLoginFailure);
 
