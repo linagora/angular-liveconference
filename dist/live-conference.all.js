@@ -275,8 +275,8 @@ WildEmitter.prototype.getWildcardCallbacks = function (eventName) {
 ;'use strict';
 
 angular.module('op.live-conference')
-  .directive('conferenceVideo', ['$timeout', '$window', '$rootScope', 'drawVideo', 'conferenceHelpers', 'LOCAL_VIDEO_ID',
-  function($timeout, $window, $rootScope, drawVideo, conferenceHelpers, LOCAL_VIDEO_ID) {
+  .directive('conferenceVideo', ['$timeout', '$window', '$rootScope', 'drawVideo', 'LOCAL_VIDEO_ID',
+  function($timeout, $window, $rootScope, drawVideo, LOCAL_VIDEO_ID) {
     return {
       restrict: 'E',
       replace: true,
@@ -314,11 +314,11 @@ angular.module('op.live-conference')
             } else {
               drawVideoInCancas();
             }
-            $rootScope.$broadcast('mainvideo', LOCAL_VIDEO_ID);
+            $rootScope.$broadcast('localVideoId:ready', LOCAL_VIDEO_ID);
           });
         }, 1000);
 
-        scope.$on('conferencestate:mainvideoid:update', function(event, newVideoId) {
+        scope.$on('conferencestate:localVideoId:update', function(event, newVideoId) {
           // Reject the first watch of the mainVideoId
           // when clicking on a new video, loadedmetadata event is not
           // fired.
@@ -329,15 +329,11 @@ angular.module('op.live-conference')
           canvas[0].width = mainVideo[0].videoWidth;
           canvas[0].height = mainVideo[0].videoHeight;
           stopAnimation = drawVideo(context, mainVideo[0], canvas[0].width, canvas[0].height);
-          $rootScope.$broadcast('mainvideo', newVideoId);
+          $rootScope.$broadcast('localVideoId:ready', newVideoId);
         });
 
         scope.streamToMainCanvas = function(index) {
-          return scope.conferenceState.updateMainVideoIdToIndex(index);
-        };
-
-        scope.getDisplayName = function(userId) {
-          return scope.conferenceState.getUserDisplayNameOfIndex(userId);
+          return scope.conferenceState.updateLocalVideoIdToIndex(index);
         };
 
         scope.$on('$destroy', garbage);
@@ -417,7 +413,7 @@ angular.module('op.live-conference')
         var videoElement = {};
         var watcher = {};
 
-        scope.$on('mainvideo', function(event, videoId) {
+        scope.$on('localVideoId:ready', function(event, videoId) {
           if (watcher instanceof Function) {
             // we must unregister previous watcher
             // if it has been initialized first
@@ -609,10 +605,21 @@ angular.module('op.live-conference')
     },
     nolimit: null
   })
+  .constant('EASYRTC_APPLICATION_NAME', 'LiveConference')
   .constant('LOCAL_VIDEO_ID', 'video-thumb0')
+  .constant('REMOTE_VIDEO_IDS', [
+    'video-thumb1',
+    'video-thumb2',
+    'video-thumb3',
+    'video-thumb4',
+    'video-thumb5',
+    'video-thumb6',
+    'video-thumb7',
+    'video-thumb8'
+  ])
   .factory('easyRTCService', ['$rootScope', '$log', 'webrtcFactory', 'tokenAPI', 'session',
-    'ioSocketConnection', 'ioConnectionManager', '$timeout', 'easyRTCBitRates',
-    function($rootScope, $log, webrtcFactory, tokenAPI, session, ioSocketConnection, ioConnectionManager, $timeout, easyRTCBitRates) {
+    'ioSocketConnection', 'ioConnectionManager', '$timeout', 'easyRTCBitRates', 'LOCAL_VIDEO_ID', 'REMOTE_VIDEO_IDS', 'EASYRTC_APPLICATION_NAME',
+    function($rootScope, $log, webrtcFactory, tokenAPI, session, ioSocketConnection, ioConnectionManager, $timeout, easyRTCBitRates, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, EASYRTC_APPLICATION_NAME) {
       var easyrtc = webrtcFactory.get();
       easyrtc.enableDataChannels(true);
 
@@ -703,7 +710,7 @@ angular.module('op.live-conference')
         );
 
         easyrtc.username = session.getUserId();
-        conferenceState.pushAttendee(0, session.getUserId());
+        conferenceState.pushAttendee(0, easyrtc.myEasyrtcid, session.getUserId(), session.getUsername());
 
         easyrtc.debugPrinter = function(message) {
           $log.debug(message);
@@ -723,28 +730,28 @@ angular.module('op.live-conference')
           }
 
           easyrtc.easyApp(
-            'LiveConference',
-            'video-thumb0',
-            [
-              'video-thumb1',
-              'video-thumb2',
-              'video-thumb3',
-              'video-thumb4',
-              'video-thumb5',
-              'video-thumb6',
-              'video-thumb7',
-              'video-thumb8'
-            ],
+            EASYRTC_APPLICATION_NAME,
+            LOCAL_VIDEO_ID,
+            REMOTE_VIDEO_IDS,
             onLoginSuccess,
             onLoginFailure);
 
           easyrtc.setOnCall(function(easyrtcid, slot) {
             $log.debug('SetOnCall', easyrtcid);
-            easyrtc.setDataChannelOpenListener( function(easyrtcid) {
-              easyrtc.sendData(easyrtcid, 'easyrtcid:myusername', { username: easyrtc.username, displayName: session.user.displayName });
-            });
-            conferenceState.pushAttendee(slot + 1, easyrtc.idToName(easyrtcid));
+            conferenceState.pushAttendee(slot + 1, easyrtcid);
             $rootScope.$apply();
+          });
+
+          easyrtc.setDataChannelOpenListener( function(easyrtcid) {
+            var data = {
+              id: session.getUserId(),
+              displayName: session.getUsername()
+            };
+            $log.debug('On datachannel open send %s (%s)', data, 'easyrtcid:myusername');
+            easyrtc.sendData(
+              easyrtcid,
+              'easyrtcid:myusername',
+              data);
           });
 
           easyrtc.setOnHangup(function(easyrtcid, slot) {
@@ -754,12 +761,9 @@ angular.module('op.live-conference')
           });
 
           easyrtc.setPeerListener(function(easyrtcid, msgType, msgData) {
-            $log.debug('setPeerListener', easyrtcid, msgType, msgData)
-            if (msgType === 'easyrtcid:myusername') {
-              $log.debug('Username received from %s: %s', easyrtcid, msgData.username, msgData.displayName);
-              conferenceState.updateAttendee(easyrtcid, msgData);
-            }
-          });
+            $log.debug('UserId and displayName received from %s: %s (%s)', easyrtcid, msgData.id, msgData.displayName);
+            conferenceState.updateAttendee(easyrtcid, msgData.id, msgData.displayName);
+         }, 'easyrtcid:myusername');
         }
 
         if (ioSocketConnection.isConnected()) {
@@ -802,149 +806,75 @@ angular.module('op.live-conference')
       };
     }])
 
-  .factory('ConferenceState', ['$rootScope', function($rootScope) {
+  .factory('ConferenceState', ['$rootScope', 'LOCAL_VIDEO_ID', 'REMOTE_VIDEO_IDS', function($rootScope, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS) {
+
+    /*
+     * Store a snapshot of current conference status and an array of attendees describing
+     * current visible attendees of the conference by their index as position.
+     * attendees : [{
+     *   videoId:
+     *   id:
+     *   easyrtcid:
+     *   displayName:
+     * }]
+     */
     function ConferenceState(conference) {
       this.conference = conference;
-      this.videoIds = [
-        'video-thumb0',
-        'video-thumb1',
-        'video-thumb2',
-        'video-thumb3',
-        'video-thumb4',
-        'video-thumb5',
-        'video-thumb6',
-        'video-thumb7',
-        'video-thumb8'
-      ];
       this.attendees = [];
-      this.positions = [];
-      this.mainVideoId = 'video-thumb0';
+      this.localVideoId = LOCAL_VIDEO_ID;
+      this.videoIds = [LOCAL_VIDEO_ID].concat(REMOTE_VIDEO_IDS);
     }
 
-    ConferenceState.prototype.updateAttendee = function(easyrtcid, message) {
-      var index = this.attendees.indexOf(easyrtcid);
-      if (index === -1) {
+    ConferenceState.prototype.updateAttendee = function(easyrtcid, id, displayName) {
+      var attendeeToUpdate = this.attendees.filter(function(attendee) {
+        return attendee.easyrtcid === easyrtcid;
+      })[0];
+      if (!attendeeToUpdate) {
         return;
       }
-      this.attendees[index] = message.username;
-      if (!this.positions[index].member) {
-        this.positions[index].member = {};
-      }
-      this.positions[index].member.displayName = message.displayName;
-      this.positions[index].member._id = message.username;
+      attendeeToUpdate.id = id;
+      attendeeToUpdate.displayName = displayName;
+      attendeeToUpdate.easyrtcid = easyrtcid;
+      $rootScope.$broadcast('conferencestate:attendees:update', attendeeToUpdate);
     };
 
-    ConferenceState.prototype.pushAttendee = function(index, attendee) {
+    ConferenceState.prototype.pushAttendee = function(index, easyrtcid, id, displayName) {
+      var attendee = {
+        videoIds: this.videoIds[index],
+        id: id,
+        easyrtcid: easyrtcid,
+        displayName: displayName
+      };
       this.attendees[index] = attendee;
-      $rootScope.$broadcast('conferencestate:attendees:push', attendee)
+      $rootScope.$broadcast('conferencestate:attendees:push', attendee);
     };
 
     ConferenceState.prototype.removeAttendee = function(index) {
       var attendee = this.attendees[index];
-      var position = this.positions.filter(function(position) {
-        return position && position.member._id === attendee;
-      })[0];
       this.attendees[index] = null;
-      $rootScope.$broadcast('conferencestate:attendees:remove', {attendee: attendee, position: position})
+      $rootScope.$broadcast('conferencestate:attendees:remove', attendee);
     };
 
-    ConferenceState.prototype.updatePositions = function(conference) {
-      var self = this;
-      this.conference = conference;
-
-      function _position(index) {
-        return {
-          member: (function() {
-            return self.conference.members.filter(function(member) {
-              return member._id === self.attendees[index];
-            })[0];
-          }) (),
-          videoId: self.videoIds[index],
-          videoIndex: i
-        }
-      }
-
-      for(var i = 0; i < this.attendees.length; i++) {
-        this.positions[i] = (this.attendees[i] === null) ? null : _position(i);
-      }
+    ConferenceState.prototype.updateLocalVideoId = function(videoId) {
+      this.localVideoId = videoId;
+      $rootScope.$broadcast('conferencestate:localVideoId:update', this.localVideoId);
     };
 
-    ConferenceState.prototype.updateMainVideoId = function(mainVideoId) {
-      this.mainVideoId = mainVideoId;
-      $rootScope.$broadcast('conferencestate:mainvideoid:update', this.mainVideoId);
+    ConferenceState.prototype.updateLocalVideoIdToIndex = function(index) {
+      this.localVideoId = this.videoIds[index];
+      $rootScope.$broadcast('conferencestate:localVideoId:update', this.localVideoId);
     };
 
-    ConferenceState.prototype.updateMainVideoIdToIndex = function(index) {
-      this.mainVideoId = this.videoIds[index];
-      $rootScope.$broadcast('conferencestate:mainvideoid:update', this.mainVideoId);
-    };
-
-    ConferenceState.prototype.getMemberOfIndex = function(index) {
-      var position = this.positions[index];
-      return position ? position.member : null;
-    };
-
-    ConferenceState.prototype.getMemberOfVideoId = function(videoId) {
-      var position = this.positions.filter(function(position) {
-        return position && position.videoId === videoId;
-      })[0];
-      return position ? position.member : null;
-    };
-
-    ConferenceState.prototype.getMainVideoIdAsMember = function() {
-      return this.positions.filter(function(position) {
-        return position && position.videoId === this.mainVideoId
-      }.bind(this))[0].member;
-    };
-
-    ConferenceState.prototype.getUserDisplayNameOfIndex = function(index) {
-      var position = this.positions[index];
-      return position && position.member ? position.member.displayName : '';
+    ConferenceState.prototype.getAttendeesByVideoIds = function() {
+      var hash = {};
+      this.attendees.forEach(function(attendee) {
+        hash[attendee.videoId] = attendee;
+      });
+      return hash;
     };
 
     return ConferenceState;
   }])
-
-  .factory('conferenceHelpers', function() {
-    var map = {};
-
-    function mapUserIdToName(users) {
-      if (!users) {
-        return map;
-      }
-
-      if (users instanceof Array) {
-        users.forEach(function(user) {
-          var name = user.displayName || 'No name';
-          map[user._id] = name;
-        });
-        return map;
-      }
-      else {
-        map[users._id] = users.displayName;
-        return map;
-      }
-    }
-
-    function getUserDisplayName(userId) {
-      return userId ? map[userId] : null;
-    }
-
-    function getMainVideoAttendeeIndexFrom(videoId) {
-      return parseInt(videoId.substr(11));
-    }
-
-    function isMainVideo(mainVideoId, videoId) {
-      return mainVideoId === videoId;
-    }
-
-    return {
-      mapUserIdToName: mapUserIdToName,
-      getMainVideoAttendeeIndexFrom: getMainVideoAttendeeIndexFrom,
-      isMainVideo: isMainVideo,
-      getUserDisplayName: getUserDisplayName
-    };
-  })
 
   .factory('drawVideo', function($rootScope, $window, $interval) {
     var requestAnimationFrame =
@@ -1057,13 +987,13 @@ angular.module('op.liveconference-templates', []).run(['$templateCache', functio
   $templateCache.put("templates/attendee-settings-dropdown.jade",
     "<ul role=\"menu\" class=\"dropdown-menu attendee-settings-dropdown\"><li role=\"presentation\"><a href=\"\" ng-click=\"mute()\" role=\"menuitem\" target=\"_blank\"><i ng-class=\"{'fa-microphone': !muted, 'fa-microphone-slash': muted}\" class=\"fa fa-fw conference-mute-button\"></i>&nbsp;Mute</a></li><li role=\"presentation\"><a href=\"\" ng-click=\"showReportPopup()\" role=\"menuitem\" target=\"_blank\"><i class=\"fa fa-fw fa-exclamation-triangle conference-report-button\"></i>&nbsp;Report</a></li></ul>");
   $templateCache.put("templates/attendee-video.jade",
-    "<div class=\"attendee-video\"><canvas data-video-id=\"{{videoId}}\" width=\"150\" height=\"150\" ng-click=\"onVideoClick(videoIndex)\" ng-mouseenter=\"thumbhover = true\" ng-mouseleave=\"thumbhover = false\" ng-init=\"count=0\" ng-class=\"{thumbhover: thumbhover}\" class=\"conference-attendee-video-multi\"></canvas><video id=\"{{videoId}}\" autoplay=\"autoplay\"></video><a href=\"\" target=\"_blank\" ng-show=\"videoId !== 'video-thumb0' &amp;&amp; thumbhover\" ng-mouseenter=\"thumbhover = true\" ng-mouseleave=\"thumbhover = true\" class=\"hidden-xs hidden-sm\"><i data-placement=\"right-bottom\" data-html=\"true\" data-animation=\"am-flip-x\" bs-dropdown template=\"templates/attendee-settings-dropdown.jade\" class=\"fa fa-2x fa-cog conference-settings-button\"></i></a><i ng-show=\"muted &amp;&amp; videoId !== 'video-thumb0'\" class=\"fa fa-2x fa-microphone-slash conference-secondary-mute-button\"></i><i ng-show=\"videoMuted\" class=\"fa fa-2x fa-eye-slash conference-secondary-toggle-video-button\"></i><p class=\"text-center conference-attendee-name ellipsis\">{{attendee}}</p><conference-speak-viewer video-id=\"{{videoId}}\"></conference-speak-viewer></div>");
+    "<div class=\"attendee-video\"><canvas data-video-id=\"{{videoId}}\" width=\"150\" height=\"150\" ng-click=\"onVideoClick(videoIndex)\" ng-mouseenter=\"thumbhover = true\" ng-mouseleave=\"thumbhover = false\" ng-init=\"count=0\" ng-class=\"{thumbhover: thumbhover}\" class=\"conference-attendee-video-multi\"></canvas><video id=\"{{videoId}}\" autoplay=\"autoplay\"></video><a href=\"\" target=\"_blank\" ng-show=\"videoId !== 'video-thumb0' &amp;&amp; thumbhover\" ng-mouseenter=\"thumbhover = true\" ng-mouseleave=\"thumbhover = true\" class=\"hidden-xs hidden-sm\"><i data-placement=\"right-bottom\" data-html=\"true\" data-animation=\"am-flip-x\" bs-dropdown template=\"templates/attendee-settings-dropdown.jade\" class=\"fa fa-2x fa-cog conference-settings-button\"></i></a><i ng-show=\"muted &amp;&amp; videoId !== 'video-thumb0'\" class=\"fa fa-2x fa-microphone-slash conference-secondary-mute-button\"></i><i ng-show=\"videoMuted\" class=\"fa fa-2x fa-eye-slash conference-secondary-toggle-video-button\"></i><p class=\"text-center conference-attendee-name ellipsis\">{{attendee.displayName}}</p><conference-speak-viewer video-id=\"{{videoId}}\"></conference-speak-viewer></div>");
   $templateCache.put("templates/attendee.jade",
     "<div class=\"col-xs-12 media nopadding conference-attendee\"><a href=\"#\" class=\"pull-left\"><img src=\"/images/user.png\" ng-src=\"/api/users/{{user._id}}/profile/avatar\" class=\"media-object thumbnail\"></a><div class=\"media-body\"><h6 class=\"media-heading\">{{user.firstname}} {{user.lastname}}</h6><button type=\"submit\" ng-disabled=\"invited\" ng-click=\"inviteCall(user); invited=true\" class=\"btn btn-primary nopadding\">Invite</button></div><div class=\"horiz-space\"></div></div>");
   $templateCache.put("templates/conference-speak-viewer.jade",
     "<i class=\"fa fa-comments-o\"></i>");
   $templateCache.put("templates/conference-video.jade",
-    "<div id=\"multiparty-conference\" local-speak-emitter class=\"conference-video fullscreen\"><conference-user-video></conference-user-video><div class=\"conference-attendees-bar\"><ul scale-to-canvas class=\"content\"><li ng-repeat=\"id in conferenceState.videoIds\" ng-hide=\"!conferenceState.attendees[$index]\"><conference-attendee-video video-index=\"$index\" on-video-click=\"streamToMainCanvas\" video-id=\"{{id}}\" attendee=\"getDisplayName($index)\"></conference-attendee-video></li></ul></div><conference-user-control-bar show-invitation=\"showInvitation\" on-leave=\"onLeave\"></conference-user-control-bar></div>");
+    "<div id=\"multiparty-conference\" local-speak-emitter class=\"conference-video fullscreen\"><conference-user-video></conference-user-video><div class=\"conference-attendees-bar\"><ul scale-to-canvas class=\"content\"><li ng-repeat=\"id in conferenceState.videoIds\" ng-hide=\"!conferenceState.attendees[$index]\"><conference-attendee-video video-index=\"$index\" on-video-click=\"streamToMainCanvas\" video-id=\"{{id}}\" attendee=\"conferenceState.attendees[$index]\"></conference-attendee-video></li></ul></div><conference-user-control-bar show-invitation=\"showInvitation\" on-leave=\"onLeave\"></conference-user-control-bar></div>");
   $templateCache.put("templates/invite-members.jade",
     "<div class=\"aside\"><div class=\"aside-dialog\"><div class=\"aside-content\"><div class=\"aside-header\"><h4>Members</h4></div><div class=\"aside-body\"><div ng-repeat=\"user in users\" class=\"row\"><conference-attendee></conference-attendee></div></div></div></div></div>");
   $templateCache.put("templates/live.jade",
