@@ -1,8 +1,8 @@
 'use strict';
 
 angular.module('op.live-conference')
-  .directive('conferenceVideo', ['$timeout', '$window', '$rootScope', 'drawVideo', 'conferenceHelpers', 'LOCAL_VIDEO_ID',
-  function($timeout, $window, $rootScope, drawVideo, conferenceHelpers, LOCAL_VIDEO_ID) {
+  .directive('conferenceVideo', ['$timeout', '$window', '$rootScope', 'drawVideo', 'LOCAL_VIDEO_ID',
+  function($timeout, $window, $rootScope, drawVideo, LOCAL_VIDEO_ID) {
     return {
       restrict: 'E',
       replace: true,

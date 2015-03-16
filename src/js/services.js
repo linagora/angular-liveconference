@@ -284,47 +284,6 @@ angular.module('op.live-conference')
     return ConferenceState;
   }])
 
-  .factory('conferenceHelpers', function() {
-    var map = {};
-
-    function mapUserIdToName(users) {
-      if (!users) {
-        return map;
-      }
-
-      if (users instanceof Array) {
-        users.forEach(function(user) {
-          var name = user.displayName || 'No name';
-          map[user._id] = name;
-        });
-        return map;
-      }
-      else {
-        map[users._id] = users.displayName;
-        return map;
-      }
-    }
-
-    function getUserDisplayName(userId) {
-      return userId ? map[userId] : null;
-    }
-
-    function getMainVideoAttendeeIndexFrom(videoId) {
-      return parseInt(videoId.substr(11));
-    }
-
-    function isMainVideo(mainVideoId, videoId) {
-      return mainVideoId === videoId;
-    }
-
-    return {
-      mapUserIdToName: mapUserIdToName,
-      getMainVideoAttendeeIndexFrom: getMainVideoAttendeeIndexFrom,
-      isMainVideo: isMainVideo,
-      getUserDisplayName: getUserDisplayName
-    };
-  })
-
   .factory('drawVideo', function($rootScope, $window, $interval) {
     var requestAnimationFrame =
       $window.requestAnimationFrame ||
