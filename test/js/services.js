@@ -7,6 +7,137 @@ var expect = chai.expect;
 describe('The live-conference Angular module', function() {
   beforeEach(angular.mock.module('op.live-conference'));
 
+  describe('ConferenceState service', function() {
+    var ConferenceState, conference, conferenceState, $rootScopeExpect;
+
+    beforeEach(function() {
+      var $rootScope = {
+        $broadcast: function(event, attendee) {
+          $rootScopeExpect(event, attendee);
+        }
+      };
+      module(function($provide) {
+        $provide.value('$rootScope', $rootScope);
+      });
+      inject(function($injector) {
+        ConferenceState = $injector.get('ConferenceState');
+      });
+      conference = { name: 'name' };
+      conferenceState = new ConferenceState(conference);
+    });
+
+    it('should store conference, attendees, localVideoId and videoIds', function() {
+      console.log(conferenceState);
+      expect(conferenceState.conference).to.deep.equal({ name: 'name' });
+      expect(conferenceState.attendees).to.deep.equal([]);
+      expect(conferenceState.localVideoId).to.equal('video-thumb0');
+      expect(conferenceState.videoIds).to.deep.equal([
+        'video-thumb0',
+        'video-thumb1',
+        'video-thumb2',
+        'video-thumb3',
+        'video-thumb4',
+        'video-thumb5',
+        'video-thumb6',
+        'video-thumb7',
+        'video-thumb8'
+      ]);
+    });
+
+    describe('updateAttendee method', function() {
+      it('should update the good attendee and $rootScope.$broadcast', function(done) {
+        $rootScopeExpect = function(event, attendee) {
+          expect(event).to.equal('conferencestate:attendees:update');
+          expect(attendee).to.deep.equal({
+            easyrtcid: 'easyrtcid',
+            id: 'id',
+            displayName: 'displayName'
+          });
+          expect(conferenceState.attendees[0]).to.deep.equal({
+            easyrtcid: 'easyrtcid',
+            id: 'id',
+            displayName: 'displayName'
+          });
+          done();
+        };
+        conferenceState.attendees = [{ easyrtcid: 'easyrtcid' }, { easyrtcid: 'easyrtcid2' }];
+        conferenceState.updateAttendee('easyrtcid', 'id', 'displayName');
+      });
+    });
+
+    describe('pushAttendee method', function() {
+      it('should push the good attendee and $rootScope.$broadcast', function(done) {
+        $rootScopeExpect = function(event, attendee) {
+          expect(event).to.equal('conferencestate:attendees:push');
+          console.log(attendee);
+          expect(attendee).to.deep.equal({
+            videoIds: 'video-thumb0',
+            easyrtcid: 'easyrtcid',
+            id: 'id',
+            displayName: 'displayName'
+          });
+          expect(conferenceState.attendees[0]).to.deep.equal({
+            videoIds: 'video-thumb0',
+            easyrtcid: 'easyrtcid',
+            id: 'id',
+            displayName: 'displayName'
+          });
+          done();
+        };
+        conferenceState.attendees = [];
+        conferenceState.pushAttendee(0, 'easyrtcid', 'id', 'displayName');
+      });
+    });
+
+    describe('updateAttendee method', function() {
+      it('should remove the good attendee and $rootScope.$broadcast', function(done) {
+        $rootScopeExpect = function(event, attendee) {
+          expect(event).to.equal('conferencestate:attendees:remove');
+          expect(attendee).to.deep.equal({ easyrtcid: 'easyrtcid2' });
+          expect(conferenceState.attendees[1]).to.be.null;
+          done();
+        };
+        conferenceState.attendees = [{ easyrtcid: 'easyrtcid' }, { easyrtcid: 'easyrtcid2' }];
+        conferenceState.removeAttendee(1);
+      });
+    });
+
+    describe('updateLocalVideoId method', function() {
+      it('should update local video id and $rootScope.$broadcast', function(done) {
+        $rootScopeExpect = function(event, videoid) {
+          expect(event).to.equal('conferencestate:localVideoId:update');
+          expect(videoid).to.deep.equal('newlocalvideo');
+          expect(conferenceState.localVideoId).to.deep.equal('newlocalvideo');
+          done();
+        };
+        conferenceState.updateLocalVideoId('newlocalvideo');
+      })
+    });
+
+    describe('updateLocalVideoIdToIndex method', function() {
+      it('should update local video id by index and $rootScope.$broadcast', function(done) {
+        $rootScopeExpect = function(event, videoid) {
+          expect(event).to.equal('conferencestate:localVideoId:update');
+          expect(videoid).to.deep.equal('video-thumb2');
+          expect(conferenceState.localVideoId).to.deep.equal('video-thumb2');
+          done();
+        };
+        conferenceState.updateLocalVideoIdToIndex(2);
+      })
+    });
+
+    describe('getAttendeesByVideoIds method', function() {
+      it('should return a hash pf attendee by videoId', function() {
+        conferenceState.attendees = [{ easyrtcid: 'easyrtcid', videoId: 'localvideo' }, { easyrtcid: 'easyrtcid2', videoId: 'remotevideo1' }];
+        var hash = conferenceState.getAttendeesByVideoIds();
+        expect(hash).to.deep.equal({
+          'localvideo': { easyrtcid: 'easyrtcid', videoId: 'localvideo' },
+          'remotevideo1': { easyrtcid: 'easyrtcid2', videoId: 'remotevideo1' }
+        });
+      });
+    });
+  });
+
   describe('easyRTCService service', function() {
     var service, $q, $rootScope, $log, tokenAPI, session, webrtcFactory;
 
@@ -42,7 +173,9 @@ describe('The live-conference Angular module', function() {
             hangupAll: function() {},
             setOnCall: function() {},
             setOnHangup: function() {},
-            useThisSocketConnection: function() {}
+            useThisSocketConnection: function() {},
+            enableDataChannels: function() {},
+            setPeerListener: function() {}
           };
         }
       };
@@ -81,7 +214,9 @@ describe('The live-conference Angular module', function() {
           return {
             hangupAll: function() {
               done();
-            }
+            },
+            enableDataChannels: function() {},
+            setPeerListener: function() {}
           };
         }
       };
@@ -107,7 +242,9 @@ describe('The live-conference Angular module', function() {
             call: function(id) {
               expect(id).to.equal(user_id);
               done();
-            }
+            },
+            enableDataChannels: function() {},
+            setPeerListener: function() {}
           };
 
         }
@@ -140,7 +277,9 @@ describe('The live-conference Angular module', function() {
             useThisSocketConnection: function() {},
             easyApp: function() {
               done();
-            }
+            },
+            enableDataChannels: function() {},
+            setPeerListener: function() {}
           };
         }
       };
@@ -155,7 +294,14 @@ describe('The live-conference Angular module', function() {
         $rootScope = _$rootScope_;
       });
 
-      service.connect({ _id: 123 }, {}, []);
+      var conferenceState = {
+        conference: {
+          conference: { _id: 123 }
+        },
+        pushAttendee: function() {},
+        removeAttendee: function() {}
+      };
+      service.connect(conferenceState);
       expect(this.ioSocketConnection.connectCallback).to.be.a('function');
       this.ioSocketConnection.connectCallback();
     });
@@ -179,7 +325,9 @@ describe('The live-conference Angular module', function() {
               done();
             },
             easyApp: function() {
-            }
+            },
+            enableDataChannels: function() {},
+            setPeerListener: function() {}
           };
         }
       };
@@ -194,7 +342,14 @@ describe('The live-conference Angular module', function() {
         $rootScope = _$rootScope_;
       });
 
-      service.connect({ _id: 123 }, {}, []);
+      var conferenceState = {
+        conference: {
+          conference: { _id: 123 }
+        },
+        pushAttendee: function() {},
+        removeAttendee: function() {}
+      };
+      service.connect(conferenceState);
     });
 
     it('$scope.connect should create the easyRTC app if the socketIO connection is available', function(done) {
@@ -217,7 +372,9 @@ describe('The live-conference Angular module', function() {
             useThisSocketConnection: function() {},
             easyApp: function() {
               done();
-            }
+            },
+            enableDataChannels: function() {},
+            setPeerListener: function() {}
           };
         }
       };
@@ -232,7 +389,14 @@ describe('The live-conference Angular module', function() {
         $rootScope = _$rootScope_;
       });
 
-      service.connect({ _id: 123 }, {}, []);
+      var conferenceState = {
+        conference: {
+          conference: { _id: 123 }
+        },
+        pushAttendee: function() {},
+        removeAttendee: function() {}
+      };
+      service.connect(conferenceState);
       expect(this.ioSocketConnection.connectCallback).to.be.a('function');
       this.ioSocketConnection.connectCallback();
     });

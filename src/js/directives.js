@@ -1,8 +1,8 @@
 'use strict';
 
 angular.module('op.live-conference')
-  .directive('conferenceVideo', ['$timeout', '$window', '$rootScope', 'drawVideo', 'conferenceHelpers', 'LOCAL_VIDEO_ID',
-  function($timeout, $window, $rootScope, drawVideo, conferenceHelpers, LOCAL_VIDEO_ID) {
+  .directive('conferenceVideo', ['$timeout', '$window', '$rootScope', 'drawVideo', 'LOCAL_VIDEO_ID',
+  function($timeout, $window, $rootScope, drawVideo, LOCAL_VIDEO_ID) {
     return {
       restrict: 'E',
       replace: true,
@@ -40,11 +40,11 @@ angular.module('op.live-conference')
             } else {
               drawVideoInCancas();
             }
-            $rootScope.$broadcast('mainvideo', LOCAL_VIDEO_ID);
+            $rootScope.$broadcast('localVideoId:ready', LOCAL_VIDEO_ID);
           });
         }, 1000);
 
-        scope.$watch('mainVideoId', function(newVideoId) {
+        scope.$on('conferencestate:localVideoId:update', function(event, newVideoId) {
           // Reject the first watch of the mainVideoId
           // when clicking on a new video, loadedmetadata event is not
           // fired.
@@ -55,11 +55,11 @@ angular.module('op.live-conference')
           canvas[0].width = mainVideo[0].videoWidth;
           canvas[0].height = mainVideo[0].videoHeight;
           stopAnimation = drawVideo(context, mainVideo[0], canvas[0].width, canvas[0].height);
-          $rootScope.$broadcast('mainvideo', newVideoId);
+          $rootScope.$broadcast('localVideoId:ready', newVideoId);
         });
 
-        scope.getDisplayName = function(userId) {
-          return conferenceHelpers.getUserDisplayName(userId);
+        scope.streamToMainCanvas = function(index) {
+          return scope.conferenceState.updateLocalVideoIdToIndex(index);
         };
 
         scope.$on('$destroy', garbage);
@@ -139,7 +139,7 @@ angular.module('op.live-conference')
         var videoElement = {};
         var watcher = {};
 
-        scope.$on('mainvideo', function(event, videoId) {
+        scope.$on('localVideoId:ready', function(event, videoId) {
           if (watcher instanceof Function) {
             // we must unregister previous watcher
             // if it has been initialized first
@@ -170,9 +170,6 @@ angular.module('op.live-conference')
       replace: true,
       templateUrl: 'templates/user-control-bar.jade',
       scope: {
-        users: '=',
-        easyrtc: '=',
-        inviteCall: '=',
         showInvitation: '=',
         onLeave: '='
       },
