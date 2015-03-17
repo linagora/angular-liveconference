@@ -158,10 +158,7 @@ angular.module('op.live-conference')
               mute: conferenceState.attendees[0].mute
             };
             $log.debug('On datachannel open send %s (%s)', data, 'easyrtcid:myusername');
-            easyrtc.sendData(
-              easyrtcid,
-              'attendee:initialization',
-              data);
+            easyrtc.sendData(easyrtcid, 'attendee:initialization', data);
           });
 
           easyrtc.setOnHangup(function(easyrtcid, slot) {
@@ -241,6 +238,10 @@ angular.module('op.live-conference')
       };
     }])
 
+  .factory('currentConferenceState', ['session', 'ConferenceState', function(session, ConferenceState) {
+    return new ConferenceState(session.conference);
+  }])
+
   .factory('ConferenceState', ['$rootScope', 'LOCAL_VIDEO_ID', 'REMOTE_VIDEO_IDS', function($rootScope, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS) {
 
     /*
@@ -270,6 +271,7 @@ angular.module('op.live-conference')
       attendeeToUpdate.id = id;
       attendeeToUpdate.displayName = displayName;
       attendeeToUpdate.easyrtcid = easyrtcid;
+      $rootScope.$apply();
       $rootScope.$broadcast('conferencestate:attendees:update', attendeeToUpdate);
     };
 
@@ -300,12 +302,16 @@ angular.module('op.live-conference')
       $rootScope.$broadcast('conferencestate:localVideoId:update', this.localVideoId);
     };
 
-    ConferenceState.prototype.getAttendeesByVideoIds = function() {
-      var hash = {};
-      this.attendees.forEach(function(attendee) {
-        hash[attendee.videoId] = attendee;
-      });
-      return hash;
+    ConferenceState.prototype.updateSpeaking = function(userId, speaking) {
+      var attendeeToUpdate = this.attendees.filter(function(attendee) {
+        return attendee.id === userId;
+      })[0];
+      if (!attendeeToUpdate) {
+        return;
+      }
+      attendeeToUpdate.speaking = speaking;
+      $rootScope.$apply();
+      $rootScope.$broadcast('conferencestate:speaking', { id: attendeeToUpdate.easyrtcid, speaking: speaking });
     };
 
     ConferenceState.prototype.updateMuteFromIndex = function(index, mute) {

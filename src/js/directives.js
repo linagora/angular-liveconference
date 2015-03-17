@@ -257,7 +257,7 @@ angular.module('op.live-conference')
       link: link
     };
   }])
-  .directive('localSpeakEmitter', ['$rootScope', 'session', 'speechDetector', function($rootScope, session, speechDetector) {
+  .directive('localSpeakEmitter', ['$window', '$rootScope', 'session', 'currentConferenceState', 'speechDetector', function($window, $rootScope, session, currentConferenceState, speechDetector) {
     function link(scope) {
       function createLocalEmitter(stream) {
         var detector = speechDetector(stream);
@@ -267,10 +267,12 @@ angular.module('op.live-conference')
           detector = null;
         });
         detector.on('speaking', function() {
-          $rootScope.$broadcast('speaking', {id: id});
+          $window.easyrtc.sendPeerMessage({targetRoom: currentConferenceState.conference._id}, 'easyrtc:speaking', {id: id , speaking: true});
+          currentConferenceState.updateSpeaking(id, true);
         });
         detector.on('stopped_speaking', function() {
-          $rootScope.$broadcast('stopped_speaking', {id: id});
+          $window.easyrtc.sendPeerMessage({targetRoom: currentConferenceState.conference._id}, 'easyrtc:speaking', {id: id , speaking: false});
+          currentConferenceState.updateSpeaking(id, false);
         });
       }
 
@@ -285,29 +287,22 @@ angular.module('op.live-conference')
       link: link
     };
   }])
-  .directive('conferenceSpeakViewer', ['$rootScope', 'LOCAL_VIDEO_ID', 'session', function($rootScope, LOCAL_VIDEO_ID, session) {
-    // this has to be updated when ConferenceState is be ready
-    // the id is to lookup the videoId of the user._id,
-    // and then to react or not
-    function link(scope, element, attrs) {
-      if (attrs.videoId !== LOCAL_VIDEO_ID) {
-        return ;
-      }
-      scope.$on('speaking', function(evt, data) {
-        if (data.id === session.getUserId()) {
-          element.show();
-        }
-      });
-      scope.$on('stopped_speaking', function(evt, data) {
-        if (data.id === session.getUserId()) {
-          element.hide();
-        }
-      });
+  .directive('localSpeakReceiver', ['$log', '$window', '$rootScope', 'session', 'currentConferenceState', function($log, $window, $rootScope, session, currentConferenceState) {
+    function link() {
+      $window.easyrtc.setPeerListener(function(easyrtcid, msgType, msgData) {
+        $log.debug('Receive message', easyrtcid, msgType, msgData);
+        currentConferenceState.updateSpeaking(msgData.id, msgData.speaking);
+      }, 'easyrtc:speaking');
     }
 
     return {
-      restrict: 'E',
-      templateUrl: 'templates/conference-speak-viewer.jade',
+      restrict: 'A',
       link: link
+    };
+  }])
+  .directive('conferenceSpeakViewer', [ function() {
+    return {
+      restrict: 'E',
+      templateUrl: 'templates/conference-speak-viewer.jade'
     };
   }]);
