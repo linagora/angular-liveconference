@@ -83,7 +83,8 @@ angular.module('op.live-conference')
         attendee: '=',
         videoId: '@',
         onVideoClick: '=',
-        videoIndex: '='
+        videoIndex: '=',
+        showReport: "="
       },
       link: function(scope, element) {
         var video = element.find('video');
@@ -99,7 +100,9 @@ angular.module('op.live-conference')
           scope.muted = video[0].muted;
         });
 
-        scope.showReportPopup = function() {}
+        scope.showReportPopup = function() {
+          scope.showReport(scope.attendee);
+        }
       }
     };
   })
