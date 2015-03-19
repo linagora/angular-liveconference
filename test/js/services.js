@@ -14,7 +14,8 @@ describe('The live-conference Angular module', function() {
       var $rootScope = {
         $broadcast: function(event, attendee) {
           $rootScopeExpect(event, attendee);
-        }
+        },
+        $applyAsync: function() {}
       };
       module(function($provide) {
         $provide.value('$rootScope', $rootScope);
@@ -111,7 +112,7 @@ describe('The live-conference Angular module', function() {
           done();
         };
         conferenceState.updateLocalVideoId('newlocalvideo');
-      })
+      });
     });
 
     describe('updateLocalVideoIdToIndex method', function() {
@@ -123,7 +124,7 @@ describe('The live-conference Angular module', function() {
           done();
         };
         conferenceState.updateLocalVideoIdToIndex(2);
-      })
+      });
     });
 
     describe('getAttendeesByVideoIds method', function() {
@@ -134,6 +135,22 @@ describe('The live-conference Angular module', function() {
           'localvideo': { easyrtcid: 'easyrtcid', videoId: 'localvideo' },
           'remotevideo1': { easyrtcid: 'easyrtcid2', videoId: 'remotevideo1' }
         });
+      });
+    });
+
+    describe('updateMuteFromEasyrtcid method', function() {
+      it('should update mute property of attendee and $rootScope.$broadcast', function() {
+        conferenceState.attendees = [{ easyrtcid: 'easyrtcid', videoIds: 'videoId'}];
+        conferenceState.updateMuteFromEasyrtcid('easyrtcid', true);
+        expect(conferenceState.attendees).to.deep.equal([{ easyrtcid: 'easyrtcid', videoIds: 'videoId', mute: true}]);
+      });
+    });
+
+    describe('updateMuteFromIndex method', function() {
+      it('should update mute property of attendee', function() {
+        conferenceState.attendees = [{easyrtcid: 'user1'}, { easyrtcid: 'easyrtcid', videoIds: 'videoId'}];
+        conferenceState.updateMuteFromIndex(1, true);
+        expect(conferenceState.attendees).to.deep.equal([{easyrtcid: 'user1'}, { easyrtcid: 'easyrtcid', videoIds: 'videoId', mute: true}]);
       });
     });
   });
