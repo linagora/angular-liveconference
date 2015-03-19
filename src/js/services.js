@@ -24,6 +24,7 @@ angular.module('op.live-conference')
     'video-thumb7',
     'video-thumb8'
   ])
+  .constant('AUTO_VIDEO_SWITCH_TIMEOUT', 700)
   .factory('easyRTCService', ['$rootScope', '$log', 'webrtcFactory', 'tokenAPI', 'session',
     'ioSocketConnection', 'ioConnectionManager', '$timeout', 'easyRTCBitRates', 'LOCAL_VIDEO_ID', 'REMOTE_VIDEO_IDS', 'EASYRTC_APPLICATION_NAME',
     function($rootScope, $log, webrtcFactory, tokenAPI, session, ioSocketConnection, ioConnectionManager, $timeout, easyRTCBitRates, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, EASYRTC_APPLICATION_NAME) {
@@ -439,22 +440,75 @@ angular.module('op.live-conference')
 
   })
   .factory('speechDetector', function() {
-  /**
-  * https://github.com/otalk/hark
-  *
-  * returns a hark instance
-  *
-  * detector.on('speaking', function() {...});
-  * detector.on('stopped_speaking', function() {...});
-  *
-  * don't forget to call detector.stop();
-  */
-  /* global hark */
-  return function(stream, options) {
-    options = options || {};
-    options.play = false;
-    var speechEvents = hark(stream, options);
-    stream = null;
-    return speechEvents;
-  };
-});
+    /**
+    * https://github.com/otalk/hark
+    *
+    * returns a hark instance
+    *
+    * detector.on('speaking', function() {...});
+    * detector.on('stopped_speaking', function() {...});
+    *
+    * don't forget to call detector.stop();
+    */
+    /* global hark */
+    return function(stream, options) {
+      options = options || {};
+      options.play = false;
+      var speechEvents = hark(stream, options);
+      stream = null;
+      return speechEvents;
+    };
+  })
+  .factory('autoVideoSwitcherService', ['autoVideoSwitcher', 'currentConferenceState', function(autoVideoSwitcher, currentConferenceState) {
+    return new autoVideoSwitcher(currentConferenceState);
+  }])
+  .factory('autoVideoSwitcher', ['$rootScope', 'AUTO_VIDEO_SWITCH_TIMEOUT', 'LOCAL_VIDEO_ID', '$timeout',
+  function($rootScope, AUTO_VIDEO_SWITCH_TIMEOUT, LOCAL_VIDEO_ID, $timeout) {
+
+    function AutoVideoSwitcher(conferenceState) {
+      this.conferenceState = conferenceState;
+      this.timeouts = {};
+      //listen events
+      var self = this;
+      $rootScope.$on('conferencestate:speaking', function(event, data) {
+        if (data.speaking) {
+          self.onSpeech(event, data);
+        } else {
+          self.onSpeechEnd(event, data);
+        }
+      });
+    }
+
+    AutoVideoSwitcher.prototype.onSpeech = function(evt, data) {
+      var member = this.getMemberFromData(data);
+      if (!member || this.timeouts[member.easyrtcid] || member.videoIds === LOCAL_VIDEO_ID || member.mute || member.videoIds === this.conferenceState.localVideoId) {
+        return;
+      }
+      var easyrtcid = member.easyrtcid;
+
+      this.timeouts[easyrtcid] = $timeout(function() {
+        var member = this.getMemberFromData(data);
+        if (!member) {
+          return;
+        }
+
+        this.conferenceState.updateLocalVideoId(member.videoIds);
+      }.bind(this), AUTO_VIDEO_SWITCH_TIMEOUT, false);
+    };
+
+    AutoVideoSwitcher.prototype.onSpeechEnd = function(evt, data) {
+      var member = this.getMemberFromData(data);
+      if (!member || !this.timeouts[member.easyrtcid] || member.videoIds === LOCAL_VIDEO_ID) {
+        return;
+      }
+      $timeout.cancel(this.timeouts[member.easyrtcid]);
+      this.timeouts[member.easyrtcid] = null;
+    };
+
+    AutoVideoSwitcher.prototype.getMemberFromData = function(data) {
+      return this.conferenceState.getAttendeeByEasyrtcid(data.id);
+    };
+
+    return AutoVideoSwitcher;
+
+  }]);
