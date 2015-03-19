@@ -154,12 +154,13 @@ angular.module('op.live-conference')
           easyrtc.setDataChannelOpenListener( function(easyrtcid) {
             var data = {
               id: session.getUserId(),
-              displayName: session.getUsername()
+              displayName: session.getUsername(),
+              mute: conferenceState.attendees[0].mute
             };
             $log.debug('On datachannel open send %s (%s)', data, 'easyrtcid:myusername');
             easyrtc.sendData(
               easyrtcid,
-              'easyrtcid:myusername',
+              'attendee:initialization',
               data);
           });
 
@@ -172,7 +173,13 @@ angular.module('op.live-conference')
           easyrtc.setPeerListener(function(easyrtcid, msgType, msgData) {
             $log.debug('UserId and displayName received from %s: %s (%s)', easyrtcid, msgData.id, msgData.displayName);
             conferenceState.updateAttendee(easyrtcid, msgData.id, msgData.displayName);
-         }, 'easyrtcid:myusername');
+            conferenceState.updateMuteFromEasyrtcid(easyrtcid, msgData.mute);
+          }, 'attendee:initialization');
+
+          easyrtc.setPeerListener(function(easyrtcid, msgType, msgData) {
+            $log.debug('Mute event received from %s: %s (%s)', easyrtcid, msgData);
+            conferenceState.updateMuteFromEasyrtcid(easyrtcid, msgData.mute);
+          }, 'conferencestate:mute');
         }
 
         if (ioSocketConnection.isConnected()) {
