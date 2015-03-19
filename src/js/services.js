@@ -30,7 +30,7 @@ angular.module('op.live-conference')
       var easyrtc = webrtcFactory.get();
       easyrtc.enableDataChannels(true);
 
-      var bitRates;
+      var bitRates, room;
 
       function stopLocalStream() {
         var stream = easyrtc.getLocalStream();
@@ -69,8 +69,10 @@ angular.module('op.live-conference')
         function entryListener(entry, roomName) {
           if (entry) {
             $log.debug('Entering room ' + roomName);
+            room = roomName;
           } else {
             $log.debug('Leaving room ' + roomName);
+            room = null;
           }
         }
 
@@ -193,6 +195,24 @@ angular.module('op.live-conference')
         easyrtc.enableVideo(videoMuted);
       }
 
+      function sendPeerMessage(msgType, data) {
+        if (!room) {
+          $log.debug('Did not send message because not in a room.');
+        }
+
+        easyrtc.sendPeerMessage(
+          {targetRoom: room},
+          msgType,
+          data,
+          function(msgType, msgBody) {
+            $log.debug('Peer message was sent to room : ', room);
+          },
+          function(errorCode, errorText) {
+            $log.error('Error sending peer message : ', errorText);
+          }
+        );
+      }
+
       function configureBandwidth(rate) {
         if (rate) {
           bitRates = easyRTCBitRates[rate];
@@ -209,7 +229,8 @@ angular.module('op.live-conference')
         enableMicrophone: enableMicrophone,
         enableCamera: enableCamera,
         enableVideo: enableVideo,
-        configureBandwidth: configureBandwidth
+        configureBandwidth: configureBandwidth,
+        sendPeerMessage: sendPeerMessage
       };
     }])
 
