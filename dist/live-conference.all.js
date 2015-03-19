@@ -357,7 +357,8 @@ angular.module('op.live-conference')
         attendee: '=',
         videoId: '@',
         onVideoClick: '=',
-        videoIndex: '='
+        videoIndex: '=',
+        showReport: "="
       },
       link: function(scope, element) {
         var video = element.find('video');
@@ -373,7 +374,9 @@ angular.module('op.live-conference')
           scope.muted = video[0].muted;
         });
 
-        scope.showReportPopup = function() {}
+        scope.showReportPopup = function() {
+          scope.showReport(scope.attendee);
+        }
       }
     };
   })
@@ -993,7 +996,7 @@ angular.module('op.liveconference-templates', []).run(['$templateCache', functio
   $templateCache.put("templates/conference-speak-viewer.jade",
     "<i class=\"fa fa-comments-o\"></i>");
   $templateCache.put("templates/conference-video.jade",
-    "<div id=\"multiparty-conference\" local-speak-emitter class=\"conference-video fullscreen\"><conference-user-video></conference-user-video><div class=\"conference-attendees-bar\"><ul scale-to-canvas class=\"content\"><li ng-repeat=\"id in conferenceState.videoIds\" ng-hide=\"!conferenceState.attendees[$index]\"><conference-attendee-video video-index=\"$index\" on-video-click=\"streamToMainCanvas\" video-id=\"{{id}}\" attendee=\"conferenceState.attendees[$index]\"></conference-attendee-video></li></ul></div><conference-user-control-bar show-invitation=\"showInvitation\" on-leave=\"onLeave\"></conference-user-control-bar></div>");
+    "<div id=\"multiparty-conference\" local-speak-emitter class=\"conference-video fullscreen\"><conference-user-video></conference-user-video><div class=\"conference-attendees-bar\"><ul scale-to-canvas class=\"content\"><li ng-repeat=\"id in conferenceState.videoIds\" ng-hide=\"!conferenceState.attendees[$index]\"><conference-attendee-video video-index=\"$index\" on-video-click=\"streamToMainCanvas\" video-id=\"{{id}}\" attendee=\"conferenceState.attendees[$index]\" show-report=\"showReport\"></conference-attendee-video></li></ul></div><conference-user-control-bar show-invitation=\"showInvitation\" on-leave=\"onLeave\"></conference-user-control-bar></div>");
   $templateCache.put("templates/invite-members.jade",
     "<div class=\"aside\"><div class=\"aside-dialog\"><div class=\"aside-content\"><div class=\"aside-header\"><h4>Members</h4></div><div class=\"aside-body\"><div ng-repeat=\"user in users\" class=\"row\"><conference-attendee></conference-attendee></div></div></div></div></div>");
   $templateCache.put("templates/live.jade",
