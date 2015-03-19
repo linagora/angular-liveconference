@@ -311,7 +311,7 @@ angular.module('op.live-conference')
     ConferenceState.prototype.updateMuteFromIndex = function(index, mute) {
       if (this.attendees[index]) {
         this.attendees[index].mute = mute;
-        $rootScope.$broadcast('conferencestate:mute:' + this.attendees[index].videoIds, mute);
+        $rootScope.$applyAsync();
       }
     };
 
@@ -319,10 +319,10 @@ angular.module('op.live-conference')
       this.attendees = this.attendees.map(function(attendee) {
         if (attendee.easyrtcid === easyrtcid) {
           attendee.mute = mute;
-          $rootScope.$broadcast('conferencestate:mute:' + attendee.videoIds, mute);
         }
         return attendee;
       });
+      $rootScope.$applyAsync();
     };
 
     return ConferenceState;
