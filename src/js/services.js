@@ -217,6 +217,10 @@ angular.module('op.live-conference')
         );
       }
 
+      function setPeerListener(handler, msgType) {
+        easyrtc.setPeerListener(handler, msgType)
+      }
+
       function configureBandwidth(rate) {
         if (rate) {
           bitRates = easyRTCBitRates[rate];
@@ -234,7 +238,8 @@ angular.module('op.live-conference')
         enableCamera: enableCamera,
         enableVideo: enableVideo,
         configureBandwidth: configureBandwidth,
-        sendPeerMessage: sendPeerMessage
+        sendPeerMessage: sendPeerMessage,
+        setPeerListener: setPeerListener
       };
     }])
 
