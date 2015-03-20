@@ -16,8 +16,7 @@ describe('The live-conference Angular module', function() {
         $broadcast: function(event, attendee) {
           $rootScopeExpect(event, attendee);
         },
-        $applyAsync: function() {},
-        $apply: function() {
+        $applyAsync: function() {
           apply = true;
         }
       };
@@ -48,8 +47,16 @@ describe('The live-conference Angular module', function() {
       ]);
     });
 
+    describe('getAttendeeByEasyrtcid method', function() {
+      it('should return the correct attendee', function() {
+        conferenceState.attendees = [{ easyrtcid: 'easyrtcid' }, { easyrtcid: 'easyrtcid2' }];
+        expect(conferenceState.getAttendeeByEasyrtcid('easyrtcid')).to.deep.equal({ easyrtcid: 'easyrtcid' });
+        expect(conferenceState.getAttendeeByEasyrtcid('easyrtcid3')).to.be.null;
+      });
+    });
+
     describe('updateAttendee method', function() {
-      it('should update the good attendee, $rootScope.$apply() and $rootScope.$broadcast', function(done) {
+      it('should update the good attendee, $rootScope.$applyAsync() and $rootScope.$broadcast', function(done) {
         $rootScopeExpect = function(event, attendee) {
           expect(event).to.equal('conferencestate:attendees:update');
           expect(attendee).to.deep.equal({
@@ -140,14 +147,14 @@ describe('The live-conference Angular module', function() {
           id: 'id',
           displayName: 'displayName'
         });
-        conferenceState.updateSpeaking('id2', true);
+        conferenceState.updateSpeaking('easyrtcid2', true);
       });
 
-      it('should update speaking,  $rootScope.$apply and $rootScope.$broadcast', function(done) {
+      it('should update speaking,  $rootScope.$applyAsync and $rootScope.$broadcast', function(done) {
         $rootScopeExpect = function(event, data) {
           expect(event).to.equal('conferencestate:speaking');
-          expect(data).to.deep.equal({id: 'easyrtcid', speaking: true});
-          expect(conferenceState.attendees[0].speaking).to.be.true;
+          expect(data).to.deep.equal({id: 'easyrtcid2', speaking: true});
+          expect(conferenceState.attendees[1].speaking).to.be.true;
           done();
         };
         conferenceState.attendees.push({
@@ -156,11 +163,11 @@ describe('The live-conference Angular module', function() {
           displayName: 'displayName'
         });
         conferenceState.attendees.push({
-          easyrtcid: 'easyrtcid',
+          easyrtcid: 'easyrtcid2',
           id: 'id2',
           displayName: 'displayName'
         });
-        conferenceState.updateSpeaking('id', true);
+        conferenceState.updateSpeaking('easyrtcid2', true);
       })
     });
 
