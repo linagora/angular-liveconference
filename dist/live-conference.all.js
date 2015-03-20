@@ -354,26 +354,13 @@ angular.module('op.live-conference')
       replace: true,
       templateUrl: 'templates/attendee-video.jade',
       scope: {
-        attendee: '=',
+        attendee: '=*',
         videoId: '@',
         onVideoClick: '=',
         videoIndex: '=',
         showReport: "="
       },
-      link: function(scope, element) {
-        var video = element.find('video');
-        scope.muted = video[0].muted;
-
-        scope.mute = function() {
-          video[0].muted = !video[0].muted;
-        };
-
-        scope.$watch(function() {
-          return video[0].muted;
-        }, function() {
-          scope.muted = video[0].muted;
-        });
-
+      link: function(scope) {
         scope.showReportPopup = function() {
           scope.showReport(scope.attendee);
         }
@@ -448,7 +435,8 @@ angular.module('op.live-conference')
       templateUrl: 'templates/user-control-bar.jade',
       scope: {
         showInvitation: '=',
-        onLeave: '='
+        onLeave: '=',
+        conferenceState: '='
       },
       controller: function($scope, $log, easyRTCService) {
         $scope.muted = false;
@@ -457,6 +445,9 @@ angular.module('op.live-conference')
         $scope.toggleSound = function() {
           easyRTCService.enableMicrophone($scope.muted);
           $scope.muted = !$scope.muted;
+
+          $scope.conferenceState.updateMuteFromIndex(0, $scope.muted);
+          easyRTCService.sendPeerMessage('conferencestate:mute', {mute: $scope.muted});
         };
 
         $scope.toggleCamera = function() {
@@ -626,7 +617,7 @@ angular.module('op.live-conference')
       var easyrtc = webrtcFactory.get();
       easyrtc.enableDataChannels(true);
 
-      var bitRates;
+      var bitRates, room;
 
       function stopLocalStream() {
         var stream = easyrtc.getLocalStream();
@@ -665,8 +656,10 @@ angular.module('op.live-conference')
         function entryListener(entry, roomName) {
           if (entry) {
             $log.debug('Entering room ' + roomName);
+            room = roomName;
           } else {
             $log.debug('Leaving room ' + roomName);
+            room = null;
           }
         }
 
@@ -748,12 +741,13 @@ angular.module('op.live-conference')
           easyrtc.setDataChannelOpenListener( function(easyrtcid) {
             var data = {
               id: session.getUserId(),
-              displayName: session.getUsername()
+              displayName: session.getUsername(),
+              mute: conferenceState.attendees[0].mute
             };
             $log.debug('On datachannel open send %s (%s)', data, 'easyrtcid:myusername');
             easyrtc.sendData(
               easyrtcid,
-              'easyrtcid:myusername',
+              'attendee:initialization',
               data);
           });
 
@@ -766,7 +760,13 @@ angular.module('op.live-conference')
           easyrtc.setPeerListener(function(easyrtcid, msgType, msgData) {
             $log.debug('UserId and displayName received from %s: %s (%s)', easyrtcid, msgData.id, msgData.displayName);
             conferenceState.updateAttendee(easyrtcid, msgData.id, msgData.displayName);
-         }, 'easyrtcid:myusername');
+            conferenceState.updateMuteFromEasyrtcid(easyrtcid, msgData.mute);
+          }, 'attendee:initialization');
+
+          easyrtc.setPeerListener(function(easyrtcid, msgType, msgData) {
+            $log.debug('Mute event received from %s: %s (%s)', easyrtcid, msgData);
+            conferenceState.updateMuteFromEasyrtcid(easyrtcid, msgData.mute);
+          }, 'conferencestate:mute');
         }
 
         if (ioSocketConnection.isConnected()) {
@@ -789,6 +789,24 @@ angular.module('op.live-conference')
         easyrtc.enableVideo(videoMuted);
       }
 
+      function sendPeerMessage(msgType, data) {
+        if (!room) {
+          $log.debug('Did not send message because not in a room.');
+        }
+
+        easyrtc.sendPeerMessage(
+          {targetRoom: room},
+          msgType,
+          data,
+          function(msgType, msgBody) {
+            $log.debug('Peer message was sent to room : ', room);
+          },
+          function(errorCode, errorText) {
+            $log.error('Error sending peer message : ', errorText);
+          }
+        );
+      }
+
       function configureBandwidth(rate) {
         if (rate) {
           bitRates = easyRTCBitRates[rate];
@@ -805,7 +823,8 @@ angular.module('op.live-conference')
         enableMicrophone: enableMicrophone,
         enableCamera: enableCamera,
         enableVideo: enableVideo,
-        configureBandwidth: configureBandwidth
+        configureBandwidth: configureBandwidth,
+        sendPeerMessage: sendPeerMessage
       };
     }])
 
@@ -874,6 +893,23 @@ angular.module('op.live-conference')
         hash[attendee.videoId] = attendee;
       });
       return hash;
+    };
+
+    ConferenceState.prototype.updateMuteFromIndex = function(index, mute) {
+      if (this.attendees[index]) {
+        this.attendees[index].mute = mute;
+        $rootScope.$applyAsync();
+      }
+    };
+
+    ConferenceState.prototype.updateMuteFromEasyrtcid = function(easyrtcid, mute) {
+      this.attendees = this.attendees.map(function(attendee) {
+        if (attendee.easyrtcid === easyrtcid) {
+          attendee.mute = mute;
+        }
+        return attendee;
+      });
+      $rootScope.$applyAsync();
     };
 
     return ConferenceState;
@@ -990,13 +1026,13 @@ angular.module('op.liveconference-templates', []).run(['$templateCache', functio
   $templateCache.put("templates/attendee-settings-dropdown.jade",
     "<ul role=\"menu\" class=\"dropdown-menu attendee-settings-dropdown\"><li role=\"presentation\"><a href=\"\" ng-click=\"mute()\" role=\"menuitem\" target=\"_blank\"><i ng-class=\"{'fa-microphone': !muted, 'fa-microphone-slash': muted}\" class=\"fa fa-fw conference-mute-button\"></i>&nbsp;Mute</a></li><li role=\"presentation\"><a href=\"\" ng-click=\"showReportPopup()\" role=\"menuitem\" target=\"_blank\"><i class=\"fa fa-fw fa-exclamation-triangle conference-report-button\"></i>&nbsp;Report</a></li></ul>");
   $templateCache.put("templates/attendee-video.jade",
-    "<div class=\"attendee-video\"><canvas data-video-id=\"{{videoId}}\" width=\"150\" height=\"150\" ng-click=\"onVideoClick(videoIndex)\" ng-mouseenter=\"thumbhover = true\" ng-mouseleave=\"thumbhover = false\" ng-init=\"count=0\" ng-class=\"{thumbhover: thumbhover}\" class=\"conference-attendee-video-multi\"></canvas><video id=\"{{videoId}}\" autoplay=\"autoplay\"></video><a href=\"\" target=\"_blank\" ng-show=\"videoId !== 'video-thumb0' &amp;&amp; thumbhover\" ng-mouseenter=\"thumbhover = true\" ng-mouseleave=\"thumbhover = true\" class=\"hidden-xs hidden-sm\"><i data-placement=\"right-bottom\" data-html=\"true\" data-animation=\"am-flip-x\" bs-dropdown template=\"templates/attendee-settings-dropdown.jade\" class=\"fa fa-2x fa-cog conference-settings-button\"></i></a><i ng-show=\"muted &amp;&amp; videoId !== 'video-thumb0'\" class=\"fa fa-2x fa-microphone-slash conference-secondary-mute-button\"></i><i ng-show=\"videoMuted\" class=\"fa fa-2x fa-eye-slash conference-secondary-toggle-video-button\"></i><p class=\"text-center conference-attendee-name ellipsis\">{{attendee.displayName}}</p><conference-speak-viewer video-id=\"{{videoId}}\"></conference-speak-viewer></div>");
+    "<div class=\"attendee-video\"><canvas data-video-id=\"{{videoId}}\" width=\"150\" height=\"150\" ng-click=\"onVideoClick(videoIndex)\" ng-mouseenter=\"thumbhover = true\" ng-mouseleave=\"thumbhover = false\" ng-init=\"count=0\" ng-class=\"{thumbhover: thumbhover}\" class=\"conference-attendee-video-multi\"></canvas><video id=\"{{videoId}}\" autoplay=\"autoplay\"></video><a href=\"\" target=\"_blank\" ng-show=\"videoId !== 'video-thumb0' &amp;&amp; thumbhover\" ng-mouseenter=\"thumbhover = true\" ng-mouseleave=\"thumbhover = true\" class=\"hidden-xs hidden-sm\"><i data-placement=\"right-bottom\" data-html=\"true\" data-animation=\"am-flip-x\" bs-dropdown template=\"templates/attendee-settings-dropdown.jade\" class=\"fa fa-2x fa-cog conference-settings-button\"></i></a><i ng-show=\"attendee.mute\" class=\"fa fa-2x fa-microphone-slash conference-secondary-mute-button\"></i><i ng-show=\"videoMuted\" class=\"fa fa-2x fa-eye-slash conference-secondary-toggle-video-button\"></i><p class=\"text-center conference-attendee-name ellipsis\">{{attendee.displayName}}</p><conference-speak-viewer video-id=\"{{videoId}}\"></conference-speak-viewer></div>");
   $templateCache.put("templates/attendee.jade",
     "<div class=\"col-xs-12 media nopadding conference-attendee\"><a href=\"#\" class=\"pull-left\"><img src=\"/images/user.png\" ng-src=\"/api/users/{{user._id}}/profile/avatar\" class=\"media-object thumbnail\"></a><div class=\"media-body\"><h6 class=\"media-heading\">{{user.firstname}} {{user.lastname}}</h6><button type=\"submit\" ng-disabled=\"invited\" ng-click=\"inviteCall(user); invited=true\" class=\"btn btn-primary nopadding\">Invite</button></div><div class=\"horiz-space\"></div></div>");
   $templateCache.put("templates/conference-speak-viewer.jade",
     "<i class=\"fa fa-comments-o\"></i>");
   $templateCache.put("templates/conference-video.jade",
-    "<div id=\"multiparty-conference\" local-speak-emitter class=\"conference-video fullscreen\"><conference-user-video></conference-user-video><div class=\"conference-attendees-bar\"><ul scale-to-canvas class=\"content\"><li ng-repeat=\"id in conferenceState.videoIds\" ng-hide=\"!conferenceState.attendees[$index]\"><conference-attendee-video video-index=\"$index\" on-video-click=\"streamToMainCanvas\" video-id=\"{{id}}\" attendee=\"conferenceState.attendees[$index]\" show-report=\"showReport\"></conference-attendee-video></li></ul></div><conference-user-control-bar show-invitation=\"showInvitation\" on-leave=\"onLeave\"></conference-user-control-bar></div>");
+    "<div id=\"multiparty-conference\" local-speak-emitter class=\"conference-video fullscreen\"><conference-user-video></conference-user-video><div class=\"conference-attendees-bar\"><ul scale-to-canvas class=\"content\"><li ng-repeat=\"id in conferenceState.videoIds\" ng-hide=\"!conferenceState.attendees[$index]\"><conference-attendee-video video-index=\"$index\" on-video-click=\"streamToMainCanvas\" video-id=\"{{id}}\" attendee=\"conferenceState.attendees[$index]\" show-report=\"showReport\"></conference-attendee-video></li></ul></div><conference-user-control-bar show-invitation=\"showInvitation\" on-leave=\"onLeave\" conference-state=\"conferenceState\"></conference-user-control-bar></div>");
   $templateCache.put("templates/invite-members.jade",
     "<div class=\"aside\"><div class=\"aside-dialog\"><div class=\"aside-content\"><div class=\"aside-header\"><h4>Members</h4></div><div class=\"aside-body\"><div ng-repeat=\"user in users\" class=\"row\"><conference-attendee></conference-attendee></div></div></div></div></div>");
   $templateCache.put("templates/live.jade",

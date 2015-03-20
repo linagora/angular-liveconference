@@ -80,26 +80,13 @@ angular.module('op.live-conference')
       replace: true,
       templateUrl: 'templates/attendee-video.jade',
       scope: {
-        attendee: '=',
+        attendee: '=*',
         videoId: '@',
         onVideoClick: '=',
         videoIndex: '=',
         showReport: "="
       },
-      link: function(scope, element) {
-        var video = element.find('video');
-        scope.muted = video[0].muted;
-
-        scope.mute = function() {
-          video[0].muted = !video[0].muted;
-        };
-
-        scope.$watch(function() {
-          return video[0].muted;
-        }, function() {
-          scope.muted = video[0].muted;
-        });
-
+      link: function(scope) {
         scope.showReportPopup = function() {
           scope.showReport(scope.attendee);
         }
@@ -174,7 +161,8 @@ angular.module('op.live-conference')
       templateUrl: 'templates/user-control-bar.jade',
       scope: {
         showInvitation: '=',
-        onLeave: '='
+        onLeave: '=',
+        conferenceState: '='
       },
       controller: function($scope, $log, easyRTCService) {
         $scope.muted = false;
@@ -183,6 +171,9 @@ angular.module('op.live-conference')
         $scope.toggleSound = function() {
           easyRTCService.enableMicrophone($scope.muted);
           $scope.muted = !$scope.muted;
+
+          $scope.conferenceState.updateMuteFromIndex(0, $scope.muted);
+          easyRTCService.sendPeerMessage('conferencestate:mute', {mute: $scope.muted});
         };
 
         $scope.toggleCamera = function() {
