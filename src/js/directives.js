@@ -173,7 +173,7 @@ angular.module('op.live-conference')
           $scope.muted = !$scope.muted;
 
           $scope.conferenceState.updateMuteFromIndex(0, $scope.muted);
-          easyRTCService.sendPeerMessage('conferencestate:mute', {mute: $scope.muted});
+          easyRTCService.broadcastData('conferencestate:mute', {mute: $scope.muted});
         };
 
         $scope.toggleCamera = function() {
@@ -267,12 +267,12 @@ angular.module('op.live-conference')
         });
         detector.on('speaking', function() {
           var myEasyrtcid = easyRTCService.myEasyrtcid();
-          easyRTCService.sendPeerMessage('easyrtc:speaking', true);
+          easyRTCService.broadcastData('easyrtc:speaking', true);
           currentConferenceState.updateSpeaking(myEasyrtcid, true);
         });
         detector.on('stopped_speaking', function() {
           var myEasyrtcid = easyRTCService.myEasyrtcid();
-          easyRTCService.sendPeerMessage('easyrtc:speaking', false);
+          easyRTCService.broadcastData('easyrtc:speaking', false);
           currentConferenceState.updateSpeaking(myEasyrtcid, false);
         });
       }

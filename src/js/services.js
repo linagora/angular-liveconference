@@ -235,6 +235,15 @@ angular.module('op.live-conference')
         return easyrtc.myEasyrtcid;
       }
 
+      function broadcastData(msgType, data) {
+        easyrtc.getRoomOccupantsAsArray(room).forEach(function(easyrtcid) {
+          if (easyrtcid === easyrtc.myEasyrtcid) {
+            return;
+          }
+          easyrtc.sendData(easyrtcid, msgType, data);
+        });
+      }
+
       return {
         leaveRoom: leaveRoom,
         performCall: performCall,
@@ -245,7 +254,8 @@ angular.module('op.live-conference')
         configureBandwidth: configureBandwidth,
         sendPeerMessage: sendPeerMessage,
         setPeerListener: setPeerListener,
-        myEasyrtcid: myEasyrtcid
+        myEasyrtcid: myEasyrtcid,
+        broadcastData: broadcastData
       };
     }])
 
@@ -273,7 +283,7 @@ angular.module('op.live-conference')
 
     ConferenceState.prototype.getAttendeeByEasyrtcid = function(easyrtcid) {
       return this.attendees.filter(function(attendee) {
-        return attendee.easyrtcid === easyrtcid;
+        return attendee && attendee.easyrtcid === easyrtcid;
       })[0] || null;
     };
 

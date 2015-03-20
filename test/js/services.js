@@ -49,7 +49,7 @@ describe('The live-conference Angular module', function() {
 
     describe('getAttendeeByEasyrtcid method', function() {
       it('should return the correct attendee', function() {
-        conferenceState.attendees = [{ easyrtcid: 'easyrtcid' }, { easyrtcid: 'easyrtcid2' }];
+        conferenceState.attendees = [{ easyrtcid: 'easyrtcid' }, { easyrtcid: 'easyrtcid2' }, null];
         expect(conferenceState.getAttendeeByEasyrtcid('easyrtcid')).to.deep.equal({ easyrtcid: 'easyrtcid' });
         expect(conferenceState.getAttendeeByEasyrtcid('easyrtcid3')).to.be.null;
       });
