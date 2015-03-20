@@ -119,7 +119,6 @@ angular.module('op.live-conference')
         );
 
         easyrtc.username = session.getUserId();
-        conferenceState.pushAttendee(0, easyrtc.myEasyrtcid, session.getUserId(), session.getUsername());
 
         easyrtc.debugPrinter = function(message) {
           $log.debug(message);
@@ -129,8 +128,10 @@ angular.module('op.live-conference')
           var sio = ioSocketConnection.getSio();
           sio.socket = {connected: true};
           easyrtc.useThisSocketConnection(sio);
+
           function onLoginSuccess(easyrtcid) {
             $log.debug('Successfully logged: ' + easyrtcid);
+            conferenceState.pushAttendee(0, easyrtcid, session.getUserId(), session.getUsername());
             $rootScope.$apply();
           }
 
@@ -157,7 +158,7 @@ angular.module('op.live-conference')
               displayName: session.getUsername(),
               mute: conferenceState.attendees[0].mute
             };
-            $log.debug('On datachannel open send %s (%s)', data, 'easyrtcid:myusername');
+            $log.debug('On datachannel open send %s (%s)', data, 'attendee:initialization');
             easyrtc.sendData(easyrtcid, 'attendee:initialization', data);
           });
 
