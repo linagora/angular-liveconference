@@ -23,10 +23,6 @@ angular.module('op.live-conference')
     };
   })
 
-  .factory('autoVideoSwitcherService', ['AutoVideoSwitcher', 'currentConferenceState', function(AutoVideoSwitcher, currentConferenceState) {
-    return new AutoVideoSwitcher(currentConferenceState);
-  }])
-
   .factory('AutoVideoSwitcher', ['$rootScope', '$timeout', 'AUTO_VIDEO_SWITCH_TIMEOUT', 'LOCAL_VIDEO_ID',
     function($rootScope, $timeout, AUTO_VIDEO_SWITCH_TIMEOUT, LOCAL_VIDEO_ID) {
 

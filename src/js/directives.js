@@ -306,4 +306,15 @@ angular.module('op.live-conference')
       restrict: 'E',
       templateUrl: 'templates/conference-speak-viewer.jade'
     };
+  }])
+  .directive('autoVideoSwitcher', ['$rootScope', 'AutoVideoSwitcher', 'currentConferenceState', function($rootScope, AutoVideoSwitcher, currentConferenceState) {
+    return {
+      restrict: 'A',
+      link: function() {
+        var unreg = $rootScope.$on('localMediaStream', function() {
+          unreg();
+          new AutoVideoSwitcher(currentConferenceState);
+        });
+      }
+    }
   }]);
