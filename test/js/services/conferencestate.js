@@ -4,7 +4,7 @@
 
 var expect = chai.expect;
 
-describe('The live-conference Angular module', function() {
+describe('The ConferenceState module', function() {
   beforeEach(angular.mock.module('op.live-conference'));
 
   describe('ConferenceState service', function() {
