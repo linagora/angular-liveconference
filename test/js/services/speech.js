@@ -1,0 +1,236 @@
+'use strict';
+
+/* global chai: false */
+
+var expect = chai.expect;
+
+describe('The speech module', function() {
+  beforeEach(angular.mock.module('op.live-conference'));
+
+  describe('autoVideoSwitcher service', function() {
+    var autoVideoSwitchService,
+        $rootScope,
+        $timeout,
+        conferenceState,
+        getAttendeeByEasyrtcidSpy,
+        updateLocalVideoIdSpy;
+
+    beforeEach(function () {
+      conferenceState = {
+        getAttendeeByEasyrtcid: function(data) {
+          return getAttendeeByEasyrtcidSpy(data);
+        },
+        updateLocalVideoId: function(videoIds) {
+          return updateLocalVideoIdSpy(videoIds);
+        },
+        localVideoId: 'video-thumb1'
+      };
+      getAttendeeByEasyrtcidSpy = {};
+      updateLocalVideoIdSpy = {};
+
+      var AutoVideoSwitcher = {};
+      inject(function ($injector) {
+        $rootScope = $injector.get('$rootScope');
+        $timeout = $injector.get('$timeout');
+        AutoVideoSwitcher = $injector.get('AutoVideoSwitcher');
+      });
+
+      autoVideoSwitchService = new AutoVideoSwitcher(conferenceState);
+    });
+
+    it('should call onSpeech if speaking is true', function(done) {
+      autoVideoSwitchService.onSpeech = function(event, data) {
+        done();
+      };
+      autoVideoSwitchService.onSpeechEnd = function() {
+        throw new Error('should not be here');
+      };
+      $rootScope.$broadcast('conferencestate:speaking', {speaking: true} );
+    });
+
+    it('should call onSpeechEnd if speaking is false', function(done) {
+      autoVideoSwitchService.onSpeech = function() {
+        throw new Error('should not be here');
+      };
+      autoVideoSwitchService.onSpeechEnd = function(event, data) {
+        done();
+      };
+      $rootScope.$broadcast('conferencestate:speaking', {speaking: false} );
+    });
+
+    describe('onSpeech method', function() {
+
+      it('should do nothing if member does not exist', function(done) {
+        getAttendeeByEasyrtcidSpy = function() {
+          return null;
+        };
+
+        $rootScope.$broadcast('conferencestate:speaking', {speaking: true} );
+        try {
+          $timeout.flush();
+        } catch(e) {
+          expect(autoVideoSwitchService.timeouts).to.deep.equal({});
+          done();
+        }
+        throw new Error('should not be here');
+      });
+
+      it('should do nothing if member.videoIds is LOCAL_VIDEO_ID', function(done) {
+        getAttendeeByEasyrtcidSpy = function() {
+          return {
+            videoIds: 'video-thumb0'
+          };
+        };
+
+        $rootScope.$broadcast('conferencestate:speaking', {speaking: true} );
+        try {
+          $timeout.flush();
+        } catch(e) {
+          expect(autoVideoSwitchService.timeouts).to.deep.equal({});
+          done();
+        }
+        throw new Error('should not be here');
+      });
+
+      it('should do nothing if member is muted', function(done) {
+        getAttendeeByEasyrtcidSpy = function() {
+          return {
+            mute: true,
+            videoIds: 'video-thumb2'
+          };
+        };
+
+        $rootScope.$broadcast('conferencestate:speaking', {speaking: true} );
+        try {
+          $timeout.flush();
+        } catch(e) {
+          expect(autoVideoSwitchService.timeouts).to.deep.equal({});
+          done();
+        }
+        throw new Error('should not be here');
+      });
+
+      it('should do nothing if member.videoIds is current localVideoId', function(done) {
+        getAttendeeByEasyrtcidSpy = function() {
+          return {
+            videoIds: 'video-thumb1'
+          };
+        };
+
+        $rootScope.$broadcast('conferencestate:speaking', {speaking: true} );
+        try {
+          $timeout.flush();
+        } catch(e) {
+          expect(autoVideoSwitchService.timeouts).to.deep.equal({});
+          done();
+        }
+        throw new Error('should not be here');
+      });
+
+      it('should add a new entry to timeouts and call updateLocalVideoId after timeout', function() {
+        getAttendeeByEasyrtcidSpy = function() {
+          return {
+            videoIds: 'video-thumb2',
+            easyrtcid: 'easyrtcid'
+          };
+        };
+
+        updateLocalVideoIdSpy = function(videoIds) {
+          autoVideoSwitchService.conferenceState.localVideoId = videoIds;
+        };
+
+        $rootScope.$broadcast('conferencestate:speaking', {speaking: true} );
+        expect(autoVideoSwitchService.timeouts.easyrtcid).to.exist;
+        expect(autoVideoSwitchService.conferenceState.localVideoId).to.equal('video-thumb1');
+        $timeout.flush();
+        expect(autoVideoSwitchService.conferenceState.localVideoId).to.equal('video-thumb2');
+      });
+
+      it('should add only 1 timeout even avec several broadcast', function() {
+        getAttendeeByEasyrtcidSpy = function() {
+          return {
+            videoIds: 'video-thumb2',
+            easyrtcid: 'easyrtcid'
+          };
+        };
+
+        updateLocalVideoIdSpy = function(videoIds) {
+          autoVideoSwitchService.conferenceState.localVideoId = videoIds;
+        };
+
+        $rootScope.$broadcast('conferencestate:speaking', {speaking: true} );
+        $rootScope.$broadcast('conferencestate:speaking', {speaking: true} );
+        $rootScope.$broadcast('conferencestate:speaking', {speaking: true} );
+        expect(autoVideoSwitchService.timeouts.easyrtcid.$$timeoutId).to.equal(0);
+        expect(autoVideoSwitchService.conferenceState.localVideoId).to.equal('video-thumb1');
+        $timeout.flush();
+        expect(autoVideoSwitchService.conferenceState.localVideoId).to.equal('video-thumb2');
+      });
+    });
+
+    describe('onSpeechEnd method', function() {
+
+      it('should do nothing if member does not exist', function() {
+        getAttendeeByEasyrtcidSpy = function() {
+          return null;
+        };
+
+        $rootScope.$broadcast('conferencestate:speaking', {speaking: false} );
+        expect(autoVideoSwitchService.timeouts).to.deep.equal({});
+      });
+
+      it('should do nothing if no entry in this.timeouts is found', function() {
+        autoVideoSwitchService.timeouts.bar = ['fake'];
+        getAttendeeByEasyrtcidSpy = function() {
+          return {
+            easyrtcid: 'foo'
+          };
+        };
+
+        $rootScope.$broadcast('conferencestate:speaking', {speaking: false} );
+        expect(autoVideoSwitchService.timeouts).to.deep.equal({
+          bar: ['fake']
+        });
+      });
+
+      it('should do nothing if member.videoIds is LOCAL_VIDEO_ID', function() {
+        autoVideoSwitchService.timeouts.bar = ['fake'];
+        autoVideoSwitchService.timeouts.foo = ['fake'];
+        getAttendeeByEasyrtcidSpy = function() {
+          return {
+            easyrtcid: 'foo',
+            videoIds: 'video-thumb0'
+          };
+        };
+
+        $rootScope.$broadcast('conferencestate:speaking', {speaking: false} );
+        expect(autoVideoSwitchService.timeouts).to.deep.equal({
+          bar: ['fake'],
+          foo: ['fake']
+        });
+      });
+
+      it('should set correct this.timeouts to null and cancel it inside $timeout', function() {
+        autoVideoSwitchService.timeouts.bar = ['fake'];
+        autoVideoSwitchService.timeouts.foo = ['fake'];
+        getAttendeeByEasyrtcidSpy = function() {
+          return {
+            easyrtcid: 'foo',
+            videoIds: 'video-thumb1'
+          };
+        };
+
+        $rootScope.$broadcast('conferencestate:speaking', {speaking: true} );
+        expect(autoVideoSwitchService.timeouts.foo).to.exist;
+
+        $rootScope.$broadcast('conferencestate:speaking', {speaking: false} );
+        expect(autoVideoSwitchService.timeouts.foo).to.not.exist;
+        expect(autoVideoSwitchService.timeouts).to.deep.equal({
+          bar: ['fake'],
+          foo: null
+        });
+      });
+    });
+  });
+
+});
