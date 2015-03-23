@@ -173,7 +173,7 @@ angular.module('op.live-conference')
           $scope.muted = !$scope.muted;
 
           $scope.conferenceState.updateMuteFromIndex(0, $scope.muted);
-          easyRTCService.sendPeerMessage('conferencestate:mute', {mute: $scope.muted});
+          easyRTCService.broadcastData('conferencestate:mute', {mute: $scope.muted});
         };
 
         $scope.toggleCamera = function() {
@@ -261,18 +261,19 @@ angular.module('op.live-conference')
     function link(scope) {
       function createLocalEmitter(stream) {
         var detector = speechDetector(stream);
-        var id = session.getUserId();
         scope.$on('$destroy', function() {
           detector.stop();
           detector = null;
         });
         detector.on('speaking', function() {
-          easyRTCService.sendPeerMessage('easyrtc:speaking', {id: id , speaking: true});
-          currentConferenceState.updateSpeaking(id, true);
+          var myEasyrtcid = easyRTCService.myEasyrtcid();
+          easyRTCService.broadcastData('easyrtc:speaking', true);
+          currentConferenceState.updateSpeaking(myEasyrtcid, true);
         });
         detector.on('stopped_speaking', function() {
-          easyRTCService.sendPeerMessage('easyrtc:speaking', {id: id , speaking: false});
-          currentConferenceState.updateSpeaking(id, false);
+          var myEasyrtcid = easyRTCService.myEasyrtcid();
+          easyRTCService.broadcastData('easyrtc:speaking', false);
+          currentConferenceState.updateSpeaking(myEasyrtcid, false);
         });
       }
 
@@ -291,7 +292,7 @@ angular.module('op.live-conference')
     function link() {
       easyRTCService.setPeerListener(function(easyrtcid, msgType, msgData) {
         $log.debug('Receive message', easyrtcid, msgType, msgData);
-        currentConferenceState.updateSpeaking(msgData.id, msgData.speaking);
+        currentConferenceState.updateSpeaking(easyrtcid, msgData);
       }, 'easyrtc:speaking');
     }
 
