@@ -593,6 +593,13 @@ describe('The ConferenceState module', function() {
   });
 
   describe('drawVideo service', function() {
+
+    beforeEach(function() {
+      module(function ($provide) {
+        $provide.value('drawAvatarIfVideoMuted', function() {});
+      });
+    });
+
     it('should return a function', function() {
       inject(function(drawVideo) {
         var test = drawVideo();
