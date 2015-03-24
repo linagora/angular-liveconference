@@ -13,6 +13,7 @@ angular.module('op.live-conference')
     nolimit: null
   })
   .constant('EASYRTC_APPLICATION_NAME', 'LiveConference')
+  .constant('MAX_ATTENDEES', 9)
   .constant('LOCAL_VIDEO_ID', 'video-thumb0')
   .constant('REMOTE_VIDEO_IDS', [
     'video-thumb1',
