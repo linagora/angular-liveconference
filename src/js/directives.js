@@ -197,7 +197,8 @@ angular.module('op.live-conference')
       }
     };
   })
-  .directive('scaleToCanvas', ['$interval', '$window', 'cropDimensions', function($interval, $window, cropDimensions) {
+  .directive('scaleToCanvas', ['$interval', '$window', 'cropDimensions', 'currentConferenceState', 'attendeeColorsService', '$log',
+    function($interval, $window, cropDimensions, currentConferenceState, attendeeColorsService, $log) {
 
     var requestAnimationFrame =
       $window.requestAnimationFrame ||
@@ -219,11 +220,32 @@ angular.module('op.live-conference')
             height = canvas.height,
             vHeight = vid.videoHeight,
             vWidth = vid.videoWidth;
+
         if (!height || !width || !vHeight || !vWidth) {
           return;
         }
-        var cropDims = cropDimensions(width, height, vWidth, vHeight);
-        ctx.drawImage(vid, cropDims[0], cropDims[1], cropDims[2], cropDims[2], 0, 0, width, height);
+
+        var attendee = currentConferenceState.getAttendeeByVideoId(vid.id);
+
+        if (!attendee) {
+          return;
+        }
+
+        if (attendee.muteVideo) {
+          currentConferenceState.getAvatarImageByIndex(attendee.index, function(err, image) {
+            if (err) {
+              return $log.error('Failed to get avatar image for attendee with videoId %s: ', videoId, err.message);
+            }
+
+            ctx.fillStyle = attendeeColorsService.getColorForAttendeeAtIndex(attendee.index);
+            ctx.fillRect(0, 0, width, height);
+            ctx.drawImage(image, 0, 0, width, height);
+          });
+        } else {
+          var cropDims = cropDimensions(width, height, vWidth, vHeight);
+
+          ctx.drawImage(vid, cropDims[0], cropDims[1], cropDims[2], cropDims[2], 0, 0, width, height);
+        }
       }
 
       $interval(function cacheWidgets() {

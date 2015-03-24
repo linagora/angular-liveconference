@@ -41,7 +41,7 @@ angular.module('op.live-conference')
 
       AutoVideoSwitcher.prototype.onSpeech = function(evt, data) {
         var member = this.getMemberFromData(data);
-        if (!member || this.timeouts[member.easyrtcid] || member.videoIds === LOCAL_VIDEO_ID || member.mute || member.videoIds === this.conferenceState.localVideoId) {
+        if (!member || this.timeouts[member.easyrtcid] || member.videoId === LOCAL_VIDEO_ID || member.mute || member.videoId === this.conferenceState.localVideoId) {
           return;
         }
         var easyrtcid = member.easyrtcid;
@@ -52,13 +52,13 @@ angular.module('op.live-conference')
             return;
           }
 
-          this.conferenceState.updateLocalVideoId(member.videoIds);
+          this.conferenceState.updateLocalVideoId(member.videoId);
         }.bind(this), AUTO_VIDEO_SWITCH_TIMEOUT, false);
       };
 
       AutoVideoSwitcher.prototype.onSpeechEnd = function(evt, data) {
         var member = this.getMemberFromData(data);
-        if (!member || !this.timeouts[member.easyrtcid] || member.videoIds === LOCAL_VIDEO_ID) {
+        if (!member || !this.timeouts[member.easyrtcid] || member.videoId === LOCAL_VIDEO_ID) {
           return;
         }
         $timeout.cancel(this.timeouts[member.easyrtcid]);

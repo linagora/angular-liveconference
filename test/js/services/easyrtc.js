@@ -5,11 +5,12 @@
 var expect = chai.expect;
 
 describe('easyRTCService service', function () {
-  var service, $log, tokenAPI, session, webrtcFactory, easyrtc;
+  var service, $log, tokenAPI, session, webrtcFactory, easyrtc, currentConferenceState;
 
   beforeEach(angular.mock.module('op.live-conference'));
 
   beforeEach(function () {
+    currentConferenceState = {};
     easyrtc = {
       enableDataChannels: function() {},
       myEasyrtcid: 'myself'
@@ -40,6 +41,7 @@ describe('easyRTCService service', function () {
       $provide.value('webrtcFactory', webrtcFactory);
       $provide.value('ioSocketConnection', {});
       $provide.value('ioConnectionManager', {});
+      $provide.value('currentConferenceState', currentConferenceState);
     });
 
     inject(function($injector) {
@@ -70,6 +72,50 @@ describe('easyRTCService service', function () {
       service.broadcastData('message', { da: 'ta' });
 
       expect(calledIds).to.deep.equal(['other1', 'other2']);
+    });
+
+  });
+
+  describe('broadcastMe function', function() {
+
+    it('should call broadcastData with a prepared attendee', function() {
+      currentConferenceState.getAttendeeByEasyrtcid = function() {
+        return {
+          index: 0,
+          videoId: 'videoId',
+          id: 'id',
+          easyrtcid: 'easyrtcid',
+          displayName: 'displayName',
+          avatar: 'avatar',
+          mute: true,
+          muteVideo: false,
+          speaking: false,
+          foo: 'bar'
+        };
+      };
+      easyrtc.getRoomOccupantsAsArray = function() { return ['myself', 'other1', 'other2']; };
+      easyrtc.sendData = function(easyrtcid, event, data) {
+        expect(data).to.deep.equal({
+          id: 'id',
+          easyrtcid: 'easyrtcid',
+          displayName: 'displayName',
+          avatar: 'avatar',
+          mute: true,
+          muteVideo: false,
+          speaking: false
+        });
+      };
+
+      service.broadcastMe();
+    });
+
+    it('should do nothing if attendee cannot be found', function() {
+      currentConferenceState.getAttendeeByEasyrtcid = function() { return null; };
+      easyrtc.getRoomOccupantsAsArray = function() {
+        throw new Error('This test should not call easyrtc.getRoomOccupantsAsArray.');
+      };
+
+      service.broadcastMe();
     });
 
   });

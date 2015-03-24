@@ -6,7 +6,13 @@ angular.module('op.live-conference')
     return new ConferenceState(session.conference);
   }])
 
-  .factory('ConferenceState', ['$rootScope', 'LOCAL_VIDEO_ID', 'REMOTE_VIDEO_IDS', function($rootScope, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS) {
+  .factory('newImage', [function() {
+    return function() {
+      return new Image();
+    };
+  }])
+
+  .factory('ConferenceState', ['$rootScope', 'LOCAL_VIDEO_ID', 'REMOTE_VIDEO_IDS', 'newImage', function($rootScope, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, newImage) {
     /*
      * Store a snapshot of current conference status and an array of attendees describing
      * current visible attendees of the conference by their index as position.
@@ -15,6 +21,7 @@ angular.module('op.live-conference')
      *   id:
      *   easyrtcid:
      *   displayName:
+     *   avatar:
      * }]
      */
     function ConferenceState(conference) {
@@ -22,11 +29,18 @@ angular.module('op.live-conference')
       this.attendees = [];
       this.localVideoId = LOCAL_VIDEO_ID;
       this.videoIds = [LOCAL_VIDEO_ID].concat(REMOTE_VIDEO_IDS);
+      this.avatarCache = [];
     }
 
     ConferenceState.prototype.getAttendeeByEasyrtcid = function(easyrtcid) {
       return this.attendees.filter(function(attendee) {
           return attendee && attendee.easyrtcid === easyrtcid;
+        })[0] || null;
+    };
+
+    ConferenceState.prototype.getAttendeeByVideoId = function(videoId) {
+      return this.attendees.filter(function(attendee) {
+          return attendee && attendee.videoId === videoId;
         })[0] || null;
     };
 
@@ -57,10 +71,13 @@ angular.module('op.live-conference')
 
     ConferenceState.prototype.pushAttendee = function(index, easyrtcid, id, displayName) {
       var attendee = {
-        videoIds: this.videoIds[index],
+        index: index,
+        videoId: this.videoIds[index],
         id: id,
         easyrtcid: easyrtcid,
-        displayName: displayName
+        displayName: displayName,
+        // This needs to be served by the webapp embedding angular-liveconference
+        avatar: '/images/avatar/default.png'
       };
       this.attendees[index] = attendee;
       $rootScope.$broadcast('conferencestate:attendees:push', attendee);
@@ -69,6 +86,7 @@ angular.module('op.live-conference')
     ConferenceState.prototype.removeAttendee = function(index) {
       var attendee = this.attendees[index];
       this.attendees[index] = null;
+      this.avatarCache[index] = null;
       $rootScope.$broadcast('conferencestate:attendees:remove', attendee);
     };
 
@@ -100,6 +118,26 @@ angular.module('op.live-conference')
 
     ConferenceState.prototype.updateMuteVideoFromEasyrtcid = function(easyrtcid, mute) {
       this.updateAttendeeByEasyrtcid(easyrtcid, { muteVideo: mute });
+    };
+
+    ConferenceState.prototype.getAvatarImageByIndex = function(index, callback) {
+      var attendee = this.attendees[index];
+
+      if (!attendee) {
+        return callback(new Error('No attendee at index ' + index));
+      }
+
+      if (!this.avatarCache[index]) {
+        var self = this;
+
+        this.avatarCache[index] = newImage();
+        this.avatarCache[index].src = attendee.avatar;
+        this.avatarCache[index].onload = function() {
+          callback(null, self.avatarCache[index]);
+        };
+      } else {
+        callback(null, this.avatarCache[index]);
+      }
     };
 
     return ConferenceState;

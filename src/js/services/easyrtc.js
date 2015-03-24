@@ -192,6 +192,18 @@ angular.module('op.live-conference')
         return easyrtc.myEasyrtcid;
       }
 
+      function prepareAttendeeForBroadcast(attendee) {
+        return {
+          id: attendee.id,
+          easyrtcid: attendee.easyrtcid,
+          displayName: attendee.displayName,
+          avatar: attendee.avatar,
+          mute: attendee.mute,
+          muteVideo: attendee.muteVideo,
+          speaking: attendee.speaking
+        };
+      }
+
       function broadcastData(msgType, data) {
         var occupants = easyrtc.getRoomOccupantsAsArray(room);
 
@@ -209,7 +221,13 @@ angular.module('op.live-conference')
       }
 
       function broadcastMe() {
-        broadcastData(EASYRTC_EVENTS.attendeeUpdate, currentConferenceState.getAttendeeByEasyrtcid(myEasyrtcid()));
+        var attendee = currentConferenceState.getAttendeeByEasyrtcid(myEasyrtcid());
+
+        if (!attendee) {
+          return;
+        }
+
+        broadcastData(EASYRTC_EVENTS.attendeeUpdate, prepareAttendeeForBroadcast(attendee));
       }
 
       return {

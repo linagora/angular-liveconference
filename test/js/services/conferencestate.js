@@ -8,10 +8,17 @@ describe('The ConferenceState module', function() {
   beforeEach(angular.mock.module('op.live-conference'));
 
   describe('ConferenceState service', function() {
-    var ConferenceState, conference, conferenceState, $rootScope, apply;
+    var ConferenceState, conference, conferenceState, $rootScope, apply, newImage;
 
     beforeEach(function() {
       apply = false;
+      newImage = {};
+
+      module(function ($provide) {
+        $provide.value('newImage', function() {
+          return newImage;
+        });
+      });
 
       inject(function($injector, _$rootScope_) {
         ConferenceState = $injector.get('ConferenceState');
@@ -49,6 +56,15 @@ describe('The ConferenceState module', function() {
       });
     });
 
+    describe('getAttendeeByVideoId method', function() {
+      it('should return the correct attendee', function() {
+        conferenceState.attendees = [{ videoId: 'video1' }, { videoId: 'video2' }, null];
+
+        expect(conferenceState.getAttendeeByVideoId('video1')).to.deep.equal({ videoId: 'video1' });
+        expect(conferenceState.getAttendeeByVideoId('idontexist')).to.be.null;
+      });
+    });
+
     describe('updateAttendee method', function() {
       it('should update the good attendee, $rootScope.$applyAsync() and $rootScope.$broadcast', function(done) {
         $rootScope.$on('conferencestate:attendees:update', function (event, attendee) {
@@ -77,10 +93,12 @@ describe('The ConferenceState module', function() {
       it('should push the good attendee and $rootScope.$broadcast', function(done) {
         $rootScope.$on('conferencestate:attendees:push', function (event, attendee) {
           var expected = {
-            videoIds: 'video-thumb0',
+            index: 0,
+            videoId: 'video-thumb0',
             easyrtcid: 'easyrtcid',
             id: 'id',
-            displayName: 'displayName'
+            displayName: 'displayName',
+            avatar: '/images/avatar/default.png'
           };
 
           expect(attendee).to.deep.equal(expected);
@@ -169,11 +187,11 @@ describe('The ConferenceState module', function() {
       it('should update mute property of attendee and $rootScope.$broadcast', function(done) {
         $rootScope.$on('conferencestate:mute', function (event, data) {
           expect(data).to.deep.equal({id: 'easyrtcid', mute: true});
-          expect(conferenceState.attendees).to.deep.equal([{ easyrtcid: 'easyrtcid', videoIds: 'videoId', mute: true}]);
+          expect(conferenceState.attendees).to.deep.equal([{ easyrtcid: 'easyrtcid', videoId: 'videoId', mute: true}]);
           done();
         });
 
-        conferenceState.attendees = [{ easyrtcid: 'easyrtcid', videoIds: 'videoId'}];
+        conferenceState.attendees = [{ easyrtcid: 'easyrtcid', videoId: 'videoId'}];
         conferenceState.updateMuteFromEasyrtcid('easyrtcid', true);
       });
     });
@@ -182,11 +200,11 @@ describe('The ConferenceState module', function() {
       it('should update mute property of attendee and $rootScope.$broadcast', function(done) {
         $rootScope.$on('conferencestate:mute', function (event, data) {
           expect(data).to.deep.equal({id: 'easyrtcid', mute: true});
-          expect(conferenceState.attendees).to.deep.equal([{easyrtcid: 'user1'}, { easyrtcid: 'easyrtcid', videoIds: 'videoId', mute: true}]);
+          expect(conferenceState.attendees).to.deep.equal([{easyrtcid: 'user1'}, { easyrtcid: 'easyrtcid', videoId: 'videoId', mute: true}]);
           done();
         });
 
-        conferenceState.attendees = [{easyrtcid: 'user1'}, { easyrtcid: 'easyrtcid', videoIds: 'videoId'}];
+        conferenceState.attendees = [{easyrtcid: 'user1'}, { easyrtcid: 'easyrtcid', videoId: 'videoId'}];
         conferenceState.updateMuteFromIndex(1, true);
       });
     });
@@ -195,11 +213,11 @@ describe('The ConferenceState module', function() {
       it('should update muteVideo property of attendee and $rootScope.$broadcast', function(done) {
         $rootScope.$on('conferencestate:muteVideo', function (event, data) {
           expect(data).to.deep.equal({id: 'easyrtcid', muteVideo: true});
-          expect(conferenceState.attendees).to.deep.equal([{ easyrtcid: 'easyrtcid', videoIds: 'videoId', muteVideo: true}]);
+          expect(conferenceState.attendees).to.deep.equal([{ easyrtcid: 'easyrtcid', videoId: 'videoId', muteVideo: true}]);
           done();
         });
 
-        conferenceState.attendees = [{ easyrtcid: 'easyrtcid', videoIds: 'videoId'}];
+        conferenceState.attendees = [{ easyrtcid: 'easyrtcid', videoId: 'videoId'}];
         conferenceState.updateMuteVideoFromEasyrtcid('easyrtcid', true);
       });
     });
@@ -208,13 +226,67 @@ describe('The ConferenceState module', function() {
       it('should update muteVideo property of attendee and $rootScope.$broadcast', function(done) {
         $rootScope.$on('conferencestate:muteVideo', function (event, data) {
           expect(data).to.deep.equal({id: 'easyrtcid', muteVideo: true});
-          expect(conferenceState.attendees).to.deep.equal([{easyrtcid: 'user1'}, { easyrtcid: 'easyrtcid', videoIds: 'videoId', muteVideo: true}]);
+          expect(conferenceState.attendees).to.deep.equal([{easyrtcid: 'user1'}, { easyrtcid: 'easyrtcid', videoId: 'videoId', muteVideo: true}]);
           done();
         });
 
-        conferenceState.attendees = [{easyrtcid: 'user1'}, { easyrtcid: 'easyrtcid', videoIds: 'videoId'}];
+        conferenceState.attendees = [{easyrtcid: 'user1'}, { easyrtcid: 'easyrtcid', videoId: 'videoId'}];
         conferenceState.updateMuteVideoFromIndex(1, true);
       });
+    });
+
+    describe('getAvatarImageByIndex method', function() {
+
+      it('should send back an error if attendee at given index does not exist', function(done) {
+        conferenceState.getAvatarImageByIndex(0, function(err) {
+          expect(err).to.exist;
+
+          done();
+        });
+      });
+
+      it('should send back the cached image if available', function(done) {
+        conferenceState.avatarCache[0] = { image: 'loaded' };
+        conferenceState.pushAttendee(0, 'easyrtcid');
+
+        conferenceState.getAvatarImageByIndex(0, function(err, image) {
+          expect(err).to.not.exist;
+          expect(image).to.deep.equal({image: 'loaded' });
+
+          expect(newImage).to.deep.equal({});
+
+          done();
+        });
+      });
+
+      it('should send back a new image when it is fully loaded', function(done) {
+        conferenceState.pushAttendee(0, 'easyrtcid');
+
+        conferenceState.getAvatarImageByIndex(0, function(err, image) {
+          expect(err).to.not.exist;
+          expect(image).to.exist;
+
+          done();
+        });
+        newImage.onload();
+      });
+
+    });
+
+  });
+
+  describe('The newImage service', function() {
+
+    var newImage;
+
+    beforeEach(function() {
+      inject(function($injector) {
+        newImage = $injector.get('newImage');
+      });
+    });
+
+    it('should return an instance of Image', function() {
+      expect(newImage()).to.be.an.instanceof(Image);
     });
 
   });
