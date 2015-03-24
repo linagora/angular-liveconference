@@ -42,7 +42,7 @@ angular.module('op.live-conference')
       $rootScope.$applyAsync();
       $rootScope.$broadcast('conferencestate:attendees:update', attendee);
 
-      ['speaking', 'mute'].forEach(function(property) {
+      ['speaking', 'mute', 'muteVideo'].forEach(function(property) {
         $rootScope.$broadcast('conferencestate:' + property, (function(o) { o[property] = attendee[property]; return o; })({ id: attendee.easyrtcid }));
       });
     }
@@ -92,6 +92,14 @@ angular.module('op.live-conference')
 
     ConferenceState.prototype.updateMuteFromEasyrtcid = function(easyrtcid, mute) {
       this.updateAttendeeByEasyrtcid(easyrtcid, { mute: mute });
+    };
+
+    ConferenceState.prototype.updateMuteVideoFromIndex = function(index, mute) {
+      this.updateAttendeeByIndex(index, { muteVideo: mute });
+    };
+
+    ConferenceState.prototype.updateMuteVideoFromEasyrtcid = function(easyrtcid, mute) {
+      this.updateAttendeeByEasyrtcid(easyrtcid, { muteVideo: mute });
     };
 
     return ConferenceState;

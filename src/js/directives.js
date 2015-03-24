@@ -182,6 +182,9 @@ angular.module('op.live-conference')
           easyRTCService.enableVideo($scope.videoMuted);
 
           $scope.videoMuted = !$scope.videoMuted;
+          $scope.conferenceState.updateMuteVideoFromIndex(0, $scope.videoMuted);
+
+          easyRTCService.broadcastMe();
         };
 
         $scope.showInvitationPanel = function() {

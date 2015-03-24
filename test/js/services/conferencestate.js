@@ -179,7 +179,7 @@ describe('The ConferenceState module', function() {
     });
 
     describe('updateMuteFromIndex method', function() {
-      it('should update mute property of attendee', function(done) {
+      it('should update mute property of attendee and $rootScope.$broadcast', function(done) {
         $rootScope.$on('conferencestate:mute', function (event, data) {
           expect(data).to.deep.equal({id: 'easyrtcid', mute: true});
           expect(conferenceState.attendees).to.deep.equal([{easyrtcid: 'user1'}, { easyrtcid: 'easyrtcid', videoIds: 'videoId', mute: true}]);
@@ -190,6 +190,33 @@ describe('The ConferenceState module', function() {
         conferenceState.updateMuteFromIndex(1, true);
       });
     });
+
+    describe('updateMuteVideoFromEasyrtcid method', function() {
+      it('should update muteVideo property of attendee and $rootScope.$broadcast', function(done) {
+        $rootScope.$on('conferencestate:muteVideo', function (event, data) {
+          expect(data).to.deep.equal({id: 'easyrtcid', muteVideo: true});
+          expect(conferenceState.attendees).to.deep.equal([{ easyrtcid: 'easyrtcid', videoIds: 'videoId', muteVideo: true}]);
+          done();
+        });
+
+        conferenceState.attendees = [{ easyrtcid: 'easyrtcid', videoIds: 'videoId'}];
+        conferenceState.updateMuteVideoFromEasyrtcid('easyrtcid', true);
+      });
+    });
+
+    describe('updateMuteVideoFromIndex method', function() {
+      it('should update muteVideo property of attendee and $rootScope.$broadcast', function(done) {
+        $rootScope.$on('conferencestate:muteVideo', function (event, data) {
+          expect(data).to.deep.equal({id: 'easyrtcid', muteVideo: true});
+          expect(conferenceState.attendees).to.deep.equal([{easyrtcid: 'user1'}, { easyrtcid: 'easyrtcid', videoIds: 'videoId', muteVideo: true}]);
+          done();
+        });
+
+        conferenceState.attendees = [{easyrtcid: 'user1'}, { easyrtcid: 'easyrtcid', videoIds: 'videoId'}];
+        conferenceState.updateMuteVideoFromIndex(1, true);
+      });
+    });
+
   });
 
   describe('easyRTCService service', function() {
