@@ -275,6 +275,33 @@ WildEmitter.prototype.getWildcardCallbacks = function (eventName) {
 ;'use strict';
 
 angular.module('op.live-conference')
+  .constant('easyRTCBitRates', {
+    low: {
+      audio: 20,
+      video: 30
+    },
+    medium: {
+      audio: 40,
+      video: 60
+    },
+    nolimit: null
+  })
+  .constant('EASYRTC_APPLICATION_NAME', 'LiveConference')
+  .constant('LOCAL_VIDEO_ID', 'video-thumb0')
+  .constant('REMOTE_VIDEO_IDS', [
+    'video-thumb1',
+    'video-thumb2',
+    'video-thumb3',
+    'video-thumb4',
+    'video-thumb5',
+    'video-thumb6',
+    'video-thumb7',
+    'video-thumb8'
+  ])
+  .constant('AUTO_VIDEO_SWITCH_TIMEOUT', 700);
+'use strict';
+
+angular.module('op.live-conference')
   .directive('conferenceVideo', ['$timeout', '$window', '$rootScope', 'drawVideo', 'LOCAL_VIDEO_ID',
   function($timeout, $window, $rootScope, drawVideo, LOCAL_VIDEO_ID) {
     return {
@@ -580,33 +607,208 @@ angular.module('op.live-conference')
       restrict: 'E',
       templateUrl: 'templates/conference-speak-viewer.jade'
     };
+  }])
+  .directive('autoVideoSwitcher', ['$rootScope', 'AutoVideoSwitcher', 'currentConferenceState', function($rootScope, AutoVideoSwitcher, currentConferenceState) {
+    return {
+      restrict: 'A',
+      link: function() {
+        var unreg = $rootScope.$on('localMediaStream', function() {
+          unreg();
+          new AutoVideoSwitcher(currentConferenceState);
+        });
+      }
+    }
   }]);
 'use strict';
 
 angular.module('op.live-conference')
-  .constant('easyRTCBitRates', {
-    low: {
-      audio: 20,
-      video: 30
-    },
-    medium: {
-      audio: 40,
-      video: 60
-    },
-    nolimit: null
+
+  .factory('currentConferenceState', ['session', 'ConferenceState', function(session, ConferenceState) {
+    return new ConferenceState(session.conference);
+  }])
+
+  .factory('ConferenceState', ['$rootScope', 'LOCAL_VIDEO_ID', 'REMOTE_VIDEO_IDS', function($rootScope, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS) {
+    /*
+     * Store a snapshot of current conference status and an array of attendees describing
+     * current visible attendees of the conference by their index as position.
+     * attendees : [{
+     *   videoId:
+     *   id:
+     *   easyrtcid:
+     *   displayName:
+     * }]
+     */
+    function ConferenceState(conference) {
+      this.conference = conference;
+      this.attendees = [];
+      this.localVideoId = LOCAL_VIDEO_ID;
+      this.videoIds = [LOCAL_VIDEO_ID].concat(REMOTE_VIDEO_IDS);
+    }
+
+    ConferenceState.prototype.getAttendeeByEasyrtcid = function(easyrtcid) {
+      return this.attendees.filter(function(attendee) {
+          return attendee && attendee.easyrtcid === easyrtcid;
+        })[0] || null;
+    };
+
+    ConferenceState.prototype.updateAttendee = function(easyrtcid, id, displayName) {
+      var attendeeToUpdate = this.getAttendeeByEasyrtcid(easyrtcid);
+      if (!attendeeToUpdate) {
+        return;
+      }
+      attendeeToUpdate.id = id;
+      attendeeToUpdate.displayName = displayName;
+      $rootScope.$applyAsync();
+      $rootScope.$broadcast('conferencestate:attendees:update', attendeeToUpdate);
+    };
+
+    ConferenceState.prototype.pushAttendee = function(index, easyrtcid, id, displayName) {
+      var attendee = {
+        videoIds: this.videoIds[index],
+        id: id,
+        easyrtcid: easyrtcid,
+        displayName: displayName
+      };
+      this.attendees[index] = attendee;
+      $rootScope.$broadcast('conferencestate:attendees:push', attendee);
+    };
+
+    ConferenceState.prototype.removeAttendee = function(index) {
+      var attendee = this.attendees[index];
+      this.attendees[index] = null;
+      $rootScope.$broadcast('conferencestate:attendees:remove', attendee);
+    };
+
+    ConferenceState.prototype.updateLocalVideoId = function(videoId) {
+      this.localVideoId = videoId;
+      $rootScope.$broadcast('conferencestate:localVideoId:update', this.localVideoId);
+    };
+
+    ConferenceState.prototype.updateLocalVideoIdToIndex = function(index) {
+      this.localVideoId = this.videoIds[index];
+      $rootScope.$broadcast('conferencestate:localVideoId:update', this.localVideoId);
+    };
+
+    ConferenceState.prototype.updateSpeaking = function(easyrtcid, speaking) {
+      var attendeeToUpdate = this.getAttendeeByEasyrtcid(easyrtcid);
+      if (!attendeeToUpdate) {
+        return;
+      }
+      attendeeToUpdate.speaking = speaking;
+      $rootScope.$applyAsync();
+      $rootScope.$broadcast('conferencestate:speaking', { id: attendeeToUpdate.easyrtcid, speaking: speaking });
+    };
+
+    ConferenceState.prototype.updateMuteFromIndex = function(index, mute) {
+      if (this.attendees[index]) {
+        this.attendees[index].mute = mute;
+        $rootScope.$applyAsync();
+      }
+    };
+
+    ConferenceState.prototype.updateMuteFromEasyrtcid = function(easyrtcid, mute) {
+      var attendeeToUpdate = this.getAttendeeByEasyrtcid(easyrtcid);
+      if (!attendeeToUpdate) {
+        return;
+      }
+      attendeeToUpdate.mute = mute;
+      $rootScope.$applyAsync();
+    };
+
+    return ConferenceState;
+  }]);
+'use strict';
+
+angular.module('op.live-conference')
+
+  .factory('drawVideo', function($rootScope, $window, $interval) {
+    var requestAnimationFrame =
+      $window.requestAnimationFrame ||
+      $window.mozRequestAnimationFrame ||
+      $window.msRequestAnimationFrame ||
+      $window.webkitRequestAnimationFrame;
+
+    var VIDEO_FRAME_RATE = 1000 / 30;
+    var promise;
+
+    function draw(context, video, width, height) {
+      // see https://bugzilla.mozilla.org/show_bug.cgi?id=879717
+      // Sometimes Firefox drawImage before it is even available.
+      // Thus we ignore this error.
+      try {
+        context.drawImage(video, 0, 0, width, height);
+      } catch (e) {
+        if (e.name !== 'NS_ERROR_NOT_AVAILABLE') {
+          throw e;
+        }
+      }
+
+    }
+
+    return function(context, video, width, height) {
+      function stopCurrentAnimation() {
+        if (promise) {
+          $interval.cancel(promise);
+        }
+      }
+
+      stopCurrentAnimation();
+
+      promise = $interval(function() {
+        requestAnimationFrame(function() {
+          draw(context, video, width, height);
+        });
+      }, VIDEO_FRAME_RATE, 0, false);
+
+      return stopCurrentAnimation;
+    };
   })
-  .constant('EASYRTC_APPLICATION_NAME', 'LiveConference')
-  .constant('LOCAL_VIDEO_ID', 'video-thumb0')
-  .constant('REMOTE_VIDEO_IDS', [
-    'video-thumb1',
-    'video-thumb2',
-    'video-thumb3',
-    'video-thumb4',
-    'video-thumb5',
-    'video-thumb6',
-    'video-thumb7',
-    'video-thumb8'
-  ])
+  .factory('cropDimensions', function() {
+    var valuesCache = {};
+
+    function cropSide(cSide, vSide, vReferenceSide) {
+      var diff = vSide - vReferenceSide;
+      var start = Math.round(diff / 2);
+      return start;
+    }
+
+    /*
+     The goal of this function is to get the coordinate to crop the
+     camera image to a square.
+     width & height are the target canvas width & height
+     vWidth & vHeight are the video width and height
+
+     Read  https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial/Using_images
+     the "Slicing" part
+
+     This method sends back an array, where:
+     the first element of the array is sx , the second element is sy,
+     and the third element is sWidth & sHeight (yeah, bc it's a square)
+     */
+    function cropDimensions(width, height, vWidth, vHeight) {
+      var key = width + ':' + height + ':' + vWidth + ':' + vHeight;
+      if ( valuesCache[key] ) {
+        return valuesCache[key];
+      }
+      var back = [0, 0, 0];
+      if ( vWidth < vHeight ) {
+        back[1] = cropSide(height, vHeight, vWidth);
+        back[2] = vWidth;
+      } else {
+        back[0] = cropSide(width, vWidth, vHeight);
+        back[2] = vHeight;
+      }
+      valuesCache[key] = back;
+      return back;
+    }
+
+    return cropDimensions;
+
+  });
+'use strict';
+
+angular.module('op.live-conference')
+
   .factory('easyRTCService', ['$rootScope', '$log', 'webrtcFactory', 'tokenAPI', 'session',
     'ioSocketConnection', 'ioConnectionManager', '$timeout', 'easyRTCBitRates', 'LOCAL_VIDEO_ID', 'REMOTE_VIDEO_IDS', 'EASYRTC_APPLICATION_NAME',
     function($rootScope, $log, webrtcFactory, tokenAPI, session, ioSocketConnection, ioConnectionManager, $timeout, easyRTCBitRates, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, EASYRTC_APPLICATION_NAME) {
@@ -840,207 +1042,80 @@ angular.module('op.live-conference')
         myEasyrtcid: myEasyrtcid,
         broadcastData: broadcastData
       };
-    }])
+    }]);
+'use strict';
 
-  .factory('currentConferenceState', ['session', 'ConferenceState', function(session, ConferenceState) {
-    return new ConferenceState(session.conference);
-  }])
+angular.module('op.live-conference')
 
-  .factory('ConferenceState', ['$rootScope', 'LOCAL_VIDEO_ID', 'REMOTE_VIDEO_IDS', function($rootScope, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS) {
-    /*
-     * Store a snapshot of current conference status and an array of attendees describing
-     * current visible attendees of the conference by their index as position.
-     * attendees : [{
-     *   videoId:
-     *   id:
-     *   easyrtcid:
-     *   displayName:
-     * }]
-     */
-    function ConferenceState(conference) {
-      this.conference = conference;
-      this.attendees = [];
-      this.localVideoId = LOCAL_VIDEO_ID;
-      this.videoIds = [LOCAL_VIDEO_ID].concat(REMOTE_VIDEO_IDS);
-    }
-
-    ConferenceState.prototype.getAttendeeByEasyrtcid = function(easyrtcid) {
-      return this.attendees.filter(function(attendee) {
-        return attendee && attendee.easyrtcid === easyrtcid;
-      })[0] || null;
-    };
-
-    ConferenceState.prototype.updateAttendee = function(easyrtcid, id, displayName) {
-      var attendeeToUpdate = this.getAttendeeByEasyrtcid(easyrtcid);
-      if (!attendeeToUpdate) {
-        return;
-      }
-      attendeeToUpdate.id = id;
-      attendeeToUpdate.displayName = displayName;
-      $rootScope.$applyAsync();
-      $rootScope.$broadcast('conferencestate:attendees:update', attendeeToUpdate);
-    };
-
-    ConferenceState.prototype.pushAttendee = function(index, easyrtcid, id, displayName) {
-      var attendee = {
-        videoIds: this.videoIds[index],
-        id: id,
-        easyrtcid: easyrtcid,
-        displayName: displayName
-      };
-      this.attendees[index] = attendee;
-      $rootScope.$broadcast('conferencestate:attendees:push', attendee);
-    };
-
-    ConferenceState.prototype.removeAttendee = function(index) {
-      var attendee = this.attendees[index];
-      this.attendees[index] = null;
-      $rootScope.$broadcast('conferencestate:attendees:remove', attendee);
-    };
-
-    ConferenceState.prototype.updateLocalVideoId = function(videoId) {
-      this.localVideoId = videoId;
-      $rootScope.$broadcast('conferencestate:localVideoId:update', this.localVideoId);
-    };
-
-    ConferenceState.prototype.updateLocalVideoIdToIndex = function(index) {
-      this.localVideoId = this.videoIds[index];
-      $rootScope.$broadcast('conferencestate:localVideoId:update', this.localVideoId);
-    };
-
-    ConferenceState.prototype.updateSpeaking = function(easyrtcid, speaking) {
-      var attendeeToUpdate = this.getAttendeeByEasyrtcid(easyrtcid);
-      if (!attendeeToUpdate) {
-        return;
-      }
-      attendeeToUpdate.speaking = speaking;
-      $rootScope.$applyAsync();
-      $rootScope.$broadcast('conferencestate:speaking', { id: attendeeToUpdate.easyrtcid, speaking: speaking });
-    };
-
-    ConferenceState.prototype.updateMuteFromIndex = function(index, mute) {
-      if (this.attendees[index]) {
-        this.attendees[index].mute = mute;
-        $rootScope.$applyAsync();
-      }
-    };
-
-    ConferenceState.prototype.updateMuteFromEasyrtcid = function(easyrtcid, mute) {
-      var attendeeToUpdate = this.getAttendeeByEasyrtcid(easyrtcid);
-      if (!attendeeToUpdate) {
-        return;
-      }
-      attendeeToUpdate.mute = mute;
-      $rootScope.$applyAsync();
-    };
-
-    return ConferenceState;
-  }])
-
-  .factory('drawVideo', function($rootScope, $window, $interval) {
-    var requestAnimationFrame =
-      $window.requestAnimationFrame ||
-      $window.mozRequestAnimationFrame ||
-      $window.msRequestAnimationFrame ||
-      $window.webkitRequestAnimationFrame;
-
-    var VIDEO_FRAME_RATE = 1000 / 30;
-    var promise;
-
-    function draw(context, video, width, height) {
-      // see https://bugzilla.mozilla.org/show_bug.cgi?id=879717
-      // Sometimes Firefox drawImage before it is even available.
-      // Thus we ignore this error.
-      try {
-        context.drawImage(video, 0, 0, width, height);
-      } catch (e) {
-        if (e.name !== 'NS_ERROR_NOT_AVAILABLE') {
-          throw e;
-        }
-      }
-
-    }
-
-    return function(context, video, width, height) {
-      function stopCurrentAnimation() {
-        if (promise) {
-          $interval.cancel(promise);
-        }
-      }
-
-      stopCurrentAnimation();
-
-      promise = $interval(function() {
-        requestAnimationFrame(function() {
-          draw(context, video, width, height);
-        });
-      }, VIDEO_FRAME_RATE, 0, false);
-
-      return stopCurrentAnimation;
-    };
-  })
-  .factory('cropDimensions', function() {
-    var valuesCache = {};
-
-    function cropSide(cSide, vSide, vReferenceSide) {
-      var diff = vSide - vReferenceSide;
-      var start = Math.round(diff / 2);
-      return start;
-    }
-
-    /*
-      The goal of this function is to get the coordinate to crop the
-      camera image to a square.
-      width & height are the target canvas width & height
-      vWidth & vHeight are the video width and height
-
-      Read  https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial/Using_images
-      the "Slicing" part
-
-      This method sends back an array, where:
-      the first element of the array is sx , the second element is sy,
-      and the third element is sWidth & sHeight (yeah, bc it's a square)
-    */
-    function cropDimensions(width, height, vWidth, vHeight) {
-      var key = width + ':' + height + ':' + vWidth + ':' + vHeight;
-      if ( valuesCache[key] ) {
-        return valuesCache[key];
-      }
-      var back = [0, 0, 0];
-      if ( vWidth < vHeight ) {
-        back[1] = cropSide(height, vHeight, vWidth);
-        back[2] = vWidth;
-      } else {
-        back[0] = cropSide(width, vWidth, vHeight);
-        back[2] = vHeight;
-      }
-      valuesCache[key] = back;
-      return back;
-    }
-
-    return cropDimensions;
-
-  })
   .factory('speechDetector', function() {
-  /**
-  * https://github.com/otalk/hark
-  *
-  * returns a hark instance
-  *
-  * detector.on('speaking', function() {...});
-  * detector.on('stopped_speaking', function() {...});
-  *
-  * don't forget to call detector.stop();
-  */
-  /* global hark */
-  return function(stream, options) {
-    options = options || {};
-    options.play = false;
-    var speechEvents = hark(stream, options);
-    stream = null;
-    return speechEvents;
-  };
-});
+    /**
+     * https://github.com/otalk/hark
+     *
+     * returns a hark instance
+     *
+     * detector.on('speaking', function() {...});
+     * detector.on('stopped_speaking', function() {...});
+     *
+     * don't forget to call detector.stop();
+     */
+    /* global hark */
+    return function(stream, options) {
+      options = options || {};
+      options.play = false;
+      var speechEvents = hark(stream, options);
+      stream = null;
+      return speechEvents;
+    };
+  })
+
+  .factory('AutoVideoSwitcher', ['$rootScope', '$timeout', 'AUTO_VIDEO_SWITCH_TIMEOUT', 'LOCAL_VIDEO_ID',
+    function($rootScope, $timeout, AUTO_VIDEO_SWITCH_TIMEOUT, LOCAL_VIDEO_ID) {
+
+      function AutoVideoSwitcher(conferenceState) {
+        this.conferenceState = conferenceState;
+        this.timeouts = {};
+        var self = this;
+        $rootScope.$on('conferencestate:speaking', function(event, data) {
+          if (data.speaking) {
+            self.onSpeech(event, data);
+          } else {
+            self.onSpeechEnd(event, data);
+          }
+        });
+      }
+
+      AutoVideoSwitcher.prototype.onSpeech = function(evt, data) {
+        var member = this.getMemberFromData(data);
+        if (!member || this.timeouts[member.easyrtcid] || member.videoIds === LOCAL_VIDEO_ID || member.mute || member.videoIds === this.conferenceState.localVideoId) {
+          return;
+        }
+        var easyrtcid = member.easyrtcid;
+
+        this.timeouts[easyrtcid] = $timeout(function() {
+          var member = this.getMemberFromData(data);
+          if (!member) {
+            return;
+          }
+
+          this.conferenceState.updateLocalVideoId(member.videoIds);
+        }.bind(this), AUTO_VIDEO_SWITCH_TIMEOUT, false);
+      };
+
+      AutoVideoSwitcher.prototype.onSpeechEnd = function(evt, data) {
+        var member = this.getMemberFromData(data);
+        if (!member || !this.timeouts[member.easyrtcid] || member.videoIds === LOCAL_VIDEO_ID) {
+          return;
+        }
+        $timeout.cancel(this.timeouts[member.easyrtcid]);
+        this.timeouts[member.easyrtcid] = null;
+      };
+
+      AutoVideoSwitcher.prototype.getMemberFromData = function(data) {
+        return this.conferenceState.getAttendeeByEasyrtcid(data.id);
+      };
+
+      return AutoVideoSwitcher;
+    }]);
 angular.module('op.liveconference-templates', []).run(['$templateCache', function($templateCache) {
   "use strict";
   $templateCache.put("templates/application.jade",
@@ -1054,7 +1129,7 @@ angular.module('op.liveconference-templates', []).run(['$templateCache', functio
   $templateCache.put("templates/conference-speak-viewer.jade",
     "<i class=\"fa fa-comments-o\"></i>");
   $templateCache.put("templates/conference-video.jade",
-    "<div id=\"multiparty-conference\" local-speak-emitter local-speak-receiver class=\"conference-video fullscreen\"><conference-user-video></conference-user-video><div class=\"conference-attendees-bar\"><ul scale-to-canvas class=\"content\"><li ng-repeat=\"id in conferenceState.videoIds\" ng-hide=\"!conferenceState.attendees[$index]\"><conference-attendee-video video-index=\"$index\" on-video-click=\"streamToMainCanvas\" video-id=\"{{id}}\" attendee=\"conferenceState.attendees[$index]\" show-report=\"showReport\"></conference-attendee-video></li></ul></div><conference-user-control-bar show-invitation=\"showInvitation\" on-leave=\"onLeave\" conference-state=\"conferenceState\"></conference-user-control-bar></div>");
+    "<div id=\"multiparty-conference\" local-speak-emitter local-speak-receiver auto-video-switcher class=\"conference-video fullscreen\"><conference-user-video></conference-user-video><div class=\"conference-attendees-bar\"><ul scale-to-canvas class=\"content\"><li ng-repeat=\"id in conferenceState.videoIds\" ng-hide=\"!conferenceState.attendees[$index]\"><conference-attendee-video video-index=\"$index\" on-video-click=\"streamToMainCanvas\" video-id=\"{{id}}\" attendee=\"conferenceState.attendees[$index]\" show-report=\"showReport\"></conference-attendee-video></li></ul></div><conference-user-control-bar show-invitation=\"showInvitation\" on-leave=\"onLeave\" conference-state=\"conferenceState\"></conference-user-control-bar></div>");
   $templateCache.put("templates/invite-members.jade",
     "<div class=\"aside\"><div class=\"aside-dialog\"><div class=\"aside-content\"><div class=\"aside-header\"><h4>Members</h4></div><div class=\"aside-body\"><div ng-repeat=\"user in users\" class=\"row\"><conference-attendee></conference-attendee></div></div></div></div></div>");
   $templateCache.put("templates/live.jade",

@@ -22,7 +22,7 @@ module.exports = function(grunt) {
         separator: ''
       },
       dist: {
-        src: ['node_modules/hark/hark.bundle.js', 'src/js/*.js'],
+        src: ['node_modules/hark/hark.bundle.js', 'src/js/**/*.js'],
         dest: 'dist/live-conference.all.js'
       }
     },
