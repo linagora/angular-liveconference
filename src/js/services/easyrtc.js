@@ -225,6 +225,22 @@ angular.module('op.live-conference')
         }
       }
 
+      function sendDataP2P(easyrtcid, msgType, data) {
+        easyrtc.sendDataP2P(easyrtcid, msgType, JSON.stringify(data));
+      }
+
+      function sendDataWS(easyrtcid, msgType, data) {
+        easyrtc.sendDataWS(easyrtcid, msgType, JSON.stringify(data));
+      }
+
+      function getP2PConnectionStatus(easyrtcid) {
+        return easyrtc.getConnectStatus(easyrtcid);
+      }
+
+      function doesDataChannelWork(easyrtcid) {
+        return easyrtc.doesDataChannelWork(easyrtcid);
+      }
+
       function setPeerListener(handler, msgType) {
         easyrtc.setPeerListener(handler, msgType);
       }
@@ -311,6 +327,10 @@ angular.module('op.live-conference')
         broadcastData: broadcastData,
         broadcastMe: broadcastMe,
         addDisconnectCallback: addDisconnectCallback,
-        removeDisconnectCallback: removeDisconnectCallback
+        removeDisconnectCallback: removeDisconnectCallback,
+        sendDataP2P: sendDataP2P,
+        sendDataWS: sendDataWS,
+        getP2PConnectionStatus: getP2PConnectionStatus,
+        doesDataChannelWork: doesDataChannelWork
       };
     }]);

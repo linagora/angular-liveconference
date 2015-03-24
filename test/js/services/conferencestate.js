@@ -425,7 +425,7 @@ describe('The ConferenceState module', function() {
   });
 
   describe('easyRTCService service', function() {
-    var service, $q, $rootScope, $log, tokenAPI, session, webrtcFactory;
+    var service, $q, $rootScope, $log, tokenAPI, session, webrtcFactory, webrtcObject;
 
     beforeEach(function() {
       tokenAPI = {};
@@ -448,21 +448,32 @@ describe('The ConferenceState module', function() {
         }
       };
 
+      webrtcObject = {
+        setRoomOccupantListener: function() {},
+        setRoomEntryListener: function() {},
+        setDisconnectListener: function() {},
+        joinRoom: function() {},
+        easyApp: function() {},
+        hangupAll: function() {},
+        setOnCall: function() {},
+        setOnHangup: function() {},
+        useThisSocketConnection: function() {},
+        enableDataChannels: function() {},
+        setPeerListener: function() {},
+        sendDataP2P: function() {},
+        sendDataWS: function() {},
+        getConnectStatus: function() {},
+        doesDataChannelWork: function() {},
+        setDataChannelCloseListener: function() {},
+        setCallCancelled: function() {},
+        setOnStreamClosed: function() {},
+        setOnError: function() {},
+        setVideoDims: function() {}
+      };
+
       webrtcFactory = {
         get: function() {
-          return {
-            setRoomOccupantListener: function() {},
-            setRoomEntryListener: function() {},
-            setDisconnectListener: function() {},
-            joinRoom: function() {},
-            easyApp: function() {},
-            hangupAll: function() {},
-            setOnCall: function() {},
-            setOnHangup: function() {},
-            useThisSocketConnection: function() {},
-            enableDataChannels: function() {},
-            setPeerListener: function() {}
-          };
+          return webrtcObject;
         }
       };
 
@@ -494,203 +505,206 @@ describe('The ConferenceState module', function() {
       });
     });
 
-    it('$scope.performCall should hangupAll', function(done) {
-      webrtcFactory = {
-        get: function() {
-          return {
-            hangupAll: function() {
-              done();
-            },
-            enableDataChannels: function() {},
-            setPeerListener: function() {},
-            setDisconnectListener: function() {}
-          };
-        }
-      };
-
-      module(function($provide) {
-        $provide.value('webrtcFactory', webrtcFactory);
-      });
-
-      inject(function($injector) {
-        service = $injector.get('easyRTCService');
-      });
-
-      service.performCall('YOLO');
-    });
-
-    it('$scope.performCall should call the given user id', function(done) {
-      var user_id = 123;
-
-      webrtcFactory = {
-        get: function() {
-          return {
-            hangupAll: function() {},
-            call: function(id) {
-              expect(id).to.equal(user_id);
-              done();
-            },
-            enableDataChannels: function() {},
-            setPeerListener: function() {},
-            setDisconnectListener: function() {}
-          };
-
-        }
-      };
-
-      module(function($provide) {
-        $provide.value('webrtcFactory', webrtcFactory);
-      });
-
-      inject(function($injector) {
-        service = $injector.get('easyRTCService');
-      });
-
-      service.performCall(user_id);
-    });
-
-    it('$scope.connect should create the easyRTC app when the socketIO connection becomes available', function(done) {
-      this.ioSocketConnection.sio = {};
-      this.ioSocketConnection.isConnected = function() {
-        return false;
-      };
-
-      webrtcFactory = {
-        get: function() {
-          return {
-            setRoomOccupantListener: function() {},
-            setRoomEntryListener: function() {},
-            setDisconnectListener: function() {},
-            joinRoom: function() {},
-            useThisSocketConnection: function() {},
-            setOnError: function() {},
-            setVideoDims: function() {},
-            easyApp: function() {
-              done();
-            },
-            enableDataChannels: function() {},
-            setPeerListener: function() {}
-          };
-        }
-      };
-
-      module(function($provide) {
-        $provide.value('webrtcFactory', webrtcFactory);
-      });
-
-      inject(function($injector, _$q_, _$rootScope_) {
-        service = $injector.get('easyRTCService');
-        $q = _$q_;
-        $rootScope = _$rootScope_;
-      });
-
-      var conferenceState = {
-        conference: {
-          conference: { _id: 123 }
-        },
-        pushAttendee: function() {},
-        removeAttendee: function() {}
-      };
-      service.connect(conferenceState);
-      expect(this.ioSocketConnection.connectCallback).to.be.a('function');
-      this.ioSocketConnection.connectCallback();
-    });
-
-    it('$scope.connect should give the socketIO instance to easyrtc', function(done) {
-      var self = this;
-      this.ioSocketConnection.isConnected = function() {
-        return true;
-      };
-      this.ioSocketConnection.sio = {websocket: true};
-
-      webrtcFactory = {
-        get: function() {
-          return {
-            setRoomOccupantListener: function() {},
-            setRoomEntryListener: function() {},
-            setDisconnectListener: function() {},
-            joinRoom: function() {},
-            useThisSocketConnection: function(sio) {
-              expect(sio).to.deep.equal(self.ioSocketConnection.sio);
-              done();
-            },
-            easyApp: function() {
-            },
-            enableDataChannels: function() {},
-            setPeerListener: function() {}
-          };
-        }
-      };
-
-      module(function($provide) {
-        $provide.value('webrtcFactory', webrtcFactory);
-      });
-
-      inject(function($injector, _$q_, _$rootScope_) {
-        service = $injector.get('easyRTCService');
-        $q = _$q_;
-        $rootScope = _$rootScope_;
-      });
-
-      var conferenceState = {
-        conference: {
-          conference: { _id: 123 }
-        },
-        pushAttendee: function() {},
-        removeAttendee: function() {}
-      };
-      service.connect(conferenceState);
-    });
-
-    it('$scope.connect should create the easyRTC app if the socketIO connection is available', function(done) {
-      var self = this;
-      this.ioSocketConnection.sio = {};
-      this.ioSocketConnection.isConnected = function() {
-        self.ioSocketConnection.addConnectCallback = function(cb) {
-          return done(new Error('I should not be called ' + cb));
+    describe('performCall() method', function() {
+      it('should hangupAll', function(done) {
+        webrtcObject.hangupAll = function() {
+          done();
         };
-        return true;
-      };
+        module(function($provide) {
+          $provide.value('webrtcFactory', webrtcFactory);
+        });
 
-      webrtcFactory = {
-        get: function() {
-          return {
-            setRoomOccupantListener: function() {},
-            setRoomEntryListener: function() {},
-            setDisconnectListener: function() {},
-            joinRoom: function() {},
-            useThisSocketConnection: function() {},
-            setOnError: function() {},
-            setVideoDims: function() {},
-            easyApp: function() {
-              done();
-            },
-            enableDataChannels: function() {},
-            setPeerListener: function() {}
+        inject(function($injector) {
+          service = $injector.get('easyRTCService');
+        });
+
+        service.performCall('YOLO');
+      });
+
+      it('should call the given user id', function(done) {
+        var user_id = 123;
+        webrtcObject.call = function(id) {
+          expect(id).to.equal(user_id);
+          done();
+        };
+        module(function($provide) {
+          $provide.value('webrtcFactory', webrtcFactory);
+        });
+
+        inject(function($injector) {
+          service = $injector.get('easyRTCService');
+        });
+
+        service.performCall(user_id);
+      });
+    });
+
+    describe('connect() method', function() {
+      it('should create the easyRTC app when the socketIO connection becomes available', function(done) {
+        this.ioSocketConnection.sio = {};
+        this.ioSocketConnection.isConnected = function() {
+          return false;
+        };
+        webrtcObject.easyApp = function() {
+          done();
+        };
+        module(function($provide) {
+          $provide.value('webrtcFactory', webrtcFactory);
+        });
+
+        inject(function($injector, _$q_, _$rootScope_) {
+          service = $injector.get('easyRTCService');
+          $q = _$q_;
+          $rootScope = _$rootScope_;
+        });
+
+        var conferenceState = {
+          conference: {
+            conference: { _id: 123 }
+          },
+          pushAttendee: function() {},
+          removeAttendee: function() {}
+        };
+        service.connect(conferenceState);
+        expect(this.ioSocketConnection.connectCallback).to.be.a('function');
+        this.ioSocketConnection.connectCallback();
+      });
+
+      it('should give the socketIO instance to easyrtc', function(done) {
+        var self = this;
+        this.ioSocketConnection.isConnected = function() {
+          return true;
+        };
+        this.ioSocketConnection.sio = {websocket: true};
+        webrtcObject.useThisSocketConnection = function(sio) {
+          expect(sio).to.deep.equal(self.ioSocketConnection.sio);
+          done();
+        };
+        module(function($provide) {
+          $provide.value('webrtcFactory', webrtcFactory);
+        });
+
+        inject(function($injector, _$q_, _$rootScope_) {
+          service = $injector.get('easyRTCService');
+          $q = _$q_;
+          $rootScope = _$rootScope_;
+        });
+
+        var conferenceState = {
+          conference: {
+            conference: { _id: 123 }
+          },
+          pushAttendee: function() {},
+          removeAttendee: function() {}
+        };
+        service.connect(conferenceState);
+      });
+
+      it('should create the easyRTC app if the socketIO connection is available', function(done) {
+        var self = this;
+        this.ioSocketConnection.sio = {};
+        this.ioSocketConnection.isConnected = function() {
+          self.ioSocketConnection.addConnectCallback = function(cb) {
+            return done(new Error('I should not be called ' + cb));
           };
-        }
-      };
+          return true;
+        };
+        webrtcObject.easyApp = function() {
+          done();
+        };
+        module(function($provide) {
+          $provide.value('webrtcFactory', webrtcFactory);
+        });
 
-      module(function($provide) {
-        $provide.value('webrtcFactory', webrtcFactory);
+        inject(function($injector, _$q_, _$rootScope_) {
+          service = $injector.get('easyRTCService');
+          $q = _$q_;
+          $rootScope = _$rootScope_;
+        });
+
+        var conferenceState = {
+          conference: {
+            conference: { _id: 123 }
+          },
+          pushAttendee: function() {},
+          removeAttendee: function() {}
+        };
+        service.connect(conferenceState);
+        expect(this.ioSocketConnection.connectCallback).to.be.a('function');
+        this.ioSocketConnection.connectCallback();
       });
+    });
 
-      inject(function($injector, _$q_, _$rootScope_) {
-        service = $injector.get('easyRTCService');
-        $q = _$q_;
-        $rootScope = _$rootScope_;
+    describe('sendDataP2P() method', function() {
+      it('should forward the call to easyrtc.sendDataP2P(), JSON encoding the data', function(done) {
+        var id = 'easyrtcid1', type = 'msgtype1', data = 'data1', service;
+        webrtcObject.sendDataP2P = function(idarg, typearg, dataarg) {
+          expect(idarg).to.equal(id);
+          expect(typearg).to.equal(type);
+          expect(dataarg).to.equal(JSON.stringify(data));
+          done();
+        };
+        module(function($provide) {
+          $provide.value('webrtcFactory', webrtcFactory);
+        });
+        inject(function(easyRTCService) {
+          service = easyRTCService;
+        });
+        service.sendDataP2P(id, type, data);
       });
+    });
 
-      var conferenceState = {
-        conference: {
-          conference: { _id: 123 }
-        },
-        pushAttendee: function() {},
-        removeAttendee: function() {}
-      };
-      service.connect(conferenceState);
-      expect(this.ioSocketConnection.connectCallback).to.be.a('function');
-      this.ioSocketConnection.connectCallback();
+    describe('sendDataWS() method', function() {
+      it('should forward the call to easyrtc.sendDataWS(), JSON encoding the data', function(done) {
+        var id = 'easyrtcid1', type = 'msgtype1', data = 'data1', service;
+        webrtcObject.sendDataWS = function(idarg, typearg, dataarg) {
+          expect(idarg).to.equal(id);
+          expect(typearg).to.equal(type);
+          expect(dataarg).to.equal(JSON.stringify(data));
+          done();
+        };
+        module(function($provide) {
+          $provide.value('webrtcFactory', webrtcFactory);
+        });
+        inject(function(easyRTCService) {
+          service = easyRTCService;
+        });
+        service.sendDataWS(id, type, data);
+      });
+    });
+
+    describe('getP2PConnectionStatus() method', function() {
+      it('should forward the call to easyrtc.getConnectStatus()', function(done) {
+        var id = 'easyrtcid1', service;
+        webrtcObject.getConnectStatus = function(idarg) {
+          expect(idarg).to.equal(id);
+          done();
+        };
+        module(function($provide) {
+          $provide.value('webrtcFactory', webrtcFactory);
+        });
+        inject(function(easyRTCService) {
+          service = easyRTCService;
+        });
+        service.getP2PConnectionStatus(id);
+      });
+    });
+
+    describe('doesDataChannelWork() method', function() {
+      it('should forward the call to easyrtc.doesDataChannelWork()', function(done) {
+        var id = 'easyrtcid1', service;
+        webrtcObject.doesDataChannelWork = function(idarg) {
+          expect(idarg).to.equal(id);
+          done();
+        };
+        module(function($provide) {
+          $provide.value('webrtcFactory', webrtcFactory);
+        });
+        inject(function(easyRTCService) {
+          service = easyRTCService;
+        });
+        service.doesDataChannelWork(id);
+      });
     });
   });
 
