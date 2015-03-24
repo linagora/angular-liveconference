@@ -24,4 +24,7 @@ angular.module('op.live-conference')
     'video-thumb7',
     'video-thumb8'
   ])
-  .constant('AUTO_VIDEO_SWITCH_TIMEOUT', 700);
+  .constant('AUTO_VIDEO_SWITCH_TIMEOUT', 700)
+  .constant('EASYRTC_EVENTS', {
+    attendeeUpdate: 'attendee:update'
+  });

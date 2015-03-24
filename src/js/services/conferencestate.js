@@ -30,15 +30,29 @@ angular.module('op.live-conference')
         })[0] || null;
     };
 
-    ConferenceState.prototype.updateAttendee = function(easyrtcid, id, displayName) {
-      var attendeeToUpdate = this.getAttendeeByEasyrtcid(easyrtcid);
-      if (!attendeeToUpdate) {
+    function updateAttendee(attendee, properties) {
+      if (!attendee) {
         return;
       }
-      attendeeToUpdate.id = id;
-      attendeeToUpdate.displayName = displayName;
+
+      Object.keys(properties).forEach(function(property) {
+        attendee[property] = properties[property];
+      });
+
       $rootScope.$applyAsync();
-      $rootScope.$broadcast('conferencestate:attendees:update', attendeeToUpdate);
+      $rootScope.$broadcast('conferencestate:attendees:update', attendee);
+
+      ['speaking', 'mute'].forEach(function(property) {
+        $rootScope.$broadcast('conferencestate:' + property, (function(o) { o[property] = attendee[property]; return o; })({ id: attendee.easyrtcid }));
+      });
+    }
+
+    ConferenceState.prototype.updateAttendeeByIndex = function(index, properties) {
+      updateAttendee(this.attendees[index], properties);
+    };
+
+    ConferenceState.prototype.updateAttendeeByEasyrtcid = function(easyrtcid, properties) {
+      updateAttendee(this.getAttendeeByEasyrtcid(easyrtcid), properties);
     };
 
     ConferenceState.prototype.pushAttendee = function(index, easyrtcid, id, displayName) {
@@ -69,29 +83,15 @@ angular.module('op.live-conference')
     };
 
     ConferenceState.prototype.updateSpeaking = function(easyrtcid, speaking) {
-      var attendeeToUpdate = this.getAttendeeByEasyrtcid(easyrtcid);
-      if (!attendeeToUpdate) {
-        return;
-      }
-      attendeeToUpdate.speaking = speaking;
-      $rootScope.$applyAsync();
-      $rootScope.$broadcast('conferencestate:speaking', { id: attendeeToUpdate.easyrtcid, speaking: speaking });
+      this.updateAttendeeByEasyrtcid(easyrtcid, { speaking: speaking });
     };
 
     ConferenceState.prototype.updateMuteFromIndex = function(index, mute) {
-      if (this.attendees[index]) {
-        this.attendees[index].mute = mute;
-        $rootScope.$applyAsync();
-      }
+      this.updateAttendeeByIndex(index, { mute: mute });
     };
 
     ConferenceState.prototype.updateMuteFromEasyrtcid = function(easyrtcid, mute) {
-      var attendeeToUpdate = this.getAttendeeByEasyrtcid(easyrtcid);
-      if (!attendeeToUpdate) {
-        return;
-      }
-      attendeeToUpdate.mute = mute;
-      $rootScope.$applyAsync();
+      this.updateAttendeeByEasyrtcid(easyrtcid, { mute: mute });
     };
 
     return ConferenceState;

@@ -3,8 +3,10 @@
 angular.module('op.live-conference')
 
   .factory('easyRTCService', ['$rootScope', '$log', 'webrtcFactory', 'tokenAPI', 'session',
-    'ioSocketConnection', 'ioConnectionManager', '$timeout', 'easyRTCBitRates', 'LOCAL_VIDEO_ID', 'REMOTE_VIDEO_IDS', 'EASYRTC_APPLICATION_NAME',
-    function($rootScope, $log, webrtcFactory, tokenAPI, session, ioSocketConnection, ioConnectionManager, $timeout, easyRTCBitRates, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, EASYRTC_APPLICATION_NAME) {
+    'ioSocketConnection', 'ioConnectionManager', '$timeout', 'easyRTCBitRates', 'currentConferenceState',
+    'LOCAL_VIDEO_ID', 'REMOTE_VIDEO_IDS', 'EASYRTC_APPLICATION_NAME', 'EASYRTC_EVENTS',
+    function($rootScope, $log, webrtcFactory, tokenAPI, session, ioSocketConnection, ioConnectionManager, $timeout, easyRTCBitRates, currentConferenceState,
+             LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, EASYRTC_APPLICATION_NAME, EASYRTC_EVENTS) {
       var easyrtc = webrtcFactory.get();
       easyrtc.enableDataChannels(true);
 
@@ -136,8 +138,9 @@ angular.module('op.live-conference')
               displayName: session.getUsername(),
               mute: conferenceState.attendees[0].mute
             };
-            $log.debug('On datachannel open send %s (%s)', data, 'attendee:initialization');
-            easyrtc.sendData(easyrtcid, 'attendee:initialization', data);
+
+            $log.debug('Data channel open, sending %s event with data: ', EASYRTC_EVENTS.attendeeUpdate, data);
+            easyrtc.sendData(easyrtcid, EASYRTC_EVENTS.attendeeUpdate, data);
           });
 
           easyrtc.setOnHangup(function(easyrtcid, slot) {
@@ -147,15 +150,9 @@ angular.module('op.live-conference')
           });
 
           easyrtc.setPeerListener(function(easyrtcid, msgType, msgData) {
-            $log.debug('UserId and displayName received from %s: %s (%s)', easyrtcid, msgData.id, msgData.displayName);
-            conferenceState.updateAttendee(easyrtcid, msgData.id, msgData.displayName);
-            conferenceState.updateMuteFromEasyrtcid(easyrtcid, msgData.mute);
-          }, 'attendee:initialization');
-
-          easyrtc.setPeerListener(function(easyrtcid, msgType, msgData) {
-            $log.debug('Mute event received from %s: %s (%s)', easyrtcid, msgData);
-            conferenceState.updateMuteFromEasyrtcid(easyrtcid, msgData.mute);
-          }, 'conferencestate:mute');
+            $log.debug('Event %s received from %s with data: ', EASYRTC_EVENTS.attendeeUpdate, easyrtcid, msgData);
+            conferenceState.updateAttendeeByEasyrtcid(easyrtcid, msgData);
+          }, EASYRTC_EVENTS.attendeeUpdate);
         }
 
         if (ioSocketConnection.isConnected()) {
@@ -178,24 +175,6 @@ angular.module('op.live-conference')
         easyrtc.enableVideo(videoMuted);
       }
 
-      function sendPeerMessage(msgType, data) {
-        if (!room) {
-          $log.debug('Did not send message because not in a room.');
-        }
-
-        easyrtc.sendPeerMessage(
-          {targetRoom: room},
-          msgType,
-          data,
-          function(msgType, msgBody) {
-            $log.debug('Peer message was sent to room : ', room);
-          },
-          function(errorCode, errorText) {
-            $log.error('Error sending peer message : ', errorText);
-          }
-        );
-      }
-
       function setPeerListener(handler, msgType) {
         easyrtc.setPeerListener(handler, msgType)
       }
@@ -215,11 +194,16 @@ angular.module('op.live-conference')
 
       function broadcastData(msgType, data) {
         easyrtc.getRoomOccupantsAsArray(room).forEach(function(easyrtcid) {
-          if (easyrtcid === easyrtc.myEasyrtcid) {
+          if (easyrtcid === myEasyrtcid()) {
             return;
           }
+
           easyrtc.sendData(easyrtcid, msgType, data);
         });
+      }
+
+      function broadcastMe() {
+        broadcastData(EASYRTC_EVENTS.attendeeUpdate, currentConferenceState.getAttendeeByEasyrtcid(myEasyrtcid()));
       }
 
       return {
@@ -230,9 +214,9 @@ angular.module('op.live-conference')
         enableCamera: enableCamera,
         enableVideo: enableVideo,
         configureBandwidth: configureBandwidth,
-        sendPeerMessage: sendPeerMessage,
         setPeerListener: setPeerListener,
         myEasyrtcid: myEasyrtcid,
-        broadcastData: broadcastData
+        broadcastData: broadcastData,
+        broadcastMe: broadcastMe
       };
     }]);

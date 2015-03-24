@@ -170,15 +170,17 @@ angular.module('op.live-conference')
 
         $scope.toggleSound = function() {
           easyRTCService.enableMicrophone($scope.muted);
-          $scope.muted = !$scope.muted;
 
+          $scope.muted = !$scope.muted;
           $scope.conferenceState.updateMuteFromIndex(0, $scope.muted);
-          easyRTCService.broadcastData('conferencestate:mute', {mute: $scope.muted});
+
+          easyRTCService.broadcastMe();
         };
 
         $scope.toggleCamera = function() {
           easyRTCService.enableCamera($scope.videoMuted);
           easyRTCService.enableVideo($scope.videoMuted);
+
           $scope.videoMuted = !$scope.videoMuted;
         };
 
@@ -266,14 +268,12 @@ angular.module('op.live-conference')
           detector = null;
         });
         detector.on('speaking', function() {
-          var myEasyrtcid = easyRTCService.myEasyrtcid();
-          easyRTCService.broadcastData('easyrtc:speaking', true);
-          currentConferenceState.updateSpeaking(myEasyrtcid, true);
+          currentConferenceState.updateSpeaking(easyRTCService.myEasyrtcid(), true);
+          easyRTCService.broadcastMe();
         });
         detector.on('stopped_speaking', function() {
-          var myEasyrtcid = easyRTCService.myEasyrtcid();
-          easyRTCService.broadcastData('easyrtc:speaking', false);
-          currentConferenceState.updateSpeaking(myEasyrtcid, false);
+          currentConferenceState.updateSpeaking(easyRTCService.myEasyrtcid(), false);
+          easyRTCService.broadcastMe();
         });
       }
 
@@ -281,19 +281,6 @@ angular.module('op.live-conference')
         unreg();
         createLocalEmitter(stream);
       });
-    }
-
-    return {
-      restrict: 'A',
-      link: link
-    };
-  }])
-  .directive('localSpeakReceiver', ['$log', '$rootScope', 'session', 'currentConferenceState', 'easyRTCService', function($log, $rootScope, session, currentConferenceState, easyRTCService) {
-    function link() {
-      easyRTCService.setPeerListener(function(easyrtcid, msgType, msgData) {
-        $log.debug('Receive message', easyrtcid, msgType, msgData);
-        currentConferenceState.updateSpeaking(easyrtcid, msgData);
-      }, 'easyrtc:speaking');
     }
 
     return {
