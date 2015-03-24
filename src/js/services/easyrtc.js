@@ -193,7 +193,13 @@ angular.module('op.live-conference')
       }
 
       function broadcastData(msgType, data) {
-        easyrtc.getRoomOccupantsAsArray(room).forEach(function(easyrtcid) {
+        var occupants = easyrtc.getRoomOccupantsAsArray(room);
+
+        if (!occupants) {
+          return;
+        }
+
+        occupants.forEach(function(easyrtcid) {
           if (easyrtcid === myEasyrtcid()) {
             return;
           }
