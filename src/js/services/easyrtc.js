@@ -280,6 +280,22 @@ angular.module('op.live-conference')
         broadcastData(EASYRTC_EVENTS.attendeeUpdate, prepareAttendeeForBroadcast(attendee));
       }
 
+      easyrtc.setDataChannelCloseListener(function(easyrtcid) {
+        $log.debug('MEET-255 Data channel closed with ' + easyrtcid);
+      });
+
+      easyrtc.setCallCancelled(function(easyrtcid, explicitlyCancelled) {
+        if(explicitlyCancelled) {
+          $log.debug('MEET-255 ' + easyrtc.idToName(easyrtcid) + ' stopped trying to reach you');
+        } else {
+          $log.debug('MEET-255 Implicitly called '  + easyrtc.idToName(easyrtcid));
+        }
+      });
+
+      easyrtc.setOnStreamClosed(function(easyrtcid, stream, streamName){
+        $log.debug('MEET-255 ' + easyrtc.idToName(easyrtcid) + ' closed stream ' + stream.id + ' ' + streamName);
+      });
+
       return {
         leaveRoom: leaveRoom,
         performCall: performCall,
