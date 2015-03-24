@@ -395,7 +395,7 @@ angular.module('op.live-conference')
     };
   })
 
-  .directive('conferenceUserVideo', ['$modal', 'matchmedia', 'LOCAL_VIDEO_ID', function($modal, matchmedia, LOCAL_VIDEO_ID) {
+  .directive('conferenceUserVideo', ['$modal', 'currentConferenceState', 'matchmedia', 'LOCAL_VIDEO_ID', function($modal, currentConferenceState, matchmedia, LOCAL_VIDEO_ID) {
     return {
       restrict: 'E',
       replace: true,
@@ -416,7 +416,7 @@ angular.module('op.live-conference')
         });
 
         scope.onMobileToggleControls = function() {
-          if (scope.mainVideoId === LOCAL_VIDEO_ID) {
+          if (currentConferenceState.localVideoId === LOCAL_VIDEO_ID) {
             return;
           }
           modal.$promise.then(modal.toggle);
