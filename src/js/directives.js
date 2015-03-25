@@ -297,12 +297,6 @@ angular.module('op.live-conference')
       link: link
     };
   }])
-  .directive('conferenceSpeakViewer', [ function() {
-    return {
-      restrict: 'E',
-      templateUrl: 'templates/conference-speak-viewer.jade'
-    };
-  }])
   .directive('autoVideoSwitcher', ['$rootScope', 'AutoVideoSwitcher', 'currentConferenceState', function($rootScope, AutoVideoSwitcher, currentConferenceState) {
     return {
       restrict: 'A',
