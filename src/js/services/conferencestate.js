@@ -49,6 +49,12 @@ angular.module('op.live-conference')
         return;
       }
 
+      var oldProperties = {
+        speaking: attendee.speaking,
+        mute: attendee.mute,
+        muteVideo: attendee.muteVideo
+      };
+
       Object.keys(properties).forEach(function(property) {
         attendee[property] = properties[property];
       });
@@ -56,8 +62,10 @@ angular.module('op.live-conference')
       $rootScope.$applyAsync();
       $rootScope.$broadcast('conferencestate:attendees:update', attendee);
 
-      ['speaking', 'mute', 'muteVideo'].forEach(function(property) {
-        $rootScope.$broadcast('conferencestate:' + property, (function(o) { o[property] = attendee[property]; return o; })({ id: attendee.easyrtcid }));
+      Object.keys(oldProperties).forEach(function(property) {
+        if (oldProperties[property] !== attendee[property]) {
+          $rootScope.$broadcast('conferencestate:' + property, (function(o) { o[property] = attendee[property]; return o; })({ id: attendee.easyrtcid }));
+        }
       });
     }
 
