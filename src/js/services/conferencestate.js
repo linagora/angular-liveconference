@@ -6,7 +6,13 @@ angular.module('op.live-conference')
     return new ConferenceState(session.conference);
   }])
 
-  .factory('ConferenceState', ['$rootScope', 'LOCAL_VIDEO_ID', 'REMOTE_VIDEO_IDS', function($rootScope, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS) {
+  .factory('newImage', [function() {
+    return function() {
+      return new Image();
+    };
+  }])
+
+  .factory('ConferenceState', ['$rootScope', 'LOCAL_VIDEO_ID', 'REMOTE_VIDEO_IDS', 'newImage', function($rootScope, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, newImage) {
     /*
      * Store a snapshot of current conference status and an array of attendees describing
      * current visible attendees of the conference by their index as position.
@@ -15,6 +21,7 @@ angular.module('op.live-conference')
      *   id:
      *   easyrtcid:
      *   displayName:
+     *   avatar:
      * }]
      */
     function ConferenceState(conference) {
@@ -22,6 +29,7 @@ angular.module('op.live-conference')
       this.attendees = [];
       this.localVideoId = LOCAL_VIDEO_ID;
       this.videoIds = [LOCAL_VIDEO_ID].concat(REMOTE_VIDEO_IDS);
+      this.avatarCache = [];
     }
 
     ConferenceState.prototype.getAttendeeByEasyrtcid = function(easyrtcid) {
@@ -30,23 +38,54 @@ angular.module('op.live-conference')
         })[0] || null;
     };
 
-    ConferenceState.prototype.updateAttendee = function(easyrtcid, id, displayName) {
-      var attendeeToUpdate = this.getAttendeeByEasyrtcid(easyrtcid);
-      if (!attendeeToUpdate) {
+    ConferenceState.prototype.getAttendeeByVideoId = function(videoId) {
+      return this.attendees.filter(function(attendee) {
+          return attendee && attendee.videoId === videoId;
+        })[0] || null;
+    };
+
+    function updateAttendee(attendee, properties) {
+      if (!attendee) {
         return;
       }
-      attendeeToUpdate.id = id;
-      attendeeToUpdate.displayName = displayName;
+
+      var oldProperties = {
+        speaking: attendee.speaking,
+        mute: attendee.mute,
+        muteVideo: attendee.muteVideo
+      };
+
+      Object.keys(properties).forEach(function(property) {
+        attendee[property] = properties[property];
+      });
+
       $rootScope.$applyAsync();
-      $rootScope.$broadcast('conferencestate:attendees:update', attendeeToUpdate);
+      $rootScope.$broadcast('conferencestate:attendees:update', attendee);
+
+      Object.keys(oldProperties).forEach(function(property) {
+        if (oldProperties[property] !== attendee[property]) {
+          $rootScope.$broadcast('conferencestate:' + property, (function(o) { o[property] = attendee[property]; return o; })({ id: attendee.easyrtcid }));
+        }
+      });
+    }
+
+    ConferenceState.prototype.updateAttendeeByIndex = function(index, properties) {
+      updateAttendee(this.attendees[index], properties);
+    };
+
+    ConferenceState.prototype.updateAttendeeByEasyrtcid = function(easyrtcid, properties) {
+      updateAttendee(this.getAttendeeByEasyrtcid(easyrtcid), properties);
     };
 
     ConferenceState.prototype.pushAttendee = function(index, easyrtcid, id, displayName) {
       var attendee = {
-        videoIds: this.videoIds[index],
+        index: index,
+        videoId: this.videoIds[index],
         id: id,
         easyrtcid: easyrtcid,
-        displayName: displayName
+        displayName: displayName,
+        // This needs to be served by the webapp embedding angular-liveconference
+        avatar: '/images/avatar/default.png'
       };
       this.attendees[index] = attendee;
       $rootScope.$broadcast('conferencestate:attendees:push', attendee);
@@ -55,6 +94,7 @@ angular.module('op.live-conference')
     ConferenceState.prototype.removeAttendee = function(index) {
       var attendee = this.attendees[index];
       this.attendees[index] = null;
+      this.avatarCache[index] = null;
       $rootScope.$broadcast('conferencestate:attendees:remove', attendee);
     };
 
@@ -69,29 +109,43 @@ angular.module('op.live-conference')
     };
 
     ConferenceState.prototype.updateSpeaking = function(easyrtcid, speaking) {
-      var attendeeToUpdate = this.getAttendeeByEasyrtcid(easyrtcid);
-      if (!attendeeToUpdate) {
-        return;
-      }
-      attendeeToUpdate.speaking = speaking;
-      $rootScope.$applyAsync();
-      $rootScope.$broadcast('conferencestate:speaking', { id: attendeeToUpdate.easyrtcid, speaking: speaking });
+      this.updateAttendeeByEasyrtcid(easyrtcid, { speaking: speaking });
     };
 
     ConferenceState.prototype.updateMuteFromIndex = function(index, mute) {
-      if (this.attendees[index]) {
-        this.attendees[index].mute = mute;
-        $rootScope.$applyAsync();
-      }
+      this.updateAttendeeByIndex(index, { mute: mute });
     };
 
     ConferenceState.prototype.updateMuteFromEasyrtcid = function(easyrtcid, mute) {
-      var attendeeToUpdate = this.getAttendeeByEasyrtcid(easyrtcid);
-      if (!attendeeToUpdate) {
-        return;
+      this.updateAttendeeByEasyrtcid(easyrtcid, { mute: mute });
+    };
+
+    ConferenceState.prototype.updateMuteVideoFromIndex = function(index, mute) {
+      this.updateAttendeeByIndex(index, { muteVideo: mute });
+    };
+
+    ConferenceState.prototype.updateMuteVideoFromEasyrtcid = function(easyrtcid, mute) {
+      this.updateAttendeeByEasyrtcid(easyrtcid, { muteVideo: mute });
+    };
+
+    ConferenceState.prototype.getAvatarImageByIndex = function(index, callback) {
+      var attendee = this.attendees[index];
+
+      if (!attendee) {
+        return callback(new Error('No attendee at index ' + index));
       }
-      attendeeToUpdate.mute = mute;
-      $rootScope.$applyAsync();
+
+      if (!this.avatarCache[index]) {
+        var self = this;
+
+        this.avatarCache[index] = newImage();
+        this.avatarCache[index].src = attendee.avatar;
+        this.avatarCache[index].onload = function() {
+          callback(null, self.avatarCache[index]);
+        };
+      } else {
+        callback(null, this.avatarCache[index]);
+      }
     };
 
     return ConferenceState;

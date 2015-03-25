@@ -20,8 +20,8 @@ describe('The speech module', function() {
         getAttendeeByEasyrtcid: function(data) {
           return getAttendeeByEasyrtcidSpy(data);
         },
-        updateLocalVideoId: function(videoIds) {
-          return updateLocalVideoIdSpy(videoIds);
+        updateLocalVideoId: function(videoId) {
+          return updateLocalVideoIdSpy(videoId);
         },
         localVideoId: 'video-thumb1'
       };
@@ -75,10 +75,10 @@ describe('The speech module', function() {
         throw new Error('should not be here');
       });
 
-      it('should do nothing if member.videoIds is LOCAL_VIDEO_ID', function(done) {
+      it('should do nothing if member.videoId is LOCAL_VIDEO_ID', function(done) {
         getAttendeeByEasyrtcidSpy = function() {
           return {
-            videoIds: 'video-thumb0'
+            videoId: 'video-thumb0'
           };
         };
 
@@ -96,7 +96,7 @@ describe('The speech module', function() {
         getAttendeeByEasyrtcidSpy = function() {
           return {
             mute: true,
-            videoIds: 'video-thumb2'
+            videoId: 'video-thumb2'
           };
         };
 
@@ -110,10 +110,10 @@ describe('The speech module', function() {
         throw new Error('should not be here');
       });
 
-      it('should do nothing if member.videoIds is current localVideoId', function(done) {
+      it('should do nothing if member.videoId is current localVideoId', function(done) {
         getAttendeeByEasyrtcidSpy = function() {
           return {
-            videoIds: 'video-thumb1'
+            videoId: 'video-thumb1'
           };
         };
 
@@ -130,13 +130,13 @@ describe('The speech module', function() {
       it('should add a new entry to timeouts and call updateLocalVideoId after timeout', function() {
         getAttendeeByEasyrtcidSpy = function() {
           return {
-            videoIds: 'video-thumb2',
+            videoId: 'video-thumb2',
             easyrtcid: 'easyrtcid'
           };
         };
 
-        updateLocalVideoIdSpy = function(videoIds) {
-          autoVideoSwitchService.conferenceState.localVideoId = videoIds;
+        updateLocalVideoIdSpy = function(videoId) {
+          autoVideoSwitchService.conferenceState.localVideoId = videoId;
         };
 
         $rootScope.$broadcast('conferencestate:speaking', {speaking: true} );
@@ -149,13 +149,13 @@ describe('The speech module', function() {
       it('should add only 1 timeout even avec several broadcast', function() {
         getAttendeeByEasyrtcidSpy = function() {
           return {
-            videoIds: 'video-thumb2',
+            videoId: 'video-thumb2',
             easyrtcid: 'easyrtcid'
           };
         };
 
-        updateLocalVideoIdSpy = function(videoIds) {
-          autoVideoSwitchService.conferenceState.localVideoId = videoIds;
+        updateLocalVideoIdSpy = function(videoId) {
+          autoVideoSwitchService.conferenceState.localVideoId = videoId;
         };
 
         $rootScope.$broadcast('conferencestate:speaking', {speaking: true} );
@@ -193,13 +193,13 @@ describe('The speech module', function() {
         });
       });
 
-      it('should do nothing if member.videoIds is LOCAL_VIDEO_ID', function() {
+      it('should do nothing if member.videoId is LOCAL_VIDEO_ID', function() {
         autoVideoSwitchService.timeouts.bar = ['fake'];
         autoVideoSwitchService.timeouts.foo = ['fake'];
         getAttendeeByEasyrtcidSpy = function() {
           return {
             easyrtcid: 'foo',
-            videoIds: 'video-thumb0'
+            videoId: 'video-thumb0'
           };
         };
 
@@ -216,7 +216,7 @@ describe('The speech module', function() {
         getAttendeeByEasyrtcidSpy = function() {
           return {
             easyrtcid: 'foo',
-            videoIds: 'video-thumb1'
+            videoId: 'video-thumb1'
           };
         };
 

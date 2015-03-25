@@ -170,16 +170,21 @@ angular.module('op.live-conference')
 
         $scope.toggleSound = function() {
           easyRTCService.enableMicrophone($scope.muted);
-          $scope.muted = !$scope.muted;
 
+          $scope.muted = !$scope.muted;
           $scope.conferenceState.updateMuteFromIndex(0, $scope.muted);
-          easyRTCService.broadcastData('conferencestate:mute', {mute: $scope.muted});
+
+          easyRTCService.broadcastMe();
         };
 
         $scope.toggleCamera = function() {
           easyRTCService.enableCamera($scope.videoMuted);
           easyRTCService.enableVideo($scope.videoMuted);
+
           $scope.videoMuted = !$scope.videoMuted;
+          $scope.conferenceState.updateMuteVideoFromIndex(0, $scope.videoMuted);
+
+          easyRTCService.broadcastMe();
         };
 
         $scope.showInvitationPanel = function() {
@@ -192,7 +197,8 @@ angular.module('op.live-conference')
       }
     };
   })
-  .directive('scaleToCanvas', ['$interval', '$window', 'cropDimensions', function($interval, $window, cropDimensions) {
+  .directive('scaleToCanvas', ['$interval', '$window', 'cropDimensions', 'drawAvatarIfVideoMuted', '$log',
+    function($interval, $window, cropDimensions, drawAvatarIfVideoMuted, $log) {
 
     var requestAnimationFrame =
       $window.requestAnimationFrame ||
@@ -214,11 +220,16 @@ angular.module('op.live-conference')
             height = canvas.height,
             vHeight = vid.videoHeight,
             vWidth = vid.videoWidth;
+
         if (!height || !width || !vHeight || !vWidth) {
           return;
         }
-        var cropDims = cropDimensions(width, height, vWidth, vHeight);
-        ctx.drawImage(vid, cropDims[0], cropDims[1], cropDims[2], cropDims[2], 0, 0, width, height);
+
+        drawAvatarIfVideoMuted(vid.id, ctx, width, height, function() {
+          var cropDims = cropDimensions(width, height, vWidth, vHeight);
+
+          ctx.drawImage(vid, cropDims[0], cropDims[1], cropDims[2], cropDims[2], 0, 0, width, height);
+        });
       }
 
       $interval(function cacheWidgets() {
@@ -266,14 +277,12 @@ angular.module('op.live-conference')
           detector = null;
         });
         detector.on('speaking', function() {
-          var myEasyrtcid = easyRTCService.myEasyrtcid();
-          easyRTCService.broadcastData('easyrtc:speaking', true);
-          currentConferenceState.updateSpeaking(myEasyrtcid, true);
+          currentConferenceState.updateSpeaking(easyRTCService.myEasyrtcid(), true);
+          easyRTCService.broadcastMe();
         });
         detector.on('stopped_speaking', function() {
-          var myEasyrtcid = easyRTCService.myEasyrtcid();
-          easyRTCService.broadcastData('easyrtc:speaking', false);
-          currentConferenceState.updateSpeaking(myEasyrtcid, false);
+          currentConferenceState.updateSpeaking(easyRTCService.myEasyrtcid(), false);
+          easyRTCService.broadcastMe();
         });
       }
 
@@ -281,19 +290,6 @@ angular.module('op.live-conference')
         unreg();
         createLocalEmitter(stream);
       });
-    }
-
-    return {
-      restrict: 'A',
-      link: link
-    };
-  }])
-  .directive('localSpeakReceiver', ['$log', '$rootScope', 'session', 'currentConferenceState', 'easyRTCService', function($log, $rootScope, session, currentConferenceState, easyRTCService) {
-    function link() {
-      easyRTCService.setPeerListener(function(easyrtcid, msgType, msgData) {
-        $log.debug('Receive message', easyrtcid, msgType, msgData);
-        currentConferenceState.updateSpeaking(easyrtcid, msgData);
-      }, 'easyrtc:speaking');
     }
 
     return {

@@ -2,7 +2,7 @@
 
 angular.module('op.live-conference')
 
-  .factory('drawVideo', function($rootScope, $window, $interval) {
+  .factory('drawVideo', ['$window', '$interval', 'drawAvatarIfVideoMuted', function($window, $interval, drawAvatarIfVideoMuted) {
     var requestAnimationFrame =
       $window.requestAnimationFrame ||
       $window.mozRequestAnimationFrame ||
@@ -17,7 +17,9 @@ angular.module('op.live-conference')
       // Sometimes Firefox drawImage before it is even available.
       // Thus we ignore this error.
       try {
-        context.drawImage(video, 0, 0, width, height);
+        drawAvatarIfVideoMuted(video.id, context, width, height, function() {
+          context.drawImage(video, 0, 0, width, height);
+        });
       } catch (e) {
         if (e.name !== 'NS_ERROR_NOT_AVAILABLE') {
           throw e;
@@ -43,7 +45,7 @@ angular.module('op.live-conference')
 
       return stopCurrentAnimation;
     };
-  })
+  }])
   .factory('cropDimensions', function() {
     var valuesCache = {};
 
@@ -85,4 +87,54 @@ angular.module('op.live-conference')
 
     return cropDimensions;
 
-  });
+  })
+
+  .factory('getCoordinatesOfCenteredImage', function() {
+    return function(width, height, childSize) {
+      var scale = Math.min(Math.min(width, height) / childSize, 1);
+
+      return {
+        x: (width - childSize * scale) / 2,
+        y: (height - childSize * scale) / 2,
+        size: childSize * scale
+      };
+    };
+  })
+
+  .factory('drawAvatarIfVideoMuted', ['currentConferenceState', 'attendeeColorsService', 'getCoordinatesOfCenteredImage', '$log',
+    function(currentConferenceState, attendeeColorsService, getCoordinatesOfCenteredImage, $log) {
+    return function(videoId, context, width, height, otherwise) {
+      var attendee = currentConferenceState.getAttendeeByVideoId(videoId);
+
+      if (!attendee) {
+        return;
+      }
+
+      var canvas = context.canvas;
+
+      if (attendee.muteVideo) {
+        if (canvas.drawnAvatarVideoId === videoId) {
+          return;
+        }
+
+        currentConferenceState.getAvatarImageByIndex(attendee.index, function(err, image) {
+          if (err) {
+            return $log.error('Failed to get avatar image for attendee with videoId %s: ', videoId, err);
+          }
+
+          var coords = getCoordinatesOfCenteredImage(width, height, image.width);
+
+          context.clearRect(0, 0, width, height);
+          context.fillStyle = attendeeColorsService.getColorForAttendeeAtIndex(attendee.index);
+          context.fillRect(coords.x, coords.y, coords.size, coords.size);
+          context.drawImage(image, coords.x, coords.y, coords.size, coords.size);
+
+          canvas.drawnAvatarVideoId = videoId;
+        });
+      } else {
+        otherwise(videoId, context, width, height);
+        canvas.drawnAvatarVideoId = null;
+      }
+    };
+  }]);
+

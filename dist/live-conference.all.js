@@ -287,6 +287,7 @@ angular.module('op.live-conference')
     nolimit: null
   })
   .constant('EASYRTC_APPLICATION_NAME', 'LiveConference')
+  .constant('MAX_ATTENDEES', 9)
   .constant('LOCAL_VIDEO_ID', 'video-thumb0')
   .constant('REMOTE_VIDEO_IDS', [
     'video-thumb1',
@@ -298,7 +299,10 @@ angular.module('op.live-conference')
     'video-thumb7',
     'video-thumb8'
   ])
-  .constant('AUTO_VIDEO_SWITCH_TIMEOUT', 700);
+  .constant('AUTO_VIDEO_SWITCH_TIMEOUT', 700)
+  .constant('EASYRTC_EVENTS', {
+    attendeeUpdate: 'attendee:update'
+  });
 'use strict';
 
 angular.module('op.live-conference')
@@ -471,16 +475,21 @@ angular.module('op.live-conference')
 
         $scope.toggleSound = function() {
           easyRTCService.enableMicrophone($scope.muted);
-          $scope.muted = !$scope.muted;
 
+          $scope.muted = !$scope.muted;
           $scope.conferenceState.updateMuteFromIndex(0, $scope.muted);
-          easyRTCService.broadcastData('conferencestate:mute', {mute: $scope.muted});
+
+          easyRTCService.broadcastMe();
         };
 
         $scope.toggleCamera = function() {
           easyRTCService.enableCamera($scope.videoMuted);
           easyRTCService.enableVideo($scope.videoMuted);
+
           $scope.videoMuted = !$scope.videoMuted;
+          $scope.conferenceState.updateMuteVideoFromIndex(0, $scope.videoMuted);
+
+          easyRTCService.broadcastMe();
         };
 
         $scope.showInvitationPanel = function() {
@@ -493,7 +502,8 @@ angular.module('op.live-conference')
       }
     };
   })
-  .directive('scaleToCanvas', ['$interval', '$window', 'cropDimensions', function($interval, $window, cropDimensions) {
+  .directive('scaleToCanvas', ['$interval', '$window', 'cropDimensions', 'drawAvatarIfVideoMuted', '$log',
+    function($interval, $window, cropDimensions, drawAvatarIfVideoMuted, $log) {
 
     var requestAnimationFrame =
       $window.requestAnimationFrame ||
@@ -515,11 +525,16 @@ angular.module('op.live-conference')
             height = canvas.height,
             vHeight = vid.videoHeight,
             vWidth = vid.videoWidth;
+
         if (!height || !width || !vHeight || !vWidth) {
           return;
         }
-        var cropDims = cropDimensions(width, height, vWidth, vHeight);
-        ctx.drawImage(vid, cropDims[0], cropDims[1], cropDims[2], cropDims[2], 0, 0, width, height);
+
+        drawAvatarIfVideoMuted(vid.id, ctx, width, height, function() {
+          var cropDims = cropDimensions(width, height, vWidth, vHeight);
+
+          ctx.drawImage(vid, cropDims[0], cropDims[1], cropDims[2], cropDims[2], 0, 0, width, height);
+        });
       }
 
       $interval(function cacheWidgets() {
@@ -567,14 +582,12 @@ angular.module('op.live-conference')
           detector = null;
         });
         detector.on('speaking', function() {
-          var myEasyrtcid = easyRTCService.myEasyrtcid();
-          easyRTCService.broadcastData('easyrtc:speaking', true);
-          currentConferenceState.updateSpeaking(myEasyrtcid, true);
+          currentConferenceState.updateSpeaking(easyRTCService.myEasyrtcid(), true);
+          easyRTCService.broadcastMe();
         });
         detector.on('stopped_speaking', function() {
-          var myEasyrtcid = easyRTCService.myEasyrtcid();
-          easyRTCService.broadcastData('easyrtc:speaking', false);
-          currentConferenceState.updateSpeaking(myEasyrtcid, false);
+          currentConferenceState.updateSpeaking(easyRTCService.myEasyrtcid(), false);
+          easyRTCService.broadcastMe();
         });
       }
 
@@ -582,19 +595,6 @@ angular.module('op.live-conference')
         unreg();
         createLocalEmitter(stream);
       });
-    }
-
-    return {
-      restrict: 'A',
-      link: link
-    };
-  }])
-  .directive('localSpeakReceiver', ['$log', '$rootScope', 'session', 'currentConferenceState', 'easyRTCService', function($log, $rootScope, session, currentConferenceState, easyRTCService) {
-    function link() {
-      easyRTCService.setPeerListener(function(easyrtcid, msgType, msgData) {
-        $log.debug('Receive message', easyrtcid, msgType, msgData);
-        currentConferenceState.updateSpeaking(easyrtcid, msgData);
-      }, 'easyrtc:speaking');
     }
 
     return {
@@ -622,12 +622,42 @@ angular.module('op.live-conference')
 'use strict';
 
 angular.module('op.live-conference')
+  .factory('attendeeColorsService', ['MAX_ATTENDEES', function(MAX_ATTENDEES) {
+    var colors = [
+      '#F44336',
+      '#9C27B0',
+      '#673AB7',
+      '#2196F3',
+      '#00968',
+      '#CDDC39',
+      '#FFEB3B',
+      '#FF9800',
+      '#4CAF50'
+    ];
+
+    function getColorForAttendeeAtIndex(index) {
+      return colors[index % MAX_ATTENDEES];
+    }
+
+    return {
+      getColorForAttendeeAtIndex: getColorForAttendeeAtIndex
+    };
+  }]);
+'use strict';
+
+angular.module('op.live-conference')
 
   .factory('currentConferenceState', ['session', 'ConferenceState', function(session, ConferenceState) {
     return new ConferenceState(session.conference);
   }])
 
-  .factory('ConferenceState', ['$rootScope', 'LOCAL_VIDEO_ID', 'REMOTE_VIDEO_IDS', function($rootScope, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS) {
+  .factory('newImage', [function() {
+    return function() {
+      return new Image();
+    };
+  }])
+
+  .factory('ConferenceState', ['$rootScope', 'LOCAL_VIDEO_ID', 'REMOTE_VIDEO_IDS', 'newImage', function($rootScope, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, newImage) {
     /*
      * Store a snapshot of current conference status and an array of attendees describing
      * current visible attendees of the conference by their index as position.
@@ -636,6 +666,7 @@ angular.module('op.live-conference')
      *   id:
      *   easyrtcid:
      *   displayName:
+     *   avatar:
      * }]
      */
     function ConferenceState(conference) {
@@ -643,6 +674,7 @@ angular.module('op.live-conference')
       this.attendees = [];
       this.localVideoId = LOCAL_VIDEO_ID;
       this.videoIds = [LOCAL_VIDEO_ID].concat(REMOTE_VIDEO_IDS);
+      this.avatarCache = [];
     }
 
     ConferenceState.prototype.getAttendeeByEasyrtcid = function(easyrtcid) {
@@ -651,23 +683,54 @@ angular.module('op.live-conference')
         })[0] || null;
     };
 
-    ConferenceState.prototype.updateAttendee = function(easyrtcid, id, displayName) {
-      var attendeeToUpdate = this.getAttendeeByEasyrtcid(easyrtcid);
-      if (!attendeeToUpdate) {
+    ConferenceState.prototype.getAttendeeByVideoId = function(videoId) {
+      return this.attendees.filter(function(attendee) {
+          return attendee && attendee.videoId === videoId;
+        })[0] || null;
+    };
+
+    function updateAttendee(attendee, properties) {
+      if (!attendee) {
         return;
       }
-      attendeeToUpdate.id = id;
-      attendeeToUpdate.displayName = displayName;
+
+      var oldProperties = {
+        speaking: attendee.speaking,
+        mute: attendee.mute,
+        muteVideo: attendee.muteVideo
+      };
+
+      Object.keys(properties).forEach(function(property) {
+        attendee[property] = properties[property];
+      });
+
       $rootScope.$applyAsync();
-      $rootScope.$broadcast('conferencestate:attendees:update', attendeeToUpdate);
+      $rootScope.$broadcast('conferencestate:attendees:update', attendee);
+
+      Object.keys(oldProperties).forEach(function(property) {
+        if (oldProperties[property] !== attendee[property]) {
+          $rootScope.$broadcast('conferencestate:' + property, (function(o) { o[property] = attendee[property]; return o; })({ id: attendee.easyrtcid }));
+        }
+      });
+    }
+
+    ConferenceState.prototype.updateAttendeeByIndex = function(index, properties) {
+      updateAttendee(this.attendees[index], properties);
+    };
+
+    ConferenceState.prototype.updateAttendeeByEasyrtcid = function(easyrtcid, properties) {
+      updateAttendee(this.getAttendeeByEasyrtcid(easyrtcid), properties);
     };
 
     ConferenceState.prototype.pushAttendee = function(index, easyrtcid, id, displayName) {
       var attendee = {
-        videoIds: this.videoIds[index],
+        index: index,
+        videoId: this.videoIds[index],
         id: id,
         easyrtcid: easyrtcid,
-        displayName: displayName
+        displayName: displayName,
+        // This needs to be served by the webapp embedding angular-liveconference
+        avatar: '/images/avatar/default.png'
       };
       this.attendees[index] = attendee;
       $rootScope.$broadcast('conferencestate:attendees:push', attendee);
@@ -676,6 +739,7 @@ angular.module('op.live-conference')
     ConferenceState.prototype.removeAttendee = function(index) {
       var attendee = this.attendees[index];
       this.attendees[index] = null;
+      this.avatarCache[index] = null;
       $rootScope.$broadcast('conferencestate:attendees:remove', attendee);
     };
 
@@ -690,29 +754,43 @@ angular.module('op.live-conference')
     };
 
     ConferenceState.prototype.updateSpeaking = function(easyrtcid, speaking) {
-      var attendeeToUpdate = this.getAttendeeByEasyrtcid(easyrtcid);
-      if (!attendeeToUpdate) {
-        return;
-      }
-      attendeeToUpdate.speaking = speaking;
-      $rootScope.$applyAsync();
-      $rootScope.$broadcast('conferencestate:speaking', { id: attendeeToUpdate.easyrtcid, speaking: speaking });
+      this.updateAttendeeByEasyrtcid(easyrtcid, { speaking: speaking });
     };
 
     ConferenceState.prototype.updateMuteFromIndex = function(index, mute) {
-      if (this.attendees[index]) {
-        this.attendees[index].mute = mute;
-        $rootScope.$applyAsync();
-      }
+      this.updateAttendeeByIndex(index, { mute: mute });
     };
 
     ConferenceState.prototype.updateMuteFromEasyrtcid = function(easyrtcid, mute) {
-      var attendeeToUpdate = this.getAttendeeByEasyrtcid(easyrtcid);
-      if (!attendeeToUpdate) {
-        return;
+      this.updateAttendeeByEasyrtcid(easyrtcid, { mute: mute });
+    };
+
+    ConferenceState.prototype.updateMuteVideoFromIndex = function(index, mute) {
+      this.updateAttendeeByIndex(index, { muteVideo: mute });
+    };
+
+    ConferenceState.prototype.updateMuteVideoFromEasyrtcid = function(easyrtcid, mute) {
+      this.updateAttendeeByEasyrtcid(easyrtcid, { muteVideo: mute });
+    };
+
+    ConferenceState.prototype.getAvatarImageByIndex = function(index, callback) {
+      var attendee = this.attendees[index];
+
+      if (!attendee) {
+        return callback(new Error('No attendee at index ' + index));
       }
-      attendeeToUpdate.mute = mute;
-      $rootScope.$applyAsync();
+
+      if (!this.avatarCache[index]) {
+        var self = this;
+
+        this.avatarCache[index] = newImage();
+        this.avatarCache[index].src = attendee.avatar;
+        this.avatarCache[index].onload = function() {
+          callback(null, self.avatarCache[index]);
+        };
+      } else {
+        callback(null, this.avatarCache[index]);
+      }
     };
 
     return ConferenceState;
@@ -721,7 +799,7 @@ angular.module('op.live-conference')
 
 angular.module('op.live-conference')
 
-  .factory('drawVideo', function($rootScope, $window, $interval) {
+  .factory('drawVideo', ['$window', '$interval', 'drawAvatarIfVideoMuted', function($window, $interval, drawAvatarIfVideoMuted) {
     var requestAnimationFrame =
       $window.requestAnimationFrame ||
       $window.mozRequestAnimationFrame ||
@@ -736,7 +814,9 @@ angular.module('op.live-conference')
       // Sometimes Firefox drawImage before it is even available.
       // Thus we ignore this error.
       try {
-        context.drawImage(video, 0, 0, width, height);
+        drawAvatarIfVideoMuted(video.id, context, width, height, function() {
+          context.drawImage(video, 0, 0, width, height);
+        });
       } catch (e) {
         if (e.name !== 'NS_ERROR_NOT_AVAILABLE') {
           throw e;
@@ -762,7 +842,7 @@ angular.module('op.live-conference')
 
       return stopCurrentAnimation;
     };
-  })
+  }])
   .factory('cropDimensions', function() {
     var valuesCache = {};
 
@@ -804,14 +884,66 @@ angular.module('op.live-conference')
 
     return cropDimensions;
 
-  });
+  })
+
+  .factory('getCoordinatesOfCenteredImage', function() {
+    return function(width, height, childSize) {
+      var scale = Math.min(Math.min(width, height) / childSize, 1);
+
+      return {
+        x: (width - childSize * scale) / 2,
+        y: (height - childSize * scale) / 2,
+        size: childSize * scale
+      };
+    };
+  })
+
+  .factory('drawAvatarIfVideoMuted', ['currentConferenceState', 'attendeeColorsService', 'getCoordinatesOfCenteredImage', '$log',
+    function(currentConferenceState, attendeeColorsService, getCoordinatesOfCenteredImage, $log) {
+    return function(videoId, context, width, height, otherwise) {
+      var attendee = currentConferenceState.getAttendeeByVideoId(videoId);
+
+      if (!attendee) {
+        return;
+      }
+
+      var canvas = context.canvas;
+
+      if (attendee.muteVideo) {
+        if (canvas.drawnAvatarVideoId === videoId) {
+          return;
+        }
+
+        currentConferenceState.getAvatarImageByIndex(attendee.index, function(err, image) {
+          if (err) {
+            return $log.error('Failed to get avatar image for attendee with videoId %s: ', videoId, err);
+          }
+
+          var coords = getCoordinatesOfCenteredImage(width, height, image.width);
+
+          context.clearRect(0, 0, width, height);
+          context.fillStyle = attendeeColorsService.getColorForAttendeeAtIndex(attendee.index);
+          context.fillRect(coords.x, coords.y, coords.size, coords.size);
+          context.drawImage(image, coords.x, coords.y, coords.size, coords.size);
+
+          canvas.drawnAvatarVideoId = videoId;
+        });
+      } else {
+        otherwise(videoId, context, width, height);
+        canvas.drawnAvatarVideoId = null;
+      }
+    };
+  }]);
+
 'use strict';
 
 angular.module('op.live-conference')
 
   .factory('easyRTCService', ['$rootScope', '$log', 'webrtcFactory', 'tokenAPI', 'session',
-    'ioSocketConnection', 'ioConnectionManager', '$timeout', 'easyRTCBitRates', 'LOCAL_VIDEO_ID', 'REMOTE_VIDEO_IDS', 'EASYRTC_APPLICATION_NAME',
-    function($rootScope, $log, webrtcFactory, tokenAPI, session, ioSocketConnection, ioConnectionManager, $timeout, easyRTCBitRates, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, EASYRTC_APPLICATION_NAME) {
+    'ioSocketConnection', 'ioConnectionManager', '$timeout', 'easyRTCBitRates', 'currentConferenceState',
+    'LOCAL_VIDEO_ID', 'REMOTE_VIDEO_IDS', 'EASYRTC_APPLICATION_NAME', 'EASYRTC_EVENTS',
+    function($rootScope, $log, webrtcFactory, tokenAPI, session, ioSocketConnection, ioConnectionManager, $timeout, easyRTCBitRates, currentConferenceState,
+             LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, EASYRTC_APPLICATION_NAME, EASYRTC_EVENTS) {
       var easyrtc = webrtcFactory.get();
       easyrtc.enableDataChannels(true);
 
@@ -943,8 +1075,9 @@ angular.module('op.live-conference')
               displayName: session.getUsername(),
               mute: conferenceState.attendees[0].mute
             };
-            $log.debug('On datachannel open send %s (%s)', data, 'attendee:initialization');
-            easyrtc.sendData(easyrtcid, 'attendee:initialization', data);
+
+            $log.debug('Data channel open, sending %s event with data: ', EASYRTC_EVENTS.attendeeUpdate, data);
+            easyrtc.sendData(easyrtcid, EASYRTC_EVENTS.attendeeUpdate, data);
           });
 
           easyrtc.setOnHangup(function(easyrtcid, slot) {
@@ -954,15 +1087,9 @@ angular.module('op.live-conference')
           });
 
           easyrtc.setPeerListener(function(easyrtcid, msgType, msgData) {
-            $log.debug('UserId and displayName received from %s: %s (%s)', easyrtcid, msgData.id, msgData.displayName);
-            conferenceState.updateAttendee(easyrtcid, msgData.id, msgData.displayName);
-            conferenceState.updateMuteFromEasyrtcid(easyrtcid, msgData.mute);
-          }, 'attendee:initialization');
-
-          easyrtc.setPeerListener(function(easyrtcid, msgType, msgData) {
-            $log.debug('Mute event received from %s: %s (%s)', easyrtcid, msgData);
-            conferenceState.updateMuteFromEasyrtcid(easyrtcid, msgData.mute);
-          }, 'conferencestate:mute');
+            $log.debug('Event %s received from %s with data: ', EASYRTC_EVENTS.attendeeUpdate, easyrtcid, msgData);
+            conferenceState.updateAttendeeByEasyrtcid(easyrtcid, msgData);
+          }, EASYRTC_EVENTS.attendeeUpdate);
         }
 
         if (ioSocketConnection.isConnected()) {
@@ -985,24 +1112,6 @@ angular.module('op.live-conference')
         easyrtc.enableVideo(videoMuted);
       }
 
-      function sendPeerMessage(msgType, data) {
-        if (!room) {
-          $log.debug('Did not send message because not in a room.');
-        }
-
-        easyrtc.sendPeerMessage(
-          {targetRoom: room},
-          msgType,
-          data,
-          function(msgType, msgBody) {
-            $log.debug('Peer message was sent to room : ', room);
-          },
-          function(errorCode, errorText) {
-            $log.error('Error sending peer message : ', errorText);
-          }
-        );
-      }
-
       function setPeerListener(handler, msgType) {
         easyrtc.setPeerListener(handler, msgType)
       }
@@ -1020,13 +1129,42 @@ angular.module('op.live-conference')
         return easyrtc.myEasyrtcid;
       }
 
+      function prepareAttendeeForBroadcast(attendee) {
+        return {
+          id: attendee.id,
+          easyrtcid: attendee.easyrtcid,
+          displayName: attendee.displayName,
+          avatar: attendee.avatar,
+          mute: attendee.mute,
+          muteVideo: attendee.muteVideo,
+          speaking: attendee.speaking
+        };
+      }
+
       function broadcastData(msgType, data) {
-        easyrtc.getRoomOccupantsAsArray(room).forEach(function(easyrtcid) {
-          if (easyrtcid === easyrtc.myEasyrtcid) {
+        var occupants = easyrtc.getRoomOccupantsAsArray(room);
+
+        if (!occupants) {
+          return;
+        }
+
+        occupants.forEach(function(easyrtcid) {
+          if (easyrtcid === myEasyrtcid()) {
             return;
           }
+
           easyrtc.sendData(easyrtcid, msgType, data);
         });
+      }
+
+      function broadcastMe() {
+        var attendee = currentConferenceState.getAttendeeByEasyrtcid(myEasyrtcid());
+
+        if (!attendee) {
+          return;
+        }
+
+        broadcastData(EASYRTC_EVENTS.attendeeUpdate, prepareAttendeeForBroadcast(attendee));
       }
 
       return {
@@ -1037,10 +1175,10 @@ angular.module('op.live-conference')
         enableCamera: enableCamera,
         enableVideo: enableVideo,
         configureBandwidth: configureBandwidth,
-        sendPeerMessage: sendPeerMessage,
         setPeerListener: setPeerListener,
         myEasyrtcid: myEasyrtcid,
-        broadcastData: broadcastData
+        broadcastData: broadcastData,
+        broadcastMe: broadcastMe
       };
     }]);
 'use strict';
@@ -1086,7 +1224,7 @@ angular.module('op.live-conference')
 
       AutoVideoSwitcher.prototype.onSpeech = function(evt, data) {
         var member = this.getMemberFromData(data);
-        if (!member || this.timeouts[member.easyrtcid] || member.videoIds === LOCAL_VIDEO_ID || member.mute || member.videoIds === this.conferenceState.localVideoId) {
+        if (!member || this.timeouts[member.easyrtcid] || member.videoId === LOCAL_VIDEO_ID || member.mute || member.videoId === this.conferenceState.localVideoId) {
           return;
         }
         var easyrtcid = member.easyrtcid;
@@ -1097,13 +1235,13 @@ angular.module('op.live-conference')
             return;
           }
 
-          this.conferenceState.updateLocalVideoId(member.videoIds);
+          this.conferenceState.updateLocalVideoId(member.videoId);
         }.bind(this), AUTO_VIDEO_SWITCH_TIMEOUT, false);
       };
 
       AutoVideoSwitcher.prototype.onSpeechEnd = function(evt, data) {
         var member = this.getMemberFromData(data);
-        if (!member || !this.timeouts[member.easyrtcid] || member.videoIds === LOCAL_VIDEO_ID) {
+        if (!member || !this.timeouts[member.easyrtcid] || member.videoId === LOCAL_VIDEO_ID) {
           return;
         }
         $timeout.cancel(this.timeouts[member.easyrtcid]);
@@ -1129,7 +1267,7 @@ angular.module('op.liveconference-templates', []).run(['$templateCache', functio
   $templateCache.put("templates/conference-speak-viewer.jade",
     "<i class=\"fa fa-comments-o\"></i>");
   $templateCache.put("templates/conference-video.jade",
-    "<div id=\"multiparty-conference\" local-speak-emitter local-speak-receiver auto-video-switcher class=\"conference-video fullscreen\"><conference-user-video></conference-user-video><div class=\"conference-attendees-bar\"><ul scale-to-canvas class=\"content\"><li ng-repeat=\"id in conferenceState.videoIds\" ng-hide=\"!conferenceState.attendees[$index]\"><conference-attendee-video video-index=\"$index\" on-video-click=\"streamToMainCanvas\" video-id=\"{{id}}\" attendee=\"conferenceState.attendees[$index]\" show-report=\"showReport\"></conference-attendee-video></li></ul></div><conference-user-control-bar show-invitation=\"showInvitation\" on-leave=\"onLeave\" conference-state=\"conferenceState\"></conference-user-control-bar></div>");
+    "<div id=\"multiparty-conference\" local-speak-emitter auto-video-switcher class=\"conference-video fullscreen\"><conference-user-video></conference-user-video><div class=\"conference-attendees-bar\"><ul scale-to-canvas class=\"content\"><li ng-repeat=\"id in conferenceState.videoIds\" ng-hide=\"!conferenceState.attendees[$index]\"><conference-attendee-video video-index=\"$index\" on-video-click=\"streamToMainCanvas\" video-id=\"{{id}}\" attendee=\"conferenceState.attendees[$index]\" show-report=\"showReport\"></conference-attendee-video></li></ul></div><conference-user-control-bar show-invitation=\"showInvitation\" on-leave=\"onLeave\" conference-state=\"conferenceState\"></conference-user-control-bar></div>");
   $templateCache.put("templates/invite-members.jade",
     "<div class=\"aside\"><div class=\"aside-dialog\"><div class=\"aside-content\"><div class=\"aside-header\"><h4>Members</h4></div><div class=\"aside-body\"><div ng-repeat=\"user in users\" class=\"row\"><conference-attendee></conference-attendee></div></div></div></div></div>");
   $templateCache.put("templates/live.jade",
