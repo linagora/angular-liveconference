@@ -40,8 +40,7 @@
     "mocha": "~1.18.2",
     "open": "0.0.5",
     "requirejs": "~2.1.10",
-    "sinon": "^1.11.1",
-    "sinon-chai": "^2.6.0"
+    "sinon": "^1.11.1"
   },
   "author": "Linagora folks",
   "license": "AGPLv3"

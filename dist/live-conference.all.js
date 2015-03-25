@@ -379,7 +379,7 @@ angular.module('op.live-conference')
     };
   })
 
-  .directive('conferenceAttendeeVideo', function() {
+  .directive('conferenceAttendeeVideo', ['easyRTCService', 'currentConferenceState', function(easyRTCService, currentConferenceState) {
     return {
       restrict: 'E',
       replace: true,
@@ -392,12 +392,19 @@ angular.module('op.live-conference')
         showReport: "="
       },
       link: function(scope) {
+
         scope.showReportPopup = function() {
           scope.showReport(scope.attendee);
         }
+
+        scope.toggleAttendeeMute = function() {
+          var mute = scope.attendee.localmute;
+          easyRTCService.muteRemoteMicrophone(scope.attendee.easyrtcid, !mute);
+          currentConferenceState.updateLocalMuteFromEasyrtcid(scope.attendee.easyrtcid, !mute);
+        };
       }
     };
-  })
+  }])
 
   .directive('conferenceUserVideo', ['$modal', 'currentConferenceState', 'matchmedia', 'LOCAL_VIDEO_ID', function($modal, currentConferenceState, matchmedia, LOCAL_VIDEO_ID) {
     return {
@@ -691,7 +698,8 @@ angular.module('op.live-conference')
       var oldProperties = {
         speaking: attendee.speaking,
         mute: attendee.mute,
-        muteVideo: attendee.muteVideo
+        muteVideo: attendee.muteVideo,
+        localmute: attendee.localmute
       };
 
       Object.keys(properties).forEach(function(property) {
@@ -724,7 +732,8 @@ angular.module('op.live-conference')
         easyrtcid: easyrtcid,
         displayName: displayName,
         // This needs to be served by the webapp embedding angular-liveconference
-        avatar: '/images/avatar/default.png'
+        avatar: '/images/avatar/default.png',
+        localmute: false
       };
       this.attendees[index] = attendee;
       $rootScope.$broadcast('conferencestate:attendees:push', attendee);
@@ -785,6 +794,10 @@ angular.module('op.live-conference')
       } else {
         callback(null, this.avatarCache[index]);
       }
+    };
+
+    ConferenceState.prototype.updateLocalMuteFromEasyrtcid = function(easyrtcid, mute) {
+      this.updateAttendeeByEasyrtcid(easyrtcid, {localmute: mute});
     };
 
     return ConferenceState;
@@ -1106,6 +1119,18 @@ angular.module('op.live-conference')
         easyrtc.enableVideo(videoMuted);
       }
 
+      function muteRemoteMicrophone(easyrtcid, mute) {
+        var stream = easyrtc.getRemoteStream(easyrtcid);
+        if (stream && stream.getAudioTracks) {
+          var tracks = stream.getAudioTracks();
+          if (tracks) {
+            tracks.forEach(function(track) {
+              track.enabled = !mute;
+            });
+          }
+        }
+      }
+
       function setPeerListener(handler, msgType) {
         easyrtc.setPeerListener(handler, msgType)
       }
@@ -1166,6 +1191,7 @@ angular.module('op.live-conference')
         performCall: performCall,
         connect: connect,
         enableMicrophone: enableMicrophone,
+        muteRemoteMicrophone: muteRemoteMicrophone,
         enableCamera: enableCamera,
         enableVideo: enableVideo,
         configureBandwidth: configureBandwidth,
@@ -1253,9 +1279,9 @@ angular.module('op.liveconference-templates', []).run(['$templateCache', functio
   $templateCache.put("templates/application.jade",
     "<div class=\"conference-container\"><div class=\"container-fluid\"><div class=\"row\"><div ng-view></div></div></div></div>");
   $templateCache.put("templates/attendee-settings-dropdown.jade",
-    "<ul role=\"menu\" class=\"dropdown-menu attendee-settings-dropdown\"><li role=\"presentation\"><a href=\"\" ng-click=\"mute()\" role=\"menuitem\" target=\"_blank\"><i ng-class=\"{'fa-microphone': !muted, 'fa-microphone-slash': muted}\" class=\"fa fa-fw conference-mute-button\"></i>&nbsp;Mute</a></li><li role=\"presentation\"><a href=\"\" ng-click=\"showReportPopup()\" role=\"menuitem\" target=\"_blank\"><i class=\"fa fa-fw fa-exclamation-triangle conference-report-button\"></i>&nbsp;Report</a></li></ul>");
+    "<ul role=\"menu\" class=\"dropdown-menu attendee-settings-dropdown\"><li role=\"presentation\" ng-class=\"{'disabled': attendee.mute &amp;&amp; !attendee.localmute}\"><a href=\"\" ng-click=\"toggleAttendeeMute()\" role=\"menuitem\" target=\"_blank\"><i ng-class=\"{'fa-microphone': !attendee.mute &amp;&amp; !attendee.localmute, 'fa-microphone-slash': attendee.mute || attendee.localmute}\" class=\"fa fa-fw conference-mute-button\"></i><span ng-if=\"attendee.localmute\">Unmute</span><span ng-if=\"!attendee.localmute\">Mute</span></a></li><li role=\"presentation\"><a href=\"\" ng-click=\"showReportPopup()\" role=\"menuitem\" target=\"_blank\"><i class=\"fa fa-fw fa-exclamation-triangle conference-report-button\"></i>&nbsp;Report</a></li></ul>");
   $templateCache.put("templates/attendee-video.jade",
-    "<div class=\"attendee-video\"><canvas data-video-id=\"{{videoId}}\" width=\"150\" height=\"150\" ng-click=\"onVideoClick(videoIndex)\" ng-mouseenter=\"thumbhover = true\" ng-mouseleave=\"thumbhover = false\" ng-init=\"count=0\" ng-class=\"{thumbhover: thumbhover, speaking: attendee.speaking &amp;&amp; !attendee.mute}\" class=\"conference-attendee-video-multi\"></canvas><video id=\"{{videoId}}\" autoplay=\"autoplay\"></video><a href=\"\" target=\"_blank\" ng-show=\"videoId !== 'video-thumb0' &amp;&amp; thumbhover\" ng-mouseenter=\"thumbhover = true\" ng-mouseleave=\"thumbhover = true\" class=\"hidden-xs hidden-sm\"><i data-placement=\"right-bottom\" data-html=\"true\" data-animation=\"am-flip-x\" bs-dropdown template=\"templates/attendee-settings-dropdown.jade\" class=\"fa fa-2x fa-cog conference-settings-button\"></i></a><i ng-show=\"attendee.mute\" ng-class=\"{'glow': attendee.speaking &amp;&amp; attendee.mute}\" class=\"fa fa-2x fa-microphone-slash conference-secondary-mute-button\"></i><i ng-show=\"false\" class=\"fa fa-2x fa-eye-slash conference-secondary-toggle-video-button\"></i><p class=\"text-center conference-attendee-name ellipsis\">{{attendee.displayName}}</p></div>");
+    "<div class=\"attendee-video\"><canvas data-video-id=\"{{videoId}}\" width=\"150\" height=\"150\" ng-click=\"onVideoClick(videoIndex)\" ng-mouseenter=\"thumbhover = true\" ng-mouseleave=\"thumbhover = false\" ng-init=\"count=0\" ng-class=\"{thumbhover: thumbhover, speaking: attendee.speaking &amp;&amp; (!attendee.mute &amp;&amp; !attendee.localmute)}\" class=\"conference-attendee-video-multi\"></canvas><video id=\"{{videoId}}\" autoplay=\"autoplay\"></video><a href=\"\" target=\"_blank\" ng-show=\"videoId !== 'video-thumb0' &amp;&amp; thumbhover\" ng-mouseenter=\"thumbhover = true\" ng-mouseleave=\"thumbhover = true\" class=\"hidden-xs hidden-sm\"><i data-placement=\"right-bottom\" data-html=\"true\" data-animation=\"am-flip-x\" bs-dropdown template=\"templates/attendee-settings-dropdown.jade\" class=\"fa fa-2x fa-cog conference-settings-button\"></i></a><i ng-show=\"attendee.mute || attendee.localmute\" class=\"fa fa-2x fa-microphone-slash conference-secondary-mute-button\"></i><i ng-show=\"false\" class=\"fa fa-2x fa-eye-slash conference-secondary-toggle-video-button\"></i><p class=\"text-center conference-attendee-name ellipsis\">{{attendee.displayName}}</p></div>");
   $templateCache.put("templates/attendee.jade",
     "<div class=\"col-xs-12 media nopadding conference-attendee\"><a href=\"#\" class=\"pull-left\"><img src=\"/images/user.png\" ng-src=\"/api/users/{{user._id}}/profile/avatar\" class=\"media-object thumbnail\"></a><div class=\"media-body\"><h6 class=\"media-heading\">{{user.firstname}} {{user.lastname}}</h6><button type=\"submit\" ng-disabled=\"invited\" ng-click=\"inviteCall(user); invited=true\" class=\"btn btn-primary nopadding\">Invite</button></div><div class=\"horiz-space\"></div></div>");
   $templateCache.put("templates/conference-video.jade",

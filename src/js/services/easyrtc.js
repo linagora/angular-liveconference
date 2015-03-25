@@ -175,6 +175,18 @@ angular.module('op.live-conference')
         easyrtc.enableVideo(videoMuted);
       }
 
+      function muteRemoteMicrophone(easyrtcid, mute) {
+        var stream = easyrtc.getRemoteStream(easyrtcid);
+        if (stream && stream.getAudioTracks) {
+          var tracks = stream.getAudioTracks();
+          if (tracks) {
+            tracks.forEach(function(track) {
+              track.enabled = !mute;
+            });
+          }
+        }
+      }
+
       function setPeerListener(handler, msgType) {
         easyrtc.setPeerListener(handler, msgType)
       }
@@ -235,6 +247,7 @@ angular.module('op.live-conference')
         performCall: performCall,
         connect: connect,
         enableMicrophone: enableMicrophone,
+        muteRemoteMicrophone: muteRemoteMicrophone,
         enableCamera: enableCamera,
         enableVideo: enableVideo,
         configureBandwidth: configureBandwidth,

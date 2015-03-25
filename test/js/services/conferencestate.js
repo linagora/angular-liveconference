@@ -212,7 +212,8 @@ describe('The ConferenceState module', function() {
             easyrtcid: 'easyrtcid',
             id: 'id',
             displayName: 'displayName',
-            avatar: '/images/avatar/default.png'
+            avatar: '/images/avatar/default.png',
+            localmute: false
           };
 
           expect(attendee).to.deep.equal(expected);
@@ -385,6 +386,14 @@ describe('The ConferenceState module', function() {
         newImage.onload();
       });
 
+    });
+
+    describe('updateLocalMuteFromEasyrtcid function', function() {
+      it('should update localmute property of attendee', function() {
+        conferenceState.attendees = [{ easyrtcid: 'easyrtcid' }, { easyrtcid: 'easyrtcid2' }];
+        conferenceState.updateLocalMuteFromEasyrtcid('easyrtcid', true);
+        expect(conferenceState.attendees[0].localmute).to.be.true;
+      });
     });
 
   });

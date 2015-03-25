@@ -74,7 +74,7 @@ angular.module('op.live-conference')
     };
   })
 
-  .directive('conferenceAttendeeVideo', function() {
+  .directive('conferenceAttendeeVideo', ['easyRTCService', 'currentConferenceState', function(easyRTCService, currentConferenceState) {
     return {
       restrict: 'E',
       replace: true,
@@ -87,12 +87,19 @@ angular.module('op.live-conference')
         showReport: "="
       },
       link: function(scope) {
+
         scope.showReportPopup = function() {
           scope.showReport(scope.attendee);
         }
+
+        scope.toggleAttendeeMute = function() {
+          var mute = scope.attendee.localmute;
+          easyRTCService.muteRemoteMicrophone(scope.attendee.easyrtcid, !mute);
+          currentConferenceState.updateLocalMuteFromEasyrtcid(scope.attendee.easyrtcid, !mute);
+        };
       }
     };
-  })
+  }])
 
   .directive('conferenceUserVideo', ['$modal', 'currentConferenceState', 'matchmedia', 'LOCAL_VIDEO_ID', function($modal, currentConferenceState, matchmedia, LOCAL_VIDEO_ID) {
     return {
