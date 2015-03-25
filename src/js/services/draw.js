@@ -89,20 +89,20 @@ angular.module('op.live-conference')
 
   })
 
-  .factory('centerAndFit', function() {
+  .factory('getCoordinatesOfCenteredImage', function() {
     return function(width, height, childSize) {
       var scale = Math.min(Math.min(width, height) / childSize, 1);
 
       return {
-        x: (width / 2) - ((childSize * scale) / 2),
-        y: (height / 2) - ((childSize * scale) / 2),
+        x: (width - childSize * scale) / 2,
+        y: (height - childSize * scale) / 2,
         size: childSize * scale
       };
     };
   })
 
-  .factory('drawAvatarIfVideoMuted', ['currentConferenceState', 'attendeeColorsService', 'centerAndFit', '$log',
-    function(currentConferenceState, attendeeColorsService, centerAndFit, $log) {
+  .factory('drawAvatarIfVideoMuted', ['currentConferenceState', 'attendeeColorsService', 'getCoordinatesOfCenteredImage', '$log',
+    function(currentConferenceState, attendeeColorsService, getCoordinatesOfCenteredImage, $log) {
     return function(videoId, context, width, height, otherwise) {
       var attendee = currentConferenceState.getAttendeeByVideoId(videoId);
 
@@ -110,21 +110,30 @@ angular.module('op.live-conference')
         return;
       }
 
+      var canvas = context.canvas;
+
       if (attendee.muteVideo) {
+        if (canvas.drawnAvatarVideoId === videoId) {
+          return;
+        }
+
         currentConferenceState.getAvatarImageByIndex(attendee.index, function(err, image) {
           if (err) {
             return $log.error('Failed to get avatar image for attendee with videoId %s: ', videoId, err);
           }
 
-          var coords = centerAndFit(width, height, image.width);
+          var coords = getCoordinatesOfCenteredImage(width, height, image.width);
 
           context.clearRect(0, 0, width, height);
           context.fillStyle = attendeeColorsService.getColorForAttendeeAtIndex(attendee.index);
           context.fillRect(coords.x, coords.y, coords.size, coords.size);
           context.drawImage(image, coords.x, coords.y, coords.size, coords.size);
+
+          canvas.drawnAvatarVideoId = videoId;
         });
       } else {
         otherwise(videoId, context, width, height);
+        canvas.drawnAvatarVideoId = null;
       }
     };
   }]);
