@@ -395,7 +395,17 @@ describe('The ConferenceState module', function() {
         expect(conferenceState.attendees[0].localmute).to.be.true;
       });
     });
-
+    
+    describe('getAttendees() method', function() {
+      it('should return a copy of the attendees array', function() {
+        var attendees = [{easyrtcid: 'user1'}, { easyrtcid: 'easyrtcid', videoIds: 'videoId'}];
+        conferenceState.attendees = attendees;
+        var attendeesCopy = conferenceState.getAttendees();
+        expect(attendeesCopy).to.deep.equal(attendees);
+        conferenceState.attendees[0].test = true;
+        expect(attendeesCopy).to.not.have.property('test');
+      });
+    });
   });
 
   describe('The newImage service', function() {
