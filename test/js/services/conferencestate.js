@@ -706,6 +706,17 @@ describe('The ConferenceState module', function() {
         service.doesDataChannelWork(id);
       });
     });
+
+    it('shoud expose easyrtc connection constants', function() {
+      var service, easyrtc;
+      inject(function(easyRTCService, webrtcFactory) {
+        service = easyRTCService;
+        easyrtc = webrtcFactory.get();
+      });
+      expect(service.NOT_CONNECTED).to.equal(easyrtc.NOT_CONNECTED);
+      expect(service.BECOMING_CONNECTED).to.equal(easyrtc.BECOMING_CONNECTED);
+      expect(service.IS_CONNECTED).to.equal(easyrtc.IS_CONNECTED);
+    });
   });
 
   describe('cropDimensions services', function() {

@@ -331,6 +331,9 @@ angular.module('op.live-conference')
         sendDataP2P: sendDataP2P,
         sendDataWS: sendDataWS,
         getP2PConnectionStatus: getP2PConnectionStatus,
-        doesDataChannelWork: doesDataChannelWork
+        doesDataChannelWork: doesDataChannelWork,
+        NOT_CONNECTED: easyrtc.NOT_CONNECTED,
+        BECOMING_CONNECTED: easyrtc.BECOMING_CONNECTED,
+        IS_CONNECTED: easyrtc.IS_CONNECTED
       };
     }]);
