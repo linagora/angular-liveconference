@@ -426,10 +426,6 @@ angular.module('op.live-conference')
           modal.$promise.then(modal.toggle);
         };
 
-        scope.showReportPopup = function() {
-          scope.onMobileToggleControls();
-        };
-
         var mainVideo = {};
         var videoElement = {};
         var watcher = {};
@@ -447,6 +443,15 @@ angular.module('op.live-conference')
           scope.mute = function() {
             videoElement.muted = !videoElement.muted;
             scope.onMobileToggleControls();
+          };
+
+          scope.showReportPopup = function() {
+            scope.onMobileToggleControls();
+            var attendee = currentConferenceState.getAttendeeByVideoId(videoId);
+            if (!attendee) {
+              return;
+            }
+            scope.showReport(attendee);
           };
 
           watcher = scope.$watch(function() {

@@ -59,6 +59,50 @@ describe('Directives', function() {
       scope.onMobileToggleControls();
     });
 
+    describe('The showReportPopup fn', function() {
+      window.$ = function() {return [{}];};
+
+      it('should hide modal when called', function(done) {
+        callback = done();
+        scope.$emit('localVideoId:ready', 1);
+        scope.$digest();
+        scope.showReportPopup();
+      });
+
+      it('should call scope.showReport when attendee is found', function(done) {
+        var attendee = {id: 1};
+        var localVideoId = 'video1';
+
+        scope.showReport = function(attendee) {
+          expect(attendee).to.deep.equal(attendee);
+          done();
+        };
+        callback = function() {};
+        conferenceState.getAttendeeByVideoId = function() {
+          return attendee;
+        };
+
+        scope.$emit('localVideoId:ready', localVideoId);
+        scope.$digest();
+        scope.showReportPopup();
+      });
+
+      it('should not call scope.showReport when attendee is not found', function(done) {
+        var localVideoId = 'video1';
+
+        scope.showReport = function() {
+          done(new Error());
+        };
+        callback = function() {};
+        conferenceState.getAttendeeByVideoId = function() {
+        };
+
+        scope.$emit('localVideoId:ready', localVideoId);
+        scope.$digest();
+        scope.showReportPopup();
+        done();
+      });
+    });
   });
 
 });
