@@ -286,6 +286,7 @@ angular.module('op.live-conference')
     },
     nolimit: null
   })
+  .constant('easyRTCDefaultBitRate', 'medium')
   .constant('EASYRTC_APPLICATION_NAME', 'LiveConference')
   .constant('MAX_ATTENDEES', 9)
   .constant('LOCAL_VIDEO_ID', 'video-thumb0')
