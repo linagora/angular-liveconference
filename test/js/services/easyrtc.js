@@ -120,4 +120,23 @@ describe('easyRTCService service', function () {
 
   });
 
+  describe('muteRemoteMicrophone function', function() {
+    it('should update the tracks', function() {
+      var tracks = [{a: 1}, {b: 2}];
+      var mute = true;
+      easyrtc.getRemoteStream = function() {
+        return {
+          getAudioTracks: function() {
+            return tracks;
+          }
+        };
+      };
+
+      service.muteRemoteMicrophone(1, mute);
+      expect(tracks).to.deep.equals(
+        [{enabled: !mute, a: 1}, {enabled: !mute, b: 2}]
+      );
+    });
+  });
+
 });

@@ -52,7 +52,8 @@ angular.module('op.live-conference')
       var oldProperties = {
         speaking: attendee.speaking,
         mute: attendee.mute,
-        muteVideo: attendee.muteVideo
+        muteVideo: attendee.muteVideo,
+        localmute: attendee.localmute
       };
 
       Object.keys(properties).forEach(function(property) {
@@ -85,7 +86,8 @@ angular.module('op.live-conference')
         easyrtcid: easyrtcid,
         displayName: displayName,
         // This needs to be served by the webapp embedding angular-liveconference
-        avatar: '/images/avatar/default.png'
+        avatar: '/images/avatar/default.png',
+        localmute: false
       };
       this.attendees[index] = attendee;
       $rootScope.$broadcast('conferencestate:attendees:push', attendee);
@@ -146,6 +148,10 @@ angular.module('op.live-conference')
       } else {
         callback(null, this.avatarCache[index]);
       }
+    };
+
+    ConferenceState.prototype.updateLocalMuteFromEasyrtcid = function(easyrtcid, mute) {
+      this.updateAttendeeByEasyrtcid(easyrtcid, {localmute: mute});
     };
 
     return ConferenceState;
