@@ -74,7 +74,7 @@ angular.module('op.live-conference')
     };
   })
 
-  .directive('conferenceAttendeeVideo', ['easyRTCService', 'currentConferenceState', function(easyRTCService, currentConferenceState) {
+  .directive('conferenceAttendeeVideo', ['easyRTCService', 'currentConferenceState', 'matchmedia', function(easyRTCService, currentConferenceState, matchmedia) {
     return {
       restrict: 'E',
       replace: true,
@@ -90,13 +90,15 @@ angular.module('op.live-conference')
 
         scope.showReportPopup = function() {
           scope.showReport(scope.attendee);
-        }
+        };
 
         scope.toggleAttendeeMute = function() {
           var mute = scope.attendee.localmute;
           easyRTCService.muteRemoteMicrophone(scope.attendee.easyrtcid, !mute);
           currentConferenceState.updateLocalMuteFromEasyrtcid(scope.attendee.easyrtcid, !mute);
         };
+
+        scope.isDesktop = matchmedia.isDesktop();
       }
     };
   }])
@@ -107,9 +109,6 @@ angular.module('op.live-conference')
       replace: true,
       templateUrl: 'templates/user-video.jade',
       link: function(scope) {
-        if (matchmedia.isDesktop()) {
-          return;
-        }
 
         var modal = $modal({
           scope: scope,
@@ -122,6 +121,9 @@ angular.module('op.live-conference')
         });
 
         scope.onMobileToggleControls = function() {
+          if (matchmedia.isDesktop()) {
+            return;
+          }
           if (currentConferenceState.localVideoId === LOCAL_VIDEO_ID) {
             return;
           }
