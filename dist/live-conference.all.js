@@ -1071,6 +1071,12 @@ angular.module('op.live-conference')
             $log.error('Error while connecting to the webrtc signaling service ' + errorCode + ' : ' + message);
           }
 
+          easyrtc.setOnError(function(errorObject){
+            $log.error('setOnError with error: ' + errorObject.errorText + ' [error=' + JSON.stringify(errorObject) + ']');
+          });
+
+          easyrtc.setVideoDims();
+
           easyrtc.easyApp(
             EASYRTC_APPLICATION_NAME,
             LOCAL_VIDEO_ID,

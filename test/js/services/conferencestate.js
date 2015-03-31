@@ -551,6 +551,8 @@ describe('The ConferenceState module', function() {
             setDisconnectListener: function() {},
             joinRoom: function() {},
             useThisSocketConnection: function() {},
+            setOnError: function() {},
+            setVideoDims: function() {},
             easyApp: function() {
               done();
             },
@@ -646,6 +648,8 @@ describe('The ConferenceState module', function() {
             setDisconnectListener: function() {},
             joinRoom: function() {},
             useThisSocketConnection: function() {},
+            setOnError: function() {},
+            setVideoDims: function() {},
             easyApp: function() {
               done();
             },
