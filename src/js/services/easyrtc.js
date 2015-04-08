@@ -138,7 +138,6 @@ angular.module('op.live-conference')
             $rootScope.$apply();
             if (!videoEnabled) {
               conferenceState.updateMuteVideoFromIndex(0, true);
-              broadcastMe();
             }
           }
 
