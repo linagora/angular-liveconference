@@ -29,4 +29,5 @@ angular.module('op.live-conference')
   .constant('AUTO_VIDEO_SWITCH_TIMEOUT', 700)
   .constant('EASYRTC_EVENTS', {
     attendeeUpdate: 'attendee:update'
-  });
+  })
+  .constant('DEFAULT_AVATAR_SIZE', 500);
