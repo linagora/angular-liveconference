@@ -303,12 +303,13 @@ angular.module('op.live-conference')
   .constant('AUTO_VIDEO_SWITCH_TIMEOUT', 700)
   .constant('EASYRTC_EVENTS', {
     attendeeUpdate: 'attendee:update'
-  });
+  })
+  .constant('DEFAULT_AVATAR_SIZE', 500);
 'use strict';
 
 angular.module('op.live-conference')
-  .directive('conferenceVideo', ['$timeout', '$window', '$rootScope', 'drawVideo', 'LOCAL_VIDEO_ID',
-  function($timeout, $window, $rootScope, drawVideo, LOCAL_VIDEO_ID) {
+  .directive('conferenceVideo', ['$timeout', '$window', '$rootScope', 'drawVideo', 'LOCAL_VIDEO_ID', 'DEFAULT_AVATAR_SIZE',
+  function($timeout, $window, $rootScope, drawVideo, LOCAL_VIDEO_ID, DEFAULT_AVATAR_SIZE) {
     return {
       restrict: 'E',
       replace: true,
@@ -333,8 +334,8 @@ angular.module('op.live-conference')
           mainVideo = element.find('video#' + LOCAL_VIDEO_ID);
           mainVideo.on('loadedmetadata', function() {
             function drawVideoInCancas() {
-              canvas[0].width = mainVideo[0].videoWidth;
-              canvas[0].height = mainVideo[0].videoHeight;
+              canvas[0].width = mainVideo[0].videoWidth || DEFAULT_AVATAR_SIZE;
+              canvas[0].height = mainVideo[0].videoHeight || DEFAULT_AVATAR_SIZE;
               stopAnimation = drawVideo(context, mainVideo[0], canvas[0].width, canvas[0].height);
             }
             if ($window.mozRequestAnimationFrame) {
@@ -358,8 +359,8 @@ angular.module('op.live-conference')
             return;
           }
           mainVideo = element.find('video#' + newVideoId);
-          canvas[0].width = mainVideo[0].videoWidth;
-          canvas[0].height = mainVideo[0].videoHeight;
+          canvas[0].width = mainVideo[0].videoWidth || DEFAULT_AVATAR_SIZE;
+          canvas[0].height = mainVideo[0].videoHeight || DEFAULT_AVATAR_SIZE;
           stopAnimation = drawVideo(context, mainVideo[0], canvas[0].width, canvas[0].height);
           $rootScope.$broadcast('localVideoId:ready', newVideoId);
         });
@@ -474,7 +475,7 @@ angular.module('op.live-conference')
     };
   }])
 
-  .directive('conferenceUserControlBar', function() {
+  .directive('conferenceUserControlBar', function($log, easyRTCService) {
     return {
       restrict: 'E',
       replace: true,
@@ -484,9 +485,11 @@ angular.module('op.live-conference')
         onLeave: '=',
         conferenceState: '='
       },
-      controller: function($scope, $log, easyRTCService) {
+      link: function($scope) {
         $scope.muted = false;
         $scope.videoMuted = false;
+
+        $scope.noVideo = !easyRTCService.isVideoEnabled();
 
         $scope.toggleSound = function() {
           easyRTCService.enableMicrophone($scope.muted);
@@ -541,7 +544,7 @@ angular.module('op.live-conference')
             vHeight = vid.videoHeight,
             vWidth = vid.videoWidth;
 
-        if (!height || !width || !vHeight || !vWidth) {
+        if (!height || !width) {
           return;
         }
 
@@ -934,6 +937,10 @@ angular.module('op.live-conference')
             return $log.error('Failed to get avatar image for attendee with videoId %s: ', videoId, err);
           }
 
+          if (!image.width) {
+            return;
+          }
+
           var coords = getCoordinatesOfCenteredImage(width, height, image.width);
 
           context.clearRect(0, 0, width, height);
@@ -963,6 +970,7 @@ angular.module('op.live-conference')
       easyrtc.enableDataChannels(true);
 
       var bitRates, room, disconnectCallbacks = [];
+      var videoEnabled = true;
 
       function removeDisconnectCallback(id) {
         if (!id) {
@@ -1087,6 +1095,10 @@ angular.module('op.live-conference')
             $log.debug('Successfully logged: ' + easyrtcid);
             conferenceState.pushAttendee(0, easyrtcid, session.getUserId(), session.getUsername());
             $rootScope.$apply();
+            if (!videoEnabled) {
+              conferenceState.updateMuteVideoFromIndex(0, true);
+              broadcastMe();
+            }
           }
 
           function onLoginFailure(errorCode, message) {
@@ -1116,7 +1128,8 @@ angular.module('op.live-conference')
             var data = {
               id: session.getUserId(),
               displayName: session.getUsername(),
-              mute: conferenceState.attendees[0].mute
+              mute: conferenceState.attendees[0].mute,
+              muteVideo: conferenceState.attendees[0].muteVideo
             };
 
             $log.debug('Data channel open, sending %s event with data: ', EASYRTC_EVENTS.attendeeUpdate, data);
@@ -1151,8 +1164,13 @@ angular.module('op.live-conference')
         easyrtc.enableCamera(videoMuted);
       }
 
-      function enableVideo(videoMuted) {
-        easyrtc.enableVideo(videoMuted);
+      function enableVideo(videoChoice) {
+        videoEnabled = videoChoice;
+        easyrtc.enableVideo(videoChoice);
+      }
+
+      function isVideoEnabled() {
+        return videoEnabled;
       }
 
       function muteRemoteMicrophone(easyrtcid, mute) {
@@ -1230,6 +1248,7 @@ angular.module('op.live-conference')
         muteRemoteMicrophone: muteRemoteMicrophone,
         enableCamera: enableCamera,
         enableVideo: enableVideo,
+        isVideoEnabled: isVideoEnabled,
         configureBandwidth: configureBandwidth,
         setPeerListener: setPeerListener,
         myEasyrtcid: myEasyrtcid,
@@ -1331,7 +1350,7 @@ angular.module('op.liveconference-templates', []).run(['$templateCache', functio
   $templateCache.put("templates/mobile-user-video-quadrant-control.jade",
     "<ul class=\"list-inline mobile-user-video-control\"><li><a href=\"\" ng-click=\"mute()\"><i ng-class=\"{'fa-microphone': !muted, 'fa-microphone-slash': muted}\" class=\"fa fa-5x fa-fw\"></i></a></li><li><a href=\"\" ng-click=\"onMobileToggleControls()\"><i class=\"fa fa-5x fa-fw fa-times\"></i></a></li><li><a href=\"\" ng-click=\"showReportPopup()\"><i class=\"fa fa-5x fa-fw fa-exclamation-triangle\"></i></a></li></ul>");
   $templateCache.put("templates/user-control-bar.jade",
-    "<div class=\"conference-user-control-bar text-center\"><ul class=\"list-inline\"><li><a href=\"\" ng-click=\"showInvitationPanel()\"><i class=\"fa fa-users fa-2x conference-toggle-invite-button\"></i></a></li><li><a href=\"\" ng-click=\"toggleCamera()\"><i ng-class=\"{'fa-eye': !videoMuted, 'fa-eye-slash': videoMuted}\" class=\"fa fa-2x conference-toggle-video-button\"></i></a></li><li><a href=\"\" ng-click=\"toggleSound()\"><i ng-class=\"{'fa-microphone': !muted, 'fa-microphone-slash': muted}\" class=\"fa fa-2x conference-mute-button\"></i></a></li><li><a href=\"\" ng-click=\"leaveConference()\"><i class=\"fa fa-phone fa-2x conference-toggle-terminate-call-button\"></i></a></li></ul></div>");
+    "<div class=\"conference-user-control-bar text-center\"><ul class=\"list-inline\"><li><a href=\"\" ng-click=\"showInvitationPanel()\"><i class=\"fa fa-users fa-2x conference-toggle-invite-button\"></i></a></li><li ng-class=\"{'hidden': noVideo}\"><a href=\"\" ng-click=\"toggleCamera()\"><i ng-class=\"{'fa-eye': !videoMuted, 'fa-eye-slash': videoMuted}\" class=\"fa fa-2x conference-toggle-video-button\"></i></a></li><li><a href=\"\" ng-click=\"toggleSound()\"><i ng-class=\"{'fa-microphone': !muted, 'fa-microphone-slash': muted}\" class=\"fa fa-2x conference-mute-button\"></i></a></li><li><a href=\"\" ng-click=\"leaveConference()\"><i class=\"fa fa-phone fa-2x conference-toggle-terminate-call-button\"></i></a></li></ul></div>");
   $templateCache.put("templates/user-video.jade",
     "<div ng-mouseenter=\"thumbhover = true\" ng-mouseleave=\"thumbhover = false\" class=\"user-video\"><canvas id=\"mainVideoCanvas\" ng-click=\"onMobileToggleControls()\" class=\"conference-main-video-multi\"></canvas></div>");
 }]);

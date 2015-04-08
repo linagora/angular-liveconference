@@ -91,9 +91,6 @@ angular.module('op.live-conference')
 
   .factory('getCoordinatesOfCenteredImage', function() {
     return function(width, height, childSize) {
-      if (!childSize) {
-        childSize = 1;
-      }
       var scale = Math.min(Math.min(width, height) / childSize, 1);
 
       return {
