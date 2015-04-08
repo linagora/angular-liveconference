@@ -136,6 +136,10 @@ angular.module('op.live-conference')
             $log.debug('Successfully logged: ' + easyrtcid);
             conferenceState.pushAttendee(0, easyrtcid, session.getUserId(), session.getUsername());
             $rootScope.$apply();
+            if (!videoEnabled) {
+              conferenceState.updateMuteVideoFromIndex(0, true);
+              broadcastMe();
+            }
           }
 
           function onLoginFailure(errorCode, message) {
@@ -165,7 +169,8 @@ angular.module('op.live-conference')
             var data = {
               id: session.getUserId(),
               displayName: session.getUsername(),
-              mute: conferenceState.attendees[0].mute
+              mute: conferenceState.attendees[0].mute,
+              muteVideo: conferenceState.attendees[0].muteVideo
             };
 
             $log.debug('Data channel open, sending %s event with data: ', EASYRTC_EVENTS.attendeeUpdate, data);
