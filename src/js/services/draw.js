@@ -91,6 +91,9 @@ angular.module('op.live-conference')
 
   .factory('getCoordinatesOfCenteredImage', function() {
     return function(width, height, childSize) {
+      if (!childSize) {
+        childSize = 1;
+      }
       var scale = Math.min(Math.min(width, height) / childSize, 1);
 
       return {
@@ -120,6 +123,10 @@ angular.module('op.live-conference')
         currentConferenceState.getAvatarImageByIndex(attendee.index, function(err, image) {
           if (err) {
             return $log.error('Failed to get avatar image for attendee with videoId %s: ', videoId, err);
+          }
+
+          if (!image.width) {
+            return;
           }
 
           var coords = getCoordinatesOfCenteredImage(width, height, image.width);
