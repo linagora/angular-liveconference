@@ -11,6 +11,7 @@ angular.module('op.live-conference')
       easyrtc.enableDataChannels(true);
 
       var bitRates, room, disconnectCallbacks = [];
+      var videoEnabled = true;
 
       function removeDisconnectCallback(id) {
         if (!id) {
@@ -199,8 +200,13 @@ angular.module('op.live-conference')
         easyrtc.enableCamera(videoMuted);
       }
 
-      function enableVideo(videoMuted) {
-        easyrtc.enableVideo(videoMuted);
+      function enableVideo(videoChoice) {
+        videoEnabled = videoChoice;
+        easyrtc.enableVideo(videoChoice);
+      }
+
+      function isVideoEnabled() {
+        return videoEnabled;
       }
 
       function muteRemoteMicrophone(easyrtcid, mute) {
@@ -278,6 +284,7 @@ angular.module('op.live-conference')
         muteRemoteMicrophone: muteRemoteMicrophone,
         enableCamera: enableCamera,
         enableVideo: enableVideo,
+        isVideoEnabled: isVideoEnabled,
         configureBandwidth: configureBandwidth,
         setPeerListener: setPeerListener,
         myEasyrtcid: myEasyrtcid,
