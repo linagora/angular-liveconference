@@ -168,7 +168,7 @@ angular.module('op.live-conference')
     };
   }])
 
-  .directive('conferenceUserControlBar', function() {
+  .directive('conferenceUserControlBar', function($log, easyRTCService) {
     return {
       restrict: 'E',
       replace: true,
@@ -178,9 +178,11 @@ angular.module('op.live-conference')
         onLeave: '=',
         conferenceState: '='
       },
-      controller: function($scope, $log, easyRTCService) {
+      link: function($scope) {
         $scope.muted = false;
         $scope.videoMuted = false;
+
+        $scope.noVideo = !easyRTCService.isVideoEnabled();
 
         $scope.toggleSound = function() {
           easyRTCService.enableMicrophone($scope.muted);
