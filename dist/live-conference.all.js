@@ -962,7 +962,33 @@ angular.module('op.live-conference')
       var easyrtc = webrtcFactory.get();
       easyrtc.enableDataChannels(true);
 
-      var bitRates, room;
+      var bitRates, room, disconnectCallbacks = [];
+
+      function removeDisconnectCallback(id) {
+        if (!id) {
+          return false;
+        }
+
+        disconnectCallbacks.splice(id, 1);
+      }
+
+      function addDisconnectCallback(callback) {
+        if (!callback) {
+          return false;
+        }
+
+        return disconnectCallbacks.push(callback) - 1;
+      }
+
+      easyrtc.setDisconnectListener(function() {
+        disconnectCallbacks.forEach(function(callback) {
+          callback();
+        });
+      });
+
+      addDisconnectCallback(function() {
+        $log.info('Lost connection to signaling server');
+      });
 
       function stopLocalStream() {
         var stream = easyrtc.getLocalStream();
@@ -1035,10 +1061,6 @@ angular.module('op.live-conference')
 
         easyrtc.setRoomOccupantListener(roomOccupantListener);
         easyrtc.setRoomEntryListener(entryListener);
-
-        easyrtc.setDisconnectListener(function() {
-          $log.info('Lost connection to signaling server');
-        });
 
         var conference = conferenceState.conference;
         easyrtc.joinRoom(conference._id, null,
@@ -1146,7 +1168,7 @@ angular.module('op.live-conference')
       }
 
       function setPeerListener(handler, msgType) {
-        easyrtc.setPeerListener(handler, msgType)
+        easyrtc.setPeerListener(handler, msgType);
       }
 
       function configureBandwidth(rate) {
@@ -1212,7 +1234,9 @@ angular.module('op.live-conference')
         setPeerListener: setPeerListener,
         myEasyrtcid: myEasyrtcid,
         broadcastData: broadcastData,
-        broadcastMe: broadcastMe
+        broadcastMe: broadcastMe,
+        addDisconnectCallback: addDisconnectCallback,
+        removeDisconnectCallback: removeDisconnectCallback
       };
     }]);
 'use strict';
