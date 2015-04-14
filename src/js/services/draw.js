@@ -122,6 +122,10 @@ angular.module('op.live-conference')
             return $log.error('Failed to get avatar image for attendee with videoId %s: ', videoId, err);
           }
 
+          if (!image.width) {
+            return;
+          }
+
           var coords = getCoordinatesOfCenteredImage(width, height, image.width);
 
           context.clearRect(0, 0, width, height);

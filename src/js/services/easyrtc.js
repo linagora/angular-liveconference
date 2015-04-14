@@ -11,6 +11,7 @@ angular.module('op.live-conference')
       easyrtc.enableDataChannels(true);
 
       var bitRates, room, disconnectCallbacks = [];
+      var videoEnabled = true;
 
       function removeDisconnectCallback(id) {
         if (!id) {
@@ -135,6 +136,9 @@ angular.module('op.live-conference')
             $log.debug('Successfully logged: ' + easyrtcid);
             conferenceState.pushAttendee(0, easyrtcid, session.getUserId(), session.getUsername());
             $rootScope.$apply();
+            if (!videoEnabled) {
+              conferenceState.updateMuteVideoFromIndex(0, true);
+            }
           }
 
           function onLoginFailure(errorCode, message) {
@@ -164,7 +168,8 @@ angular.module('op.live-conference')
             var data = {
               id: session.getUserId(),
               displayName: session.getUsername(),
-              mute: conferenceState.attendees[0].mute
+              mute: conferenceState.attendees[0].mute,
+              muteVideo: conferenceState.attendees[0].muteVideo
             };
 
             $log.debug('Data channel open, sending %s event with data: ', EASYRTC_EVENTS.attendeeUpdate, data);
@@ -199,8 +204,13 @@ angular.module('op.live-conference')
         easyrtc.enableCamera(videoMuted);
       }
 
-      function enableVideo(videoMuted) {
-        easyrtc.enableVideo(videoMuted);
+      function enableVideo(videoChoice) {
+        videoEnabled = videoChoice;
+        easyrtc.enableVideo(videoChoice);
+      }
+
+      function isVideoEnabled() {
+        return videoEnabled;
       }
 
       function muteRemoteMicrophone(easyrtcid, mute) {
@@ -278,6 +288,7 @@ angular.module('op.live-conference')
         muteRemoteMicrophone: muteRemoteMicrophone,
         enableCamera: enableCamera,
         enableVideo: enableVideo,
+        isVideoEnabled: isVideoEnabled,
         configureBandwidth: configureBandwidth,
         setPeerListener: setPeerListener,
         myEasyrtcid: myEasyrtcid,

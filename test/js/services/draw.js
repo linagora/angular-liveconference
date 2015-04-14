@@ -63,6 +63,20 @@ describe('The draw factory collection', function () {
       });
     });
 
+    it('should do nothing if the attendee avatar has no size', function() {
+      currentConferenceState.getAttendeeByVideoId = function() { return { muteVideo: true }; };
+      currentConferenceState.getAvatarImageByIndex = function(index, callback) { callback(null, new Image()); };
+
+      drawAvatarIfVideoMuted('videoId', {
+        canvas: {},
+        clearRect: function() {
+          throw new Error('This test should not call context.clearRect');
+        }
+      }, null, null, function() {
+        throw new Error('This test should not call the otherwise function');
+      });
+    });
+
     it('should draw the avatar, centered and fitted', function() {
       var context = {
         canvas: {},

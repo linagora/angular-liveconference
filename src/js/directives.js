@@ -1,8 +1,8 @@
 'use strict';
 
 angular.module('op.live-conference')
-  .directive('conferenceVideo', ['$timeout', '$window', '$rootScope', 'drawVideo', 'LOCAL_VIDEO_ID',
-  function($timeout, $window, $rootScope, drawVideo, LOCAL_VIDEO_ID) {
+  .directive('conferenceVideo', ['$timeout', '$window', '$rootScope', 'drawVideo', 'LOCAL_VIDEO_ID', 'DEFAULT_AVATAR_SIZE',
+  function($timeout, $window, $rootScope, drawVideo, LOCAL_VIDEO_ID, DEFAULT_AVATAR_SIZE) {
     return {
       restrict: 'E',
       replace: true,
@@ -27,8 +27,8 @@ angular.module('op.live-conference')
           mainVideo = element.find('video#' + LOCAL_VIDEO_ID);
           mainVideo.on('loadedmetadata', function() {
             function drawVideoInCancas() {
-              canvas[0].width = mainVideo[0].videoWidth;
-              canvas[0].height = mainVideo[0].videoHeight;
+              canvas[0].width = mainVideo[0].videoWidth || DEFAULT_AVATAR_SIZE;
+              canvas[0].height = mainVideo[0].videoHeight || DEFAULT_AVATAR_SIZE;
               stopAnimation = drawVideo(context, mainVideo[0], canvas[0].width, canvas[0].height);
             }
             if ($window.mozRequestAnimationFrame) {
@@ -52,8 +52,8 @@ angular.module('op.live-conference')
             return;
           }
           mainVideo = element.find('video#' + newVideoId);
-          canvas[0].width = mainVideo[0].videoWidth;
-          canvas[0].height = mainVideo[0].videoHeight;
+          canvas[0].width = mainVideo[0].videoWidth || DEFAULT_AVATAR_SIZE;
+          canvas[0].height = mainVideo[0].videoHeight || DEFAULT_AVATAR_SIZE;
           stopAnimation = drawVideo(context, mainVideo[0], canvas[0].width, canvas[0].height);
           $rootScope.$broadcast('localVideoId:ready', newVideoId);
         });
@@ -168,7 +168,7 @@ angular.module('op.live-conference')
     };
   }])
 
-  .directive('conferenceUserControlBar', function() {
+  .directive('conferenceUserControlBar', function($log, easyRTCService) {
     return {
       restrict: 'E',
       replace: true,
@@ -178,9 +178,11 @@ angular.module('op.live-conference')
         onLeave: '=',
         conferenceState: '='
       },
-      controller: function($scope, $log, easyRTCService) {
+      link: function($scope) {
         $scope.muted = false;
         $scope.videoMuted = false;
+
+        $scope.noVideo = !easyRTCService.isVideoEnabled();
 
         $scope.toggleSound = function() {
           easyRTCService.enableMicrophone($scope.muted);
@@ -235,7 +237,7 @@ angular.module('op.live-conference')
             vHeight = vid.videoHeight,
             vWidth = vid.videoWidth;
 
-        if (!height || !width || !vHeight || !vWidth) {
+        if (!height || !width) {
           return;
         }
 

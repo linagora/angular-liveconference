@@ -3,7 +3,7 @@
     li
       a(href="", ng-click="showInvitationPanel()")
         i.fa.fa-users.fa-2x.conference-toggle-invite-button
-    li
+    li(ng-class="{'hidden': noVideo}")
       a(href="", ng-click="toggleCamera()")
         i.fa.fa-2x.conference-toggle-video-button(ng-class="{'fa-eye': !videoMuted, 'fa-eye-slash': videoMuted}")
     li
