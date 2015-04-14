@@ -5,7 +5,7 @@
 var expect = chai.expect;
 
 describe('easyRTCService service', function () {
-  var service, $log, tokenAPI, session, webrtcFactory, easyrtc, currentConferenceState;
+  var service, tokenAPI, session, webrtcFactory, easyrtc, currentConferenceState, disconnectCallback;
 
   beforeEach(angular.mock.module('op.live-conference'));
 
@@ -13,10 +13,10 @@ describe('easyRTCService service', function () {
     currentConferenceState = {};
     easyrtc = {
       enableDataChannels: function() {},
+      setDisconnectListener: function(callback) { disconnectCallback = callback; },
       myEasyrtcid: 'myself'
     };
     tokenAPI = {};
-    $log = { debug: function () {} };
     session = {
       getUsername: function () { return 'Wooot'; },
       getUserId: function () { return 2; },
@@ -35,7 +35,6 @@ describe('easyRTCService service', function () {
     };
 
     module(function ($provide) {
-      $provide.value('$log', $log);
       $provide.value('tokenAPI', {});
       $provide.value('session', session);
       $provide.value('webrtcFactory', webrtcFactory);
@@ -120,23 +119,39 @@ describe('easyRTCService service', function () {
 
   });
 
-  describe('muteRemoteMicrophone function', function() {
-    it('should update the tracks', function() {
-      var tracks = [{a: 1}, {b: 2}];
-      var mute = true;
-      easyrtc.getRemoteStream = function() {
-        return {
-          getAudioTracks: function() {
-            return tracks;
-          }
-        };
-      };
+  describe('addDisconnectCallback function', function() {
 
-      service.muteRemoteMicrophone(1, mute);
-      expect(tracks).to.deep.equals(
-        [{enabled: !mute, a: 1}, {enabled: !mute, b: 2}]
-      );
+    it('should return false if no callback is given', function() {
+      expect(service.addDisconnectCallback()).to.be.false;
     });
+
+    it('should register a new disconnect callback', function(done) {
+      service.addDisconnectCallback(done);
+
+      disconnectCallback();
+    });
+
+    it('should return an identifier for the registered callback', function() {
+      expect(service.addDisconnectCallback(function() {})).to.exist;
+    });
+
+  });
+
+  describe('removeDisconnectCallback function', function() {
+
+    it('should return false if no id is given', function() {
+      expect(service.removeDisconnectCallback()).to.be.false;
+    });
+
+    it('should remove an existing disconnect callback', function() {
+      var id = service.addDisconnectCallback(function() {
+        throw new Error('This test should not call any disconnect callback !');
+      });
+
+      service.removeDisconnectCallback(id);
+      disconnectCallback();
+    });
+
   });
 
 });

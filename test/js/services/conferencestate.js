@@ -492,7 +492,8 @@ describe('The ConferenceState module', function() {
               done();
             },
             enableDataChannels: function() {},
-            setPeerListener: function() {}
+            setPeerListener: function() {},
+            setDisconnectListener: function() {}
           };
         }
       };
@@ -520,7 +521,8 @@ describe('The ConferenceState module', function() {
               done();
             },
             enableDataChannels: function() {},
-            setPeerListener: function() {}
+            setPeerListener: function() {},
+            setDisconnectListener: function() {}
           };
 
         }
