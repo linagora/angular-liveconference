@@ -225,6 +225,22 @@ angular.module('op.live-conference')
         }
       }
 
+      function sendDataP2P(easyrtcid, msgType, data) {
+        easyrtc.sendDataP2P(easyrtcid, msgType, JSON.stringify(data));
+      }
+
+      function sendDataWS(easyrtcid, msgType, data) {
+        easyrtc.sendDataWS(easyrtcid, msgType, JSON.stringify(data));
+      }
+
+      function getP2PConnectionStatus(easyrtcid) {
+        return easyrtc.getConnectStatus(easyrtcid);
+      }
+
+      function doesDataChannelWork(easyrtcid) {
+        return easyrtc.doesDataChannelWork(easyrtcid);
+      }
+
       function setPeerListener(handler, msgType) {
         easyrtc.setPeerListener(handler, msgType);
       }
@@ -280,6 +296,22 @@ angular.module('op.live-conference')
         broadcastData(EASYRTC_EVENTS.attendeeUpdate, prepareAttendeeForBroadcast(attendee));
       }
 
+      easyrtc.setDataChannelCloseListener(function(easyrtcid) {
+        $log.debug('MEET-255 Data channel closed with ' + easyrtcid);
+      });
+
+      easyrtc.setCallCancelled(function(easyrtcid, explicitlyCancelled) {
+        if(explicitlyCancelled) {
+          $log.debug('MEET-255 ' + easyrtc.idToName(easyrtcid) + ' stopped trying to reach you');
+        } else {
+          $log.debug('MEET-255 Implicitly called '  + easyrtc.idToName(easyrtcid));
+        }
+      });
+
+      easyrtc.setOnStreamClosed(function(easyrtcid, stream, streamName){
+        $log.debug('MEET-255 ' + easyrtc.idToName(easyrtcid) + ' closed stream ' + stream.id + ' ' + streamName);
+      });
+
       return {
         leaveRoom: leaveRoom,
         performCall: performCall,
@@ -295,6 +327,13 @@ angular.module('op.live-conference')
         broadcastData: broadcastData,
         broadcastMe: broadcastMe,
         addDisconnectCallback: addDisconnectCallback,
-        removeDisconnectCallback: removeDisconnectCallback
+        removeDisconnectCallback: removeDisconnectCallback,
+        sendDataP2P: sendDataP2P,
+        sendDataWS: sendDataWS,
+        getP2PConnectionStatus: getP2PConnectionStatus,
+        doesDataChannelWork: doesDataChannelWork,
+        NOT_CONNECTED: easyrtc.NOT_CONNECTED,
+        BECOMING_CONNECTED: easyrtc.BECOMING_CONNECTED,
+        IS_CONNECTED: easyrtc.IS_CONNECTED
       };
     }]);

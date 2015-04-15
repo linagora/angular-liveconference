@@ -154,5 +154,9 @@ angular.module('op.live-conference')
       this.updateAttendeeByEasyrtcid(easyrtcid, {localmute: mute});
     };
 
+    ConferenceState.prototype.getAttendees = function() {
+      return angular.copy(this.attendees);
+    };
+
     return ConferenceState;
   }]);

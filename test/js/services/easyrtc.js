@@ -12,6 +12,9 @@ describe('easyRTCService service', function () {
   beforeEach(function () {
     currentConferenceState = {};
     easyrtc = {
+      setDataChannelCloseListener: function() {},
+      setCallCancelled: function() {},
+      setOnStreamClosed: function() {},
       enableDataChannels: function() {},
       setDisconnectListener: function(callback) { disconnectCallback = callback; },
       myEasyrtcid: 'myself'
