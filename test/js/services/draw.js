@@ -8,6 +8,39 @@ describe('The draw factory collection', function () {
 
   beforeEach(angular.mock.module('op.live-conference'));
 
+  describe('The drawHelper function', function() {
+
+    var drawHelper;
+
+    beforeEach(function() {
+      inject(function($injector) {
+        drawHelper = $injector.get('drawHelper');
+      });
+    });
+
+    it('should call context.drawImage with all parameter except the first one and "this" to be the first parameter', function(done) {
+      var arg1Expected = 'arg1';
+      var arg2Expected = 'arg2';
+      var arg3Expected = 'arg3';
+
+      function drawImage(arg1, arg2, arg3, arg4) {
+        expect(this).to.deep.equal(context);
+        expect(arg1).to.deep.equal(arg1Expected);
+        expect(arg2).to.deep.equal(arg2Expected);
+        expect(arg3).to.deep.equal(arg3Expected);
+        expect(arg4).to.be.undefined;
+        done();
+      }
+
+      var context = {
+        drawImage: drawImage
+      };
+
+      drawHelper.drawImage(context, arg1Expected, arg2Expected, arg3Expected);
+    });
+
+  });
+
   describe('The drawAvatarIfVideoMuted function', function() {
 
     var currentConferenceState, drawAvatarIfVideoMuted, getCoordinatesOfCenteredImage, attendeeColorsService, getCoordinatesOfCenteredImageMock;
