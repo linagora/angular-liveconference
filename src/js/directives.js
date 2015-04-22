@@ -213,8 +213,8 @@ angular.module('op.live-conference')
       }
     };
   })
-  .directive('scaleToCanvas', ['$interval', '$window', 'cropDimensions', 'drawAvatarIfVideoMuted', '$log',
-    function($interval, $window, cropDimensions, drawAvatarIfVideoMuted, $log) {
+  .directive('scaleToCanvas', ['$interval', '$window', 'cropDimensions', 'drawAvatarIfVideoMuted', 'drawHelper',
+    function($interval, $window, cropDimensions, drawAvatarIfVideoMuted, drawHelper) {
 
     var requestAnimationFrame =
       $window.requestAnimationFrame ||
@@ -244,7 +244,7 @@ angular.module('op.live-conference')
         drawAvatarIfVideoMuted(vid.id, ctx, width, height, function() {
           var cropDims = cropDimensions(width, height, vWidth, vHeight);
 
-          ctx.drawImage(vid, cropDims[0], cropDims[1], cropDims[2], cropDims[2], 0, 0, width, height);
+          drawHelper.drawImage(ctx, vid, cropDims[0], cropDims[1], cropDims[2], cropDims[2], 0, 0, width, height);
         });
       }
 

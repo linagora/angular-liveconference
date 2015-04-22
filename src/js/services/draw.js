@@ -2,7 +2,33 @@
 
 angular.module('op.live-conference')
 
-  .factory('drawVideo', ['$window', '$interval', 'drawAvatarIfVideoMuted', function($window, $interval, drawAvatarIfVideoMuted) {
+  .factory('drawHelper', function () {
+
+    function drawImage(context) {
+      // see https://bugzilla.mozilla.org/show_bug.cgi?id=879717
+      // Sometimes Firefox drawImage before it is even available.
+      // Thus we ignore this error.
+
+      var argumentsArray = [];
+      for (var i = 1 ; i < arguments.length ; i++) {
+        argumentsArray.push(arguments[i]);
+      }
+
+      try {
+        context.drawImage.apply(context, argumentsArray);
+      } catch (e) {
+        if (e.name !== 'NS_ERROR_NOT_AVAILABLE') {
+          throw e;
+        }
+      }
+    }
+
+    return {
+      drawImage: drawImage
+    };
+  })
+
+  .factory('drawVideo', ['$window', '$interval', 'drawAvatarIfVideoMuted', 'drawHelper', function($window, $interval, drawAvatarIfVideoMuted, drawHelper) {
     var requestAnimationFrame =
       $window.requestAnimationFrame ||
       $window.mozRequestAnimationFrame ||
@@ -13,19 +39,9 @@ angular.module('op.live-conference')
     var promise;
 
     function draw(context, video, width, height) {
-      // see https://bugzilla.mozilla.org/show_bug.cgi?id=879717
-      // Sometimes Firefox drawImage before it is even available.
-      // Thus we ignore this error.
-      try {
-        drawAvatarIfVideoMuted(video.id, context, width, height, function() {
-          context.drawImage(video, 0, 0, width, height);
-        });
-      } catch (e) {
-        if (e.name !== 'NS_ERROR_NOT_AVAILABLE') {
-          throw e;
-        }
-      }
-
+      drawAvatarIfVideoMuted(video.id, context, width, height, function() {
+        drawHelper.drawImage(context, video, 0, 0, width, height);
+      });
     }
 
     return function(context, video, width, height) {
@@ -101,8 +117,8 @@ angular.module('op.live-conference')
     };
   })
 
-  .factory('drawAvatarIfVideoMuted', ['currentConferenceState', 'attendeeColorsService', 'getCoordinatesOfCenteredImage', '$log',
-    function(currentConferenceState, attendeeColorsService, getCoordinatesOfCenteredImage, $log) {
+  .factory('drawAvatarIfVideoMuted', ['currentConferenceState', 'attendeeColorsService', 'getCoordinatesOfCenteredImage', '$log', 'drawHelper',
+    function(currentConferenceState, attendeeColorsService, getCoordinatesOfCenteredImage, $log, drawHelper) {
     return function(videoId, context, width, height, otherwise) {
       var attendee = currentConferenceState.getAttendeeByVideoId(videoId);
 
@@ -131,7 +147,7 @@ angular.module('op.live-conference')
           context.clearRect(0, 0, width, height);
           context.fillStyle = attendeeColorsService.getColorForAttendeeAtIndex(attendee.index);
           context.fillRect(coords.x, coords.y, coords.size, coords.size);
-          context.drawImage(image, coords.x, coords.y, coords.size, coords.size);
+          drawHelper.drawImage(context, image, coords.x, coords.y, coords.size, coords.size);
 
           canvas.drawnAvatarVideoId = videoId;
         });
