@@ -449,6 +449,8 @@ describe('The ConferenceState module', function() {
       };
 
       webrtcObject = {
+        roomJoin: {},
+
         setRoomOccupantListener: function() {},
         setRoomEntryListener: function() {},
         setDisconnectListener: function() {},
@@ -591,9 +593,7 @@ describe('The ConferenceState module', function() {
         });
 
         var conferenceState = {
-          conference: {
-            conference: { _id: 123 }
-          },
+          conference: { _id: 123 },
           pushAttendee: function() {},
           removeAttendee: function() {}
         };
@@ -623,9 +623,7 @@ describe('The ConferenceState module', function() {
         });
 
         var conferenceState = {
-          conference: {
-            conference: { _id: 123 }
-          },
+          conference: { _id: 123 },
           pushAttendee: function() {},
           removeAttendee: function() {}
         };
