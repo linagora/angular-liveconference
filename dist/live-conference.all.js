@@ -1050,7 +1050,7 @@ angular.module('op.live-conference')
         easyrtc.call(otherEasyrtcid, onSuccess, onFailure);
       }
 
-      function connect(conferenceState) {
+      function connect(conferenceState, callback) {
 
         function entryListener(entry, roomName) {
           if (entry) {
@@ -1091,14 +1091,16 @@ angular.module('op.live-conference')
         easyrtc.setRoomEntryListener(entryListener);
 
         var conference = conferenceState.conference;
-        easyrtc.joinRoom(conference._id, null,
-          function() {
-            $log.debug('Joined room ' + conference._id);
-          },
-          function() {
-            $log.debug('Error while joining room ' + conference._id);
-          }
-        );
+        if (!(conference._id in easyrtc.roomJoin)) {
+          easyrtc.joinRoom(conference._id, null,
+            function() {
+              $log.debug('Joined room ' + conference._id);
+            },
+            function() {
+              $log.debug('Error while joining room ' + conference._id);
+            }
+          );
+        }
 
         easyrtc.username = session.getUserId();
 
@@ -1118,10 +1120,16 @@ angular.module('op.live-conference')
             if (!videoEnabled) {
               conferenceState.updateMuteVideoFromIndex(0, true);
             }
+            if (callback) {
+              callback(null);
+            }
           }
 
           function onLoginFailure(errorCode, message) {
             $log.error('Error while connecting to the webrtc signaling service ' + errorCode + ' : ' + message);
+            if (callback) {
+              callback(errorCode);
+            }
           }
 
           easyrtc.setOnError(function(errorObject){
