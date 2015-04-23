@@ -4,12 +4,12 @@
 
 var expect = chai.expect;
 
-describe('attendeeColors service', function () {
+describe('attendeeColors service', function() {
   var service, MAX_ATTENDEES;
 
   beforeEach(angular.mock.module('op.live-conference'));
 
-  beforeEach(function () {
+  beforeEach(function() {
     inject(function($injector) {
       service = $injector.get('attendeeColorsService');
       MAX_ATTENDEES = $injector.get('MAX_ATTENDEES');

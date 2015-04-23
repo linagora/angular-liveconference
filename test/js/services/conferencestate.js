@@ -14,7 +14,7 @@ describe('The ConferenceState module', function() {
       apply = false;
       newImage = {};
 
-      module(function ($provide) {
+      module(function($provide) {
         $provide.value('newImage', function() {
           return newImage;
         });
@@ -67,7 +67,7 @@ describe('The ConferenceState module', function() {
 
     describe('updateAttendee method', function() {
       it('should update the good attendee, $rootScope.$applyAsync() and $rootScope.$broadcast', function(done) {
-        $rootScope.$on('conferencestate:attendees:update', function (event, attendee) {
+        $rootScope.$on('conferencestate:attendees:update', function(event, attendee) {
           var expected = {
             easyrtcid: 'easyrtcid',
             id: 'id',
@@ -91,7 +91,7 @@ describe('The ConferenceState module', function() {
 
     describe('updateAttendee method', function() {
       it('should $rootScope.$broadcast when the speaking property changes', function(done) {
-        $rootScope.$on('conferencestate:speaking', function (event, attendee) {
+        $rootScope.$on('conferencestate:speaking', function(event, attendee) {
           expect(attendee).to.deep.equal({
             id: 'easyrtcid',
             speaking: true
@@ -110,7 +110,7 @@ describe('The ConferenceState module', function() {
 
     describe('updateAttendee method', function() {
       it('should not $rootScope.$broadcast when the speaking property does not change', function(done) {
-        $rootScope.$on('conferencestate:speaking', function () {
+        $rootScope.$on('conferencestate:speaking', function() {
           done(new Error('This test should not call $rootScope.$broadcast(conferencestate:speaking)'));
         });
 
@@ -129,7 +129,7 @@ describe('The ConferenceState module', function() {
 
     describe('updateAttendee method', function() {
       it('should $rootScope.$broadcast when the mute property changes', function(done) {
-        $rootScope.$on('conferencestate:mute', function (event, attendee) {
+        $rootScope.$on('conferencestate:mute', function(event, attendee) {
           expect(attendee).to.deep.equal({
             id: 'easyrtcid',
             mute: true
@@ -148,7 +148,7 @@ describe('The ConferenceState module', function() {
 
     describe('updateAttendee method', function() {
       it('should not $rootScope.$broadcast when the mute property does not change', function(done) {
-        $rootScope.$on('conferencestate:mute', function () {
+        $rootScope.$on('conferencestate:mute', function() {
           done(new Error('This test should not call $rootScope.$broadcast(conferencestate:mute)'));
         });
 
@@ -167,7 +167,7 @@ describe('The ConferenceState module', function() {
 
     describe('updateAttendee method', function() {
       it('should $rootScope.$broadcast when the muteVideo property changes', function(done) {
-        $rootScope.$on('conferencestate:muteVideo', function (event, attendee) {
+        $rootScope.$on('conferencestate:muteVideo', function(event, attendee) {
           expect(attendee).to.deep.equal({
             id: 'easyrtcid',
             muteVideo: true
@@ -186,7 +186,7 @@ describe('The ConferenceState module', function() {
 
     describe('updateAttendee method', function() {
       it('should not $rootScope.$broadcast when the muteVideo property does not change', function(done) {
-        $rootScope.$on('conferencestate:muteVideo', function () {
+        $rootScope.$on('conferencestate:muteVideo', function() {
           done(new Error('This test should not call $rootScope.$broadcast(conferencestate:muteVideo)'));
         });
 
@@ -205,7 +205,7 @@ describe('The ConferenceState module', function() {
 
     describe('pushAttendee method', function() {
       it('should push the good attendee and $rootScope.$broadcast', function(done) {
-        $rootScope.$on('conferencestate:attendees:push', function (event, attendee) {
+        $rootScope.$on('conferencestate:attendees:push', function(event, attendee) {
           var expected = {
             index: 0,
             videoId: 'video-thumb0',
@@ -228,7 +228,7 @@ describe('The ConferenceState module', function() {
 
     describe('removeAttendee method', function() {
       it('should remove the good attendee and $rootScope.$broadcast', function(done) {
-        $rootScope.$on('conferencestate:attendees:remove', function (event, attendee) {
+        $rootScope.$on('conferencestate:attendees:remove', function(event, attendee) {
           expect(attendee).to.deep.equal({ easyrtcid: 'easyrtcid2' });
           expect(conferenceState.attendees[1]).to.be.null;
           done();
@@ -241,7 +241,7 @@ describe('The ConferenceState module', function() {
 
     describe('updateLocalVideoId method', function() {
       it('should update local video id and $rootScope.$broadcast', function(done) {
-        $rootScope.$on('conferencestate:localVideoId:update', function (event, videoid) {
+        $rootScope.$on('conferencestate:localVideoId:update', function(event, videoid) {
           expect(videoid).to.deep.equal('newlocalvideo');
           expect(conferenceState.localVideoId).to.deep.equal('newlocalvideo');
           done();
@@ -253,7 +253,7 @@ describe('The ConferenceState module', function() {
 
     describe('updateLocalVideoIdToIndex method', function() {
       it('should update local video id by index and $rootScope.$broadcast', function(done) {
-        $rootScope.$on('conferencestate:localVideoId:update', function (event, videoid) {
+        $rootScope.$on('conferencestate:localVideoId:update', function(event, videoid) {
           expect(videoid).to.deep.equal('video-thumb2');
           expect(conferenceState.localVideoId).to.deep.equal('video-thumb2');
           done();
@@ -265,7 +265,7 @@ describe('The ConferenceState module', function() {
 
     describe('updateSpeaking method', function() {
       it('should do nothing if the attendee is not found', function() {
-        $rootScope.$on('conferencestate:speaking', function () {
+        $rootScope.$on('conferencestate:speaking', function() {
           throw new Error('should not be here');
         });
 
@@ -278,7 +278,7 @@ describe('The ConferenceState module', function() {
       });
 
       it('should update speaking,  $rootScope.$applyAsync and $rootScope.$broadcast', function(done) {
-        $rootScope.$on('conferencestate:speaking', function (event, data) {
+        $rootScope.$on('conferencestate:speaking', function(event, data) {
           expect(data).to.deep.equal({id: 'easyrtcid2', speaking: true});
           expect(conferenceState.attendees[1].speaking).to.be.true;
           done();
@@ -300,7 +300,7 @@ describe('The ConferenceState module', function() {
 
     describe('updateMuteFromEasyrtcid method', function() {
       it('should update mute property of attendee and $rootScope.$broadcast', function(done) {
-        $rootScope.$on('conferencestate:mute', function (event, data) {
+        $rootScope.$on('conferencestate:mute', function(event, data) {
           expect(data).to.deep.equal({id: 'easyrtcid', mute: true});
           expect(conferenceState.attendees).to.deep.equal([{ easyrtcid: 'easyrtcid', videoId: 'videoId', mute: true}]);
           done();
@@ -313,7 +313,7 @@ describe('The ConferenceState module', function() {
 
     describe('updateMuteFromIndex method', function() {
       it('should update mute property of attendee and $rootScope.$broadcast', function(done) {
-        $rootScope.$on('conferencestate:mute', function (event, data) {
+        $rootScope.$on('conferencestate:mute', function(event, data) {
           expect(data).to.deep.equal({id: 'easyrtcid', mute: true});
           expect(conferenceState.attendees).to.deep.equal([{easyrtcid: 'user1'}, { easyrtcid: 'easyrtcid', videoId: 'videoId', mute: true}]);
           done();
@@ -326,7 +326,7 @@ describe('The ConferenceState module', function() {
 
     describe('updateMuteVideoFromEasyrtcid method', function() {
       it('should update muteVideo property of attendee and $rootScope.$broadcast', function(done) {
-        $rootScope.$on('conferencestate:muteVideo', function (event, data) {
+        $rootScope.$on('conferencestate:muteVideo', function(event, data) {
           expect(data).to.deep.equal({id: 'easyrtcid', muteVideo: true});
           expect(conferenceState.attendees).to.deep.equal([{ easyrtcid: 'easyrtcid', videoId: 'videoId', muteVideo: true}]);
           done();
@@ -339,7 +339,7 @@ describe('The ConferenceState module', function() {
 
     describe('updateMuteVideoFromIndex method', function() {
       it('should update muteVideo property of attendee and $rootScope.$broadcast', function(done) {
-        $rootScope.$on('conferencestate:muteVideo', function (event, data) {
+        $rootScope.$on('conferencestate:muteVideo', function(event, data) {
           expect(data).to.deep.equal({id: 'easyrtcid', muteVideo: true});
           expect(conferenceState.attendees).to.deep.equal([{easyrtcid: 'user1'}, { easyrtcid: 'easyrtcid', videoId: 'videoId', muteVideo: true}]);
           done();
@@ -395,7 +395,7 @@ describe('The ConferenceState module', function() {
         expect(conferenceState.attendees[0].localmute).to.be.true;
       });
     });
-    
+
     describe('getAttendees() method', function() {
       it('should return a copy of the attendees array', function() {
         var attendees = [{easyrtcid: 'user1'}, { easyrtcid: 'easyrtcid', videoIds: 'videoId'}];
@@ -759,7 +759,7 @@ describe('The ConferenceState module', function() {
   describe('drawVideo service', function() {
 
     beforeEach(function() {
-      module(function ($provide) {
+      module(function($provide) {
         $provide.value('drawAvatarIfVideoMuted', function() {});
       });
     });

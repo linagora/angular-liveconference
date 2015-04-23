@@ -4,12 +4,12 @@
 
 var expect = chai.expect;
 
-describe('easyRTCService service', function () {
+describe('easyRTCService service', function() {
   var service, tokenAPI, session, webrtcFactory, easyrtc, currentConferenceState, disconnectCallback;
 
   beforeEach(angular.mock.module('op.live-conference'));
 
-  beforeEach(function () {
+  beforeEach(function() {
     currentConferenceState = {};
     easyrtc = {
       setDataChannelCloseListener: function() {},
@@ -21,8 +21,8 @@ describe('easyRTCService service', function () {
     };
     tokenAPI = {};
     session = {
-      getUsername: function () { return 'Wooot'; },
-      getUserId: function () { return 2; },
+      getUsername: function() { return 'Wooot'; },
+      getUserId: function() { return 2; },
       user: {
         _id: 2,
         emails: ['test@openpaas.io']
@@ -32,12 +32,12 @@ describe('easyRTCService service', function () {
       }
     };
     webrtcFactory = {
-      get: function () {
+      get: function() {
         return easyrtc;
       }
     };
 
-    module(function ($provide) {
+    module(function($provide) {
       $provide.value('tokenAPI', {});
       $provide.value('session', session);
       $provide.value('webrtcFactory', webrtcFactory);

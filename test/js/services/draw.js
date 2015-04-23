@@ -4,7 +4,7 @@
 
 var expect = chai.expect;
 
-describe('The draw factory collection', function () {
+describe('The draw factory collection', function() {
 
   beforeEach(angular.mock.module('op.live-conference'));
 
@@ -24,6 +24,7 @@ describe('The draw factory collection', function () {
       var arg3Expected = 'arg3';
 
       function drawImage(arg1, arg2, arg3, arg4) {
+        /* jshint validthis: true */
         expect(this).to.deep.equal(context);
         expect(arg1).to.deep.equal(arg1Expected);
         expect(arg2).to.deep.equal(arg2Expected);
@@ -53,7 +54,7 @@ describe('The draw factory collection', function () {
         getColorForAttendeeAtIndex: function() { return 'color'; }
       };
 
-      module(function ($provide) {
+      module(function($provide) {
         $provide.value('currentConferenceState', currentConferenceState);
         $provide.value('getCoordinatesOfCenteredImage', getCoordinatesOfCenteredImage);
         $provide.value('attendeeColorsService', attendeeColorsService);
@@ -196,7 +197,7 @@ describe('The draw factory collection', function () {
 
     var getCoordinatesOfCenteredImage;
 
-    beforeEach(function () {
+    beforeEach(function() {
       inject(function($injector) {
         getCoordinatesOfCenteredImage = $injector.get('getCoordinatesOfCenteredImage');
       });

@@ -84,7 +84,7 @@ angular.module('op.live-conference')
         videoId: '@',
         onVideoClick: '=',
         videoIndex: '=',
-        showReport: "="
+        showReport: '='
       },
       link: function(scope) {
 
@@ -322,5 +322,5 @@ angular.module('op.live-conference')
           new AutoVideoSwitcher(currentConferenceState);
         });
       }
-    }
+    };
   }]);

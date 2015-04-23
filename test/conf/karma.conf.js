@@ -38,7 +38,7 @@ module.exports = function(config) {
       'karma-firefox-launcher',
       'karma-mocha',
       'karma-coverage',
-      'karma-spec-reporter',
+      'karma-spec-reporter'
     ],
 
     junitReporter: {

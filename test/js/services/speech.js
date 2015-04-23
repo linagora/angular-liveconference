@@ -15,7 +15,7 @@ describe('The speech module', function() {
         getAttendeeByEasyrtcidSpy,
         updateLocalVideoIdSpy;
 
-    beforeEach(function () {
+    beforeEach(function() {
       conferenceState = {
         getAttendeeByEasyrtcid: function(data) {
           return getAttendeeByEasyrtcidSpy(data);
@@ -29,7 +29,7 @@ describe('The speech module', function() {
       updateLocalVideoIdSpy = {};
 
       var AutoVideoSwitcher = {};
-      inject(function ($injector) {
+      inject(function($injector) {
         $rootScope = $injector.get('$rootScope');
         $timeout = $injector.get('$timeout');
         AutoVideoSwitcher = $injector.get('AutoVideoSwitcher');
@@ -45,7 +45,7 @@ describe('The speech module', function() {
       autoVideoSwitchService.onSpeechEnd = function() {
         throw new Error('should not be here');
       };
-      $rootScope.$broadcast('conferencestate:speaking', {speaking: true} );
+      $rootScope.$broadcast('conferencestate:speaking', {speaking: true});
     });
 
     it('should call onSpeechEnd if speaking is false', function(done) {
@@ -55,7 +55,7 @@ describe('The speech module', function() {
       autoVideoSwitchService.onSpeechEnd = function(event, data) {
         done();
       };
-      $rootScope.$broadcast('conferencestate:speaking', {speaking: false} );
+      $rootScope.$broadcast('conferencestate:speaking', {speaking: false});
     });
 
     describe('onSpeech method', function() {
@@ -65,10 +65,10 @@ describe('The speech module', function() {
           return null;
         };
 
-        $rootScope.$broadcast('conferencestate:speaking', {speaking: true} );
+        $rootScope.$broadcast('conferencestate:speaking', {speaking: true});
         try {
           $timeout.flush();
-        } catch(e) {
+        } catch (e) {
           expect(autoVideoSwitchService.timeouts).to.deep.equal({});
           done();
         }
@@ -82,10 +82,10 @@ describe('The speech module', function() {
           };
         };
 
-        $rootScope.$broadcast('conferencestate:speaking', {speaking: true} );
+        $rootScope.$broadcast('conferencestate:speaking', {speaking: true});
         try {
           $timeout.flush();
-        } catch(e) {
+        } catch (e) {
           expect(autoVideoSwitchService.timeouts).to.deep.equal({});
           done();
         }
@@ -100,10 +100,10 @@ describe('The speech module', function() {
           };
         };
 
-        $rootScope.$broadcast('conferencestate:speaking', {speaking: true} );
+        $rootScope.$broadcast('conferencestate:speaking', {speaking: true});
         try {
           $timeout.flush();
-        } catch(e) {
+        } catch (e) {
           expect(autoVideoSwitchService.timeouts).to.deep.equal({});
           done();
         }
@@ -117,10 +117,10 @@ describe('The speech module', function() {
           };
         };
 
-        $rootScope.$broadcast('conferencestate:speaking', {speaking: true} );
+        $rootScope.$broadcast('conferencestate:speaking', {speaking: true});
         try {
           $timeout.flush();
-        } catch(e) {
+        } catch (e) {
           expect(autoVideoSwitchService.timeouts).to.deep.equal({});
           done();
         }
@@ -139,7 +139,7 @@ describe('The speech module', function() {
           autoVideoSwitchService.conferenceState.localVideoId = videoId;
         };
 
-        $rootScope.$broadcast('conferencestate:speaking', {speaking: true} );
+        $rootScope.$broadcast('conferencestate:speaking', {speaking: true});
         expect(autoVideoSwitchService.timeouts.easyrtcid).to.exist;
         expect(autoVideoSwitchService.conferenceState.localVideoId).to.equal('video-thumb1');
         $timeout.flush();
@@ -158,9 +158,9 @@ describe('The speech module', function() {
           autoVideoSwitchService.conferenceState.localVideoId = videoId;
         };
 
-        $rootScope.$broadcast('conferencestate:speaking', {speaking: true} );
-        $rootScope.$broadcast('conferencestate:speaking', {speaking: true} );
-        $rootScope.$broadcast('conferencestate:speaking', {speaking: true} );
+        $rootScope.$broadcast('conferencestate:speaking', {speaking: true});
+        $rootScope.$broadcast('conferencestate:speaking', {speaking: true});
+        $rootScope.$broadcast('conferencestate:speaking', {speaking: true});
         expect(autoVideoSwitchService.timeouts.easyrtcid.$$timeoutId).to.equal(0);
         expect(autoVideoSwitchService.conferenceState.localVideoId).to.equal('video-thumb1');
         $timeout.flush();
@@ -175,7 +175,7 @@ describe('The speech module', function() {
           return null;
         };
 
-        $rootScope.$broadcast('conferencestate:speaking', {speaking: false} );
+        $rootScope.$broadcast('conferencestate:speaking', {speaking: false});
         expect(autoVideoSwitchService.timeouts).to.deep.equal({});
       });
 
@@ -187,7 +187,7 @@ describe('The speech module', function() {
           };
         };
 
-        $rootScope.$broadcast('conferencestate:speaking', {speaking: false} );
+        $rootScope.$broadcast('conferencestate:speaking', {speaking: false});
         expect(autoVideoSwitchService.timeouts).to.deep.equal({
           bar: ['fake']
         });
@@ -203,7 +203,7 @@ describe('The speech module', function() {
           };
         };
 
-        $rootScope.$broadcast('conferencestate:speaking', {speaking: false} );
+        $rootScope.$broadcast('conferencestate:speaking', {speaking: false});
         expect(autoVideoSwitchService.timeouts).to.deep.equal({
           bar: ['fake'],
           foo: ['fake']
@@ -220,10 +220,10 @@ describe('The speech module', function() {
           };
         };
 
-        $rootScope.$broadcast('conferencestate:speaking', {speaking: true} );
+        $rootScope.$broadcast('conferencestate:speaking', {speaking: true});
         expect(autoVideoSwitchService.timeouts.foo).to.exist;
 
-        $rootScope.$broadcast('conferencestate:speaking', {speaking: false} );
+        $rootScope.$broadcast('conferencestate:speaking', {speaking: false});
         expect(autoVideoSwitchService.timeouts.foo).to.not.exist;
         expect(autoVideoSwitchService.timeouts).to.deep.equal({
           bar: ['fake'],

@@ -391,7 +391,7 @@ angular.module('op.live-conference')
         videoId: '@',
         onVideoClick: '=',
         videoIndex: '=',
-        showReport: "="
+        showReport: '='
       },
       link: function(scope) {
 
@@ -629,7 +629,7 @@ angular.module('op.live-conference')
           new AutoVideoSwitcher(currentConferenceState);
         });
       }
-    }
+    };
   }]);
 'use strict';
 
@@ -905,11 +905,11 @@ angular.module('op.live-conference')
      */
     function cropDimensions(width, height, vWidth, vHeight) {
       var key = width + ':' + height + ':' + vWidth + ':' + vHeight;
-      if ( valuesCache[key] ) {
+      if (valuesCache[key]) {
         return valuesCache[key];
       }
       var back = [0, 0, 0];
-      if ( vWidth < vHeight ) {
+      if (vWidth < vHeight) {
         back[1] = cropSide(height, vHeight, vWidth);
         back[2] = vWidth;
       } else {
@@ -1132,7 +1132,7 @@ angular.module('op.live-conference')
             }
           }
 
-          easyrtc.setOnError(function(errorObject){
+          easyrtc.setOnError(function(errorObject) {
             $log.error('setOnError with error: ' + errorObject.errorText + ' [error=' + JSON.stringify(errorObject) + ']');
           });
 
@@ -1151,7 +1151,7 @@ angular.module('op.live-conference')
             $rootScope.$apply();
           });
 
-          easyrtc.setDataChannelOpenListener( function(easyrtcid) {
+          easyrtc.setDataChannelOpenListener(function(easyrtcid) {
             var data = {
               id: session.getUserId(),
               displayName: session.getUsername(),
@@ -1341,9 +1341,9 @@ angular.module('op.live-conference')
      */
     /* global hark */
     return function(stream, options) {
-      options = options || {};
-      options.play = false;
-      var speechEvents = hark(stream, options);
+      var opts = options || {};
+      opts.play = false;
+      var speechEvents = hark(stream, opts);
       stream = null;
       return speechEvents;
     };

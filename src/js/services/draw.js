@@ -2,7 +2,7 @@
 
 angular.module('op.live-conference')
 
-  .factory('drawHelper', function () {
+  .factory('drawHelper', function() {
 
     function drawImage(context) {
       // see https://bugzilla.mozilla.org/show_bug.cgi?id=879717
@@ -10,7 +10,7 @@ angular.module('op.live-conference')
       // Thus we ignore this error.
 
       var argumentsArray = [];
-      for (var i = 1 ; i < arguments.length ; i++) {
+      for (var i = 1; i < arguments.length; i++) {
         argumentsArray.push(arguments[i]);
       }
 
@@ -86,11 +86,11 @@ angular.module('op.live-conference')
      */
     function cropDimensions(width, height, vWidth, vHeight) {
       var key = width + ':' + height + ':' + vWidth + ':' + vHeight;
-      if ( valuesCache[key] ) {
+      if (valuesCache[key]) {
         return valuesCache[key];
       }
       var back = [0, 0, 0];
-      if ( vWidth < vHeight ) {
+      if (vWidth < vHeight) {
         back[1] = cropSide(height, vHeight, vWidth);
         back[2] = vWidth;
       } else {

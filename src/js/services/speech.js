@@ -15,9 +15,9 @@ angular.module('op.live-conference')
      */
     /* global hark */
     return function(stream, options) {
-      options = options || {};
-      options.play = false;
-      var speechEvents = hark(stream, options);
+      var opts = options || {};
+      opts.play = false;
+      var speechEvents = hark(stream, opts);
       stream = null;
       return speechEvents;
     };

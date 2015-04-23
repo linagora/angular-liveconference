@@ -153,7 +153,7 @@ angular.module('op.live-conference')
             }
           }
 
-          easyrtc.setOnError(function(errorObject){
+          easyrtc.setOnError(function(errorObject) {
             $log.error('setOnError with error: ' + errorObject.errorText + ' [error=' + JSON.stringify(errorObject) + ']');
           });
 
@@ -172,7 +172,7 @@ angular.module('op.live-conference')
             $rootScope.$apply();
           });
 
-          easyrtc.setDataChannelOpenListener( function(easyrtcid) {
+          easyrtc.setDataChannelOpenListener(function(easyrtcid) {
             var data = {
               id: session.getUserId(),
               displayName: session.getUsername(),
@@ -309,14 +309,14 @@ angular.module('op.live-conference')
       });
 
       easyrtc.setCallCancelled(function(easyrtcid, explicitlyCancelled) {
-        if(explicitlyCancelled) {
+        if (explicitlyCancelled) {
           $log.debug('MEET-255 ' + easyrtc.idToName(easyrtcid) + ' stopped trying to reach you');
         } else {
-          $log.debug('MEET-255 Implicitly called '  + easyrtc.idToName(easyrtcid));
+          $log.debug('MEET-255 Implicitly called ' + easyrtc.idToName(easyrtcid));
         }
       });
 
-      easyrtc.setOnStreamClosed(function(easyrtcid, stream, streamName){
+      easyrtc.setOnStreamClosed(function(easyrtcid, stream, streamName) {
         $log.debug('MEET-255 ' + easyrtc.idToName(easyrtcid) + ' closed stream ' + stream.id + ' ' + streamName);
       });
 
