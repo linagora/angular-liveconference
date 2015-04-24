@@ -465,6 +465,7 @@ describe('The ConferenceState module', function() {
         sendDataP2P: function() {},
         sendDataWS: function() {},
         getConnectStatus: function() {},
+        getVideoSourceList: function() {},
         doesDataChannelWork: function() {},
         setDataChannelCloseListener: function() {},
         setCallCancelled: function() {},

@@ -13,6 +13,28 @@ angular.module('op.live-conference')
       var bitRates, room, disconnectCallbacks = [];
       var videoEnabled = true;
 
+      var checkFirefoxEnumerateDevices = navigator.mozGetUserMedia && navigator.mediaDevices.enumerateDevices;
+      var isChromeBrowser = window.webrtcDetectedBrowser === 'chrome';
+      var canEnumerateDevices = checkFirefoxEnumerateDevices || isChromeBrowser;
+
+      easyrtc.getVideoSourceList(function(results) {
+        if (isChromeBrowser) {
+          if (results.length === 0) {
+            videoEnabled = false;
+            easyrtc.enableVideo(false);
+          }
+        }
+
+        if (checkFirefoxEnumerateDevices) { // only for firefox >= 39
+          navigator.mediaDevices.enumerateDevices().then(function(devices) {
+            videoEnabled = devices.some(function(device) {
+              return device.kind === 'videoinput';
+            });
+            easyrtc.enableVideo(videoEnabled);
+          });
+        }
+      });
+
       function removeDisconnectCallback(id) {
         if (!id) {
           return false;
@@ -324,6 +346,7 @@ angular.module('op.live-conference')
         leaveRoom: leaveRoom,
         performCall: performCall,
         connect: connect,
+        canEnumerateDevices: canEnumerateDevices,
         enableMicrophone: enableMicrophone,
         muteRemoteMicrophone: muteRemoteMicrophone,
         enableCamera: enableCamera,
