@@ -12,6 +12,7 @@ describe('easyRTCService service', function() {
   beforeEach(function() {
     currentConferenceState = {};
     easyrtc = {
+      setGotMedia: function() {},
       setDataChannelCloseListener: function() {},
       setCallCancelled: function() {},
       setOnStreamClosed: function() {},
@@ -156,6 +157,21 @@ describe('easyRTCService service', function() {
       disconnectCallback();
     });
 
+  });
+
+  describe('setGotMedia function', function() {
+
+    it('should proxy to easyrtc.setGotMedia()', function(done) {
+
+      var callback = function() {
+      };
+
+      easyrtc.setGotMedia = function(arg) {
+        expect(arg).to.equal(callback);
+        done();
+      };
+      service.setGotMedia(callback);
+    });
   });
 
 });
