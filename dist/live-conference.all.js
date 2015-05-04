@@ -821,7 +821,7 @@ angular.module('op.live-conference')
 
 angular.module('op.live-conference')
 
-  .factory('drawHelper', function () {
+  .factory('drawHelper', function() {
 
     function drawImage(context) {
       // see https://bugzilla.mozilla.org/show_bug.cgi?id=879717
@@ -829,7 +829,7 @@ angular.module('op.live-conference')
       // Thus we ignore this error.
 
       var argumentsArray = [];
-      for (var i = 1 ; i < arguments.length ; i++) {
+      for (var i = 1; i < arguments.length; i++) {
         argumentsArray.push(arguments[i]);
       }
 
@@ -991,6 +991,28 @@ angular.module('op.live-conference')
 
       var bitRates, room, disconnectCallbacks = [];
       var videoEnabled = true;
+
+      var checkFirefoxEnumerateDevices = navigator.mozGetUserMedia && navigator.mediaDevices.enumerateDevices;
+      var isChromeBrowser = window.webrtcDetectedBrowser === 'chrome';
+      var canEnumerateDevices = checkFirefoxEnumerateDevices || isChromeBrowser;
+
+      easyrtc.getVideoSourceList(function(results) {
+        if (isChromeBrowser) {
+          if (results.length === 0) {
+            videoEnabled = false;
+            easyrtc.enableVideo(false);
+          }
+        }
+
+        if (checkFirefoxEnumerateDevices) { // only for firefox >= 39
+          navigator.mediaDevices.enumerateDevices().then(function(devices) {
+            videoEnabled = devices.some(function(device) {
+              return device.kind === 'videoinput';
+            });
+            easyrtc.enableVideo(videoEnabled);
+          });
+        }
+      });
 
       function removeDisconnectCallback(id) {
         if (!id) {
@@ -1288,14 +1310,14 @@ angular.module('op.live-conference')
       });
 
       easyrtc.setCallCancelled(function(easyrtcid, explicitlyCancelled) {
-        if(explicitlyCancelled) {
+        if (explicitlyCancelled) {
           $log.debug('MEET-255 ' + easyrtc.idToName(easyrtcid) + ' stopped trying to reach you');
         } else {
-          $log.debug('MEET-255 Implicitly called '  + easyrtc.idToName(easyrtcid));
+          $log.debug('MEET-255 Implicitly called ' + easyrtc.idToName(easyrtcid));
         }
       });
 
-      easyrtc.setOnStreamClosed(function(easyrtcid, stream, streamName){
+      easyrtc.setOnStreamClosed(function(easyrtcid, stream, streamName) {
         $log.debug('MEET-255 ' + easyrtc.idToName(easyrtcid) + ' closed stream ' + stream.id + ' ' + streamName);
       });
 
@@ -1303,6 +1325,7 @@ angular.module('op.live-conference')
         leaveRoom: leaveRoom,
         performCall: performCall,
         connect: connect,
+        canEnumerateDevices: canEnumerateDevices,
         enableMicrophone: enableMicrophone,
         muteRemoteMicrophone: muteRemoteMicrophone,
         enableCamera: enableCamera,

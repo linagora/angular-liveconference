@@ -35,6 +35,13 @@ Some specialized Grunt tasks are available :
     grunt test-frontend # only run the fontend unit tests
     grunt test # launch all the testsuite
 
+## Note
+
+You can join a conference without camera when using:
+    Firefox < 39 see https://ci.open-paas.org/jira/browse/MEET-319
+    Firefox >= 39
+    Chrome > 40.
+
 Licence
 -------
 

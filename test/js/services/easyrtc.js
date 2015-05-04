@@ -15,6 +15,7 @@ describe('easyRTCService service', function() {
       setDataChannelCloseListener: function() {},
       setCallCancelled: function() {},
       setOnStreamClosed: function() {},
+      getVideoSourceList: function() {},
       enableDataChannels: function() {},
       setDisconnectListener: function(callback) { disconnectCallback = callback; },
       myEasyrtcid: 'myself'
