@@ -342,6 +342,10 @@ angular.module('op.live-conference')
         $log.debug('MEET-255 ' + easyrtc.idToName(easyrtcid) + ' closed stream ' + stream.id + ' ' + streamName);
       });
 
+      function setGotMedia(cb) {
+        easyrtc.setGotMedia(cb);
+      }
+
       return {
         leaveRoom: leaveRoom,
         performCall: performCall,
@@ -363,6 +367,7 @@ angular.module('op.live-conference')
         sendDataWS: sendDataWS,
         getP2PConnectionStatus: getP2PConnectionStatus,
         doesDataChannelWork: doesDataChannelWork,
+        setGotMedia: setGotMedia,
         NOT_CONNECTED: easyrtc.NOT_CONNECTED,
         BECOMING_CONNECTED: easyrtc.BECOMING_CONNECTED,
         IS_CONNECTED: easyrtc.IS_CONNECTED
