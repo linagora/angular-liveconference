@@ -259,8 +259,12 @@ angular.module('op.live-conference')
         easyrtc.sendDataP2P(easyrtcid, msgType, JSON.stringify(data));
       }
 
-      function sendDataWS(easyrtcid, msgType, data) {
-        easyrtc.sendDataWS(easyrtcid, msgType, JSON.stringify(data));
+      function sendDataWS(easyrtcid, msgType, data, ackhandler) {
+        easyrtc.sendDataWS(easyrtcid, msgType, JSON.stringify(data), ackhandler);
+      }
+
+      function sendData(easyrtcid, msgType, data, ackhandler) {
+        easyrtc.sendData(easyrtcid, msgType, JSON.stringify(data), ackhandler);
       }
 
       function getP2PConnectionStatus(easyrtcid) {
@@ -365,6 +369,7 @@ angular.module('op.live-conference')
         removeDisconnectCallback: removeDisconnectCallback,
         sendDataP2P: sendDataP2P,
         sendDataWS: sendDataWS,
+        sendData: sendData,
         getP2PConnectionStatus: getP2PConnectionStatus,
         doesDataChannelWork: doesDataChannelWork,
         setGotMedia: setGotMedia,
