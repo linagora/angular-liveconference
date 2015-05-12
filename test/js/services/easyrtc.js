@@ -174,4 +174,27 @@ describe('easyRTCService service', function() {
     });
   });
 
+  describe('sendData function', function() {
+
+    it('should forward the call to easyrtc.sendData', function(done) {
+      var testId = 'anId';
+      var testMsgType = 'aType';
+      var testData = {
+        toto: 'titi',
+        tata: {}
+      };
+      var testHandler = function() {};
+
+      easyrtc.sendData = function(easyrtcid, msgType, data, ackhandler) {
+        expect(easyrtcid).to.equal(testId);
+        expect(msgType).to.equal(testMsgType);
+        expect(data).to.equal(JSON.stringify(testData));
+        expect(ackhandler).to.deep.equal(testHandler);
+        done();
+      };
+
+      service.sendData(testId, testMsgType, testData, testHandler);
+    });
+  });
+
 });
