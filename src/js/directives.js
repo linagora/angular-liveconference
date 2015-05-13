@@ -210,6 +210,9 @@ angular.module('op.live-conference')
         $scope.leaveConference = function() {
           $scope.onLeave();
         };
+        $scope.toggleEditor = function() {
+          $scope.showEditor();
+        };
       }
     };
   })
