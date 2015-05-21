@@ -63,6 +63,10 @@ angular.module('op.live-conference')
         };
 
         scope.$on('$destroy', garbage);
+
+        $rootScope.$on('paneSize', function(event, paneWidth) {
+          scope.paneStyle = {width: (100 - paneWidth) + '%'};
+        });
       }
     };
   }])
