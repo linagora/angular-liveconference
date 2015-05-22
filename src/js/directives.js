@@ -63,6 +63,16 @@ angular.module('op.live-conference')
         };
 
         scope.$on('$destroy', garbage);
+
+        $rootScope.$on('paneSize', function(event, paneSize) {
+          if (paneSize.width) {
+            scope.paneStyle = {width: (100 - paneSize.width) + '%'};
+          }
+          if (paneSize.height) {
+            scope.paneStyle = {width: (100 - paneSize.height) + '%'};
+          }
+
+        });
       }
     };
   }])
@@ -209,6 +219,9 @@ angular.module('op.live-conference')
 
         $scope.leaveConference = function() {
           $scope.onLeave();
+        };
+        $scope.toggleEditor = function() {
+          $scope.showEditor();
         };
       }
     };
