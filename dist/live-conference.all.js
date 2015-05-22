@@ -1344,6 +1344,10 @@ angular.module('op.live-conference')
         easyrtc.setDataChannelCloseListener(fun);
       }
 
+      function setGotConnection(fun) {
+        easyrtc.setGotConnection(fun);
+      }
+
       return {
         leaveRoom: leaveRoom,
         performCall: performCall,
@@ -1371,7 +1375,8 @@ angular.module('op.live-conference')
         BECOMING_CONNECTED: easyrtc.BECOMING_CONNECTED,
         IS_CONNECTED: easyrtc.IS_CONNECTED,
         setDataChannelOpenListener: setDataChannelOpenListener,
-        setDataChannelCloseListener: setDataChannelCloseListener
+        setDataChannelCloseListener: setDataChannelCloseListener,
+        setGotConnection: setGotConnection
       };
     }]);
 'use strict';
