@@ -186,7 +186,8 @@ angular.module('op.live-conference')
       scope: {
         showInvitation: '=',
         onLeave: '=',
-        conferenceState: '='
+        conferenceState: '=',
+        showEditor: '='
       },
       link: function($scope) {
         $scope.muted = false;
