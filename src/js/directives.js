@@ -65,10 +65,10 @@ angular.module('op.live-conference')
         scope.$on('$destroy', garbage);
 
         $rootScope.$on('paneSize', function(event, paneSize) {
-          if (paneSize.width) {
+          if (paneSize.width !== undefined) {
             scope.paneStyle = {width: (100 - paneSize.width) + '%'};
           }
-          if (paneSize.height) {
+          if (paneSize.height !== undefined) {
             scope.paneStyle = {width: (100 - paneSize.height) + '%'};
           }
 
