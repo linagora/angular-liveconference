@@ -3,15 +3,15 @@
 angular.module('op.live-conference')
   .factory('attendeeColorsService', ['MAX_ATTENDEES', function(MAX_ATTENDEES) {
     var colors = [
-      '#F44336',
-      '#9C27B0',
-      '#673AB7',
-      '#2196F3',
-      '#00968',
-      '#CDDC39',
-      '#FFEB3B',
-      '#FF9800',
-      '#4CAF50'
+      '#EF5350',
+      '#5C6BC0',
+      '#26A69A',
+      '#FFEE58',
+      '#FF7043',
+      '#00B0FF',
+      '#9CCC65',
+      '#BDBDBD',
+      '#FFA726'
     ];
 
     function getColorForAttendeeAtIndex(index) {
