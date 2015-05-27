@@ -93,6 +93,48 @@ angular.module('op.live-conference')
         easyrtc.call(otherEasyrtcid, onSuccess, onFailure);
       }
 
+      // This function will be called when the connection has occured
+      var ret = (function() {
+          var onConnectionsSuccessCallbacks = [],
+            onConnectionsErrorCallbacks = [],
+            connected = false, failed = false;
+          function onConnectSuccess(fun) {
+            if (!connected) {
+              onConnectionsSuccessCallbacks.push(fun);
+            } else {
+              fun(null);
+            }
+          }
+          function onConnectError(fun) {
+            if (!failed) {
+              onConnectionsErrorCallbacks.push(fun);
+            } else {
+              fun(Error('Not connected!'));
+            }
+          }
+          function callOnConnectedSuccess() {
+            connected = true;
+            onConnectionsSuccessCallbacks.forEach(function(callback) {
+              callback(null);
+            });
+          }
+          function callOnConnectedError(errorCode, message) {
+            onConnectionsErrorCallbacks.forEach(function(callback) {
+              callback(errorCode, message);
+            });
+          }
+          return {
+            onConnectSuccess: onConnectSuccess,
+            onConnectError: onConnectError,
+            callOnConnectedSuccess: callOnConnectedSuccess,
+            callOnConnectedError: callOnConnectedError
+          };
+        })(),
+        onConnectSuccess = ret.onConnectSuccess,
+        onConnectError = ret.onConnectError,
+        callOnConnectedSuccess = ret.callOnConnectedSuccess,
+        callOnConnectedError = ret.callOnConnectedError;
+
       function connect(conferenceState, callback) {
 
         function entryListener(entry, roomName) {
@@ -166,6 +208,8 @@ angular.module('op.live-conference')
             if (callback) {
               callback(null);
             }
+            // Call the manually registered callbacks
+            callOnConnectedSuccess();
           }
 
           function onLoginFailure(errorCode, message) {
@@ -173,6 +217,7 @@ angular.module('op.live-conference')
             if (callback) {
               callback(errorCode);
             }
+            callOnConnectedError(errorCode, message);
           }
 
           easyrtc.setOnError(function(errorObject) {
@@ -194,7 +239,7 @@ angular.module('op.live-conference')
             $rootScope.$apply();
           });
 
-          easyrtc.setDataChannelOpenListener(function(easyrtcid) {
+          setDataChannelOpenListeners(function(easyrtcid) {
             var data = {
               id: session.getUserId(),
               displayName: session.getUsername(),
@@ -212,7 +257,7 @@ angular.module('op.live-conference')
             $rootScope.$apply();
           });
 
-          easyrtc.setPeerListener(function(easyrtcid, msgType, msgData) {
+          setPeerListeners(function(easyrtcid, msgType, msgData) {
             $log.debug('Event %s received from %s with data: ', EASYRTC_EVENTS.attendeeUpdate, easyrtcid, msgData);
             conferenceState.updateAttendeeByEasyrtcid(easyrtcid, msgData);
           }, EASYRTC_EVENTS.attendeeUpdate);
@@ -276,6 +321,7 @@ angular.module('op.live-conference')
       }
 
       function setPeerListener(handler, msgType) {
+        $log.warn('If you use setPeerListener, only the last handler will be executed!');
         easyrtc.setPeerListener(handler, msgType);
       }
 
@@ -350,17 +396,48 @@ angular.module('op.live-conference')
         easyrtc.setGotMedia(cb);
       }
 
-      function setDataChannelOpenListener(fun) {
-        easyrtc.setDataChannelOpenListener(fun);
+      function connection() {
+        return new Promise(function(resolve, reject) {
+          onConnectSuccess(resolve);
+          onConnectError(reject);
+        });
       }
 
-      function setDataChannelCloseListener(fun) {
-        easyrtc.setDataChannelCloseListener(fun);
+      function getOpenedDataChannels() {
+        return (easyrtc.getRoomOccupantsAsArray(room) || []).filter(function(peer) {
+          return easyrtc.doesDataChannelWork(peer);
+        });
       }
 
-      function setGotConnection(fun) {
-        easyrtc.setGotConnection(fun);
-      }
+      var multipleListenerFactory = function(easyrtcFun) {
+        var callbacks = [];
+        return function(pushCallback) {
+          if (callbacks.indexOf(pushCallback) === -1) {
+            callbacks.push(pushCallback);
+            console.log('Registered', pushCallback, 'Callbacks are now:', callbacks, easyrtcFun);
+          }
+          easyrtcFun(function() {
+            var easyrtcArguments = arguments;
+            callbacks.forEach(function(callback) {
+              console.log('Applying callback', callback, easyrtcFun);
+              callback.apply(this, easyrtcArguments);
+            });
+          });
+        };
+      };
+      var setDataChannelOpenListeners = multipleListenerFactory(easyrtc.setDataChannelOpenListener);
+      var setPeerListeners = (function() {
+        var peerListener = multipleListenerFactory(easyrtc.setPeerListener);
+        return function(callback, acceptMsgType) {
+          var decoratedCallback = function(easyrtcid, msgType, msgData, targeting) {
+            if (acceptMsgType !== undefined && msgType === acceptMsgType) {
+              callback.apply(this, arguments);
+            }
+          };
+          peerListener(decoratedCallback);
+        };
+      })();
+      var setDataChannelCloseListeners = multipleListenerFactory(easyrtc.setDataChannelCloseListener);
 
       return {
         leaveRoom: leaveRoom,
@@ -374,6 +451,7 @@ angular.module('op.live-conference')
         isVideoEnabled: isVideoEnabled,
         configureBandwidth: configureBandwidth,
         setPeerListener: setPeerListener,
+        setPeerListeners: setPeerListeners,
         myEasyrtcid: myEasyrtcid,
         broadcastData: broadcastData,
         broadcastMe: broadcastMe,
@@ -388,8 +466,9 @@ angular.module('op.live-conference')
         NOT_CONNECTED: easyrtc.NOT_CONNECTED,
         BECOMING_CONNECTED: easyrtc.BECOMING_CONNECTED,
         IS_CONNECTED: easyrtc.IS_CONNECTED,
-        setDataChannelOpenListener: setDataChannelOpenListener,
-        setDataChannelCloseListener: setDataChannelCloseListener,
-        setGotConnection: setGotConnection
+        setDataChannelOpenListeners: setDataChannelOpenListeners,
+        setDataChannelCloseListeners: setDataChannelCloseListeners,
+        connection: connection,
+        getOpenedDataChannels: getOpenedDataChannels
       };
     }]);
