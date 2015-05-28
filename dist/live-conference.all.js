@@ -650,15 +650,15 @@ angular.module('op.live-conference')
 angular.module('op.live-conference')
   .factory('attendeeColorsService', ['MAX_ATTENDEES', function(MAX_ATTENDEES) {
     var colors = [
-      '#F44336',
-      '#9C27B0',
-      '#673AB7',
-      '#2196F3',
-      '#00968',
-      '#CDDC39',
-      '#FFEB3B',
-      '#FF9800',
-      '#4CAF50'
+      '#EF5350',
+      '#5C6BC0',
+      '#26A69A',
+      '#FFEE58',
+      '#FF7043',
+      '#00B0FF',
+      '#9CCC65',
+      '#BDBDBD',
+      '#FFA726'
     ];
 
     function getColorForAttendeeAtIndex(index) {
@@ -994,12 +994,33 @@ angular.module('op.live-conference')
 'use strict';
 
 angular.module('op.live-conference')
+  .factory('addListenerFactory', [function() {
+    return function(addListenerFunction) {
+      var callbacks = [];
+      return {
+        addListener: function(pushedCallback) {
+          callbacks.push(pushedCallback);
 
+          addListenerFunction(function() {
+            var listenerArguments = arguments;
+            callbacks.forEach(function(callback) {
+              callback.apply(this, listenerArguments);
+            });
+          });
+        },
+        removeListener: function(removeCallback) {
+          callbacks = callbacks.filter(function(callback) {
+            return callback !== removeCallback;
+          });
+        }
+      };
+    };
+  }])
   .factory('easyRTCService', ['$rootScope', '$log', 'webrtcFactory', 'tokenAPI', 'session',
     'ioSocketConnection', 'ioConnectionManager', '$timeout', 'easyRTCBitRates', 'currentConferenceState',
-    'LOCAL_VIDEO_ID', 'REMOTE_VIDEO_IDS', 'EASYRTC_APPLICATION_NAME', 'EASYRTC_EVENTS',
+    'LOCAL_VIDEO_ID', 'REMOTE_VIDEO_IDS', 'EASYRTC_APPLICATION_NAME', 'EASYRTC_EVENTS', '$q', 'addListenerFactory',
     function($rootScope, $log, webrtcFactory, tokenAPI, session, ioSocketConnection, ioConnectionManager, $timeout, easyRTCBitRates, currentConferenceState,
-             LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, EASYRTC_APPLICATION_NAME, EASYRTC_EVENTS) {
+             LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, EASYRTC_APPLICATION_NAME, EASYRTC_EVENTS, $q, listenerFactory) {
       var easyrtc = webrtcFactory.get();
       easyrtc.enableDataChannels(true);
 
@@ -1088,43 +1109,33 @@ angular.module('op.live-conference')
 
       // This function will be called when the connection has occured
       var ret = (function() {
-          var onConnectionsSuccessCallbacks = [],
-            onConnectionsErrorCallbacks = [],
+          var callback,
             connected = false, failed = false;
-          function onConnectSuccess(fun) {
-            if (!connected) {
-              onConnectionsSuccessCallbacks.push(fun);
+
+          function onConnectionCallbackHelper(newCallback) {
+            if (connected && failed === false) {
+              newCallback(null);
+            } else if (!connected && failed === false) {
+              callback = newCallback;
             } else {
-              fun(null);
-            }
-          }
-          function onConnectError(fun) {
-            if (!failed) {
-              onConnectionsErrorCallbacks.push(fun);
-            } else {
-              fun(Error('Not connected!'));
+              newCallback(failed.errorCode, failed.message);
             }
           }
           function callOnConnectedSuccess() {
             connected = true;
-            onConnectionsSuccessCallbacks.forEach(function(callback) {
-              callback(null);
-            });
+            callback(null);
           }
           function callOnConnectedError(errorCode, message) {
-            onConnectionsErrorCallbacks.forEach(function(callback) {
-              callback(errorCode, message);
-            });
+            failed = {errorCode: errorCode, message: message};
+            callback(errorCode, message);
           }
           return {
-            onConnectSuccess: onConnectSuccess,
-            onConnectError: onConnectError,
+            onConnectionCallback: listenerFactory(onConnectionCallbackHelper).addListener,
             callOnConnectedSuccess: callOnConnectedSuccess,
             callOnConnectedError: callOnConnectedError
           };
         })(),
-        onConnectSuccess = ret.onConnectSuccess,
-        onConnectError = ret.onConnectError,
+        onConnectionCallback = ret.onConnectionCallback,
         callOnConnectedSuccess = ret.callOnConnectedSuccess,
         callOnConnectedError = ret.callOnConnectedError;
 
@@ -1232,7 +1243,7 @@ angular.module('op.live-conference')
             $rootScope.$apply();
           });
 
-          setDataChannelOpenListeners(function(easyrtcid) {
+          addDataChannelOpenListener(function(easyrtcid) {
             var data = {
               id: session.getUserId(),
               displayName: session.getUsername(),
@@ -1250,7 +1261,7 @@ angular.module('op.live-conference')
             $rootScope.$apply();
           });
 
-          setPeerListeners(function(easyrtcid, msgType, msgData) {
+          addPeerListener(function(easyrtcid, msgType, msgData) {
             $log.debug('Event %s received from %s with data: ', EASYRTC_EVENTS.attendeeUpdate, easyrtcid, msgData);
             conferenceState.updateAttendeeByEasyrtcid(easyrtcid, msgData);
           }, EASYRTC_EVENTS.attendeeUpdate);
@@ -1390,9 +1401,14 @@ angular.module('op.live-conference')
       }
 
       function connection() {
-        return new Promise(function(resolve, reject) {
-          onConnectSuccess(resolve);
-          onConnectError(reject);
+        return $q(function(resolve, reject) {
+          onConnectionCallback(function(errorCode, message) {
+            if (errorCode) {
+              resolve();
+            } else {
+              reject(errorCode, message);
+            }
+          });
         });
       }
 
@@ -1401,26 +1417,12 @@ angular.module('op.live-conference')
           return easyrtc.doesDataChannelWork(peer);
         });
       }
-
-      var multipleListenerFactory = function(easyrtcFun) {
-        var callbacks = [];
-        return function(pushCallback) {
-          if (callbacks.indexOf(pushCallback) === -1) {
-            callbacks.push(pushCallback);
-            console.log('Registered', pushCallback, 'Callbacks are now:', callbacks, easyrtcFun);
-          }
-          easyrtcFun(function() {
-            var easyrtcArguments = arguments;
-            callbacks.forEach(function(callback) {
-              console.log('Applying callback', callback, easyrtcFun);
-              callback.apply(this, easyrtcArguments);
-            });
-          });
-        };
-      };
-      var setDataChannelOpenListeners = multipleListenerFactory(easyrtc.setDataChannelOpenListener);
-      var setPeerListeners = (function() {
-        var peerListener = multipleListenerFactory(easyrtc.setPeerListener);
+      var tmp;
+      tmp = listenerFactory(easyrtc.setDataChannelOpenListener);
+      var addDataChannelOpenListener = tmp.addListener,
+        removeDataChannelOpenListener = tmp.removeListener;
+      tmp = (function() {
+        var peerListener = listenerFactory(easyrtc.setPeerListener);
         return function(callback, acceptMsgType) {
           var decoratedCallback = function(easyrtcid, msgType, msgData, targeting) {
             if (acceptMsgType !== undefined && msgType === acceptMsgType) {
@@ -1430,7 +1432,11 @@ angular.module('op.live-conference')
           peerListener(decoratedCallback);
         };
       })();
-      var setDataChannelCloseListeners = multipleListenerFactory(easyrtc.setDataChannelCloseListener);
+      var addPeerListener = tmp.addListener,
+        removePeerListener = tmp.removeListener;
+      tmp = listenerFactory(easyrtc.setDataChannelCloseListener);
+      var addDataChannelCloseListener = tmp.addListener,
+        removeDataChannelCloseListener = tmp.removeListener;
 
       return {
         leaveRoom: leaveRoom,
@@ -1444,7 +1450,6 @@ angular.module('op.live-conference')
         isVideoEnabled: isVideoEnabled,
         configureBandwidth: configureBandwidth,
         setPeerListener: setPeerListener,
-        setPeerListeners: setPeerListeners,
         myEasyrtcid: myEasyrtcid,
         broadcastData: broadcastData,
         broadcastMe: broadcastMe,
@@ -1459,8 +1464,12 @@ angular.module('op.live-conference')
         NOT_CONNECTED: easyrtc.NOT_CONNECTED,
         BECOMING_CONNECTED: easyrtc.BECOMING_CONNECTED,
         IS_CONNECTED: easyrtc.IS_CONNECTED,
-        setDataChannelOpenListeners: setDataChannelOpenListeners,
-        setDataChannelCloseListeners: setDataChannelCloseListeners,
+        addDataChannelOpenListener: addDataChannelOpenListener,
+        addDataChannelCloseListener: addDataChannelCloseListener,
+        removeDataChannelOpenListener: removeDataChannelOpenListener,
+        removeDataChannelCloseListener: removeDataChannelCloseListener,
+        addPeerListener: addPeerListener,
+        removePeerListener: removePeerListener,
         connection: connection,
         getOpenedDataChannels: getOpenedDataChannels
       };
