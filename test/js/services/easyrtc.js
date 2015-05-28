@@ -198,3 +198,91 @@ describe('easyRTCService service', function() {
   });
 
 });
+
+describe('listenerFactory factory', function() {
+  var service, DummyCallbackConstructor, dummyCallback, CountCall, listen, emptyFunction;
+
+  DummyCallbackConstructor = function() {
+    var callback;
+    return {
+      setCallback: function(cb) {
+        callback = cb;
+      },
+      callCallback: function() {
+        console.log(callback);
+        callback();
+      }
+    };
+  };
+  CountCall = function() {
+    var count = 0;
+    return {
+      call: function() {
+        count++;
+      },
+      called: function() {
+        return count;
+      }
+    };
+  };
+
+  beforeEach(angular.mock.module('op.live-conference'));
+
+  beforeEach(function() {
+    inject(function($injector) {
+      service = $injector.get('listenerFactory');
+    });
+
+    dummyCallback = new DummyCallbackConstructor();
+    listen = service(dummyCallback.setCallback);
+    emptyFunction = function() { };
+  });
+
+  it('should return an object', function(done) {
+    expect(listen.addListener).to.be.a('function');
+    expect(listen.removeListener).to.be.a('function');
+    done();
+  });
+
+  describe('addListener function', function() {
+
+    it('should return the last added function', function(done) {
+      expect(listen.addListener(emptyFunction)).to.equal(emptyFunction);
+      done();
+    });
+
+  });
+
+  it('should call each callback once', function(done) {
+
+    var callOnce = new CountCall(), callTwice = new CountCall();
+
+    listen.addListener(callOnce.call);
+    listen.addListener(callTwice.call);
+    listen.addListener(callTwice.call);
+
+    dummyCallback.callCallback();
+
+    expect(callOnce.called()).to.equal(1);
+    expect(callTwice.called()).to.equal(2);
+    done();
+  });
+
+  it('should be able to remove callbacks', function(done) {
+    var callOnce = new CountCall(),
+      noCall = new CountCall();
+
+    listen.addListener(noCall.call);
+    listen.addListener(noCall.call);
+    listen.addListener(noCall.call);
+
+    listen.addListener(callOnce.call);
+    listen.removeListener(noCall.call);
+
+    dummyCallback.callCallback();
+
+    expect(callOnce.called()).to.equal(1);
+    expect(noCall.called()).to.equal(0);
+    done();
+  });
+});
