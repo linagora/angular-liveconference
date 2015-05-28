@@ -994,8 +994,8 @@ angular.module('op.live-conference')
 'use strict';
 
 angular.module('op.live-conference')
-  .factory('addListenerFactory', [function() {
-    return function(addListenerFunction) {
+  .factory('listenerFactory', ['$log', function($log) {
+    return function(addListenerFunction, callbackName) {
       var callbacks = [];
       return {
         addListener: function(pushedCallback) {
@@ -1003,12 +1003,19 @@ angular.module('op.live-conference')
 
           addListenerFunction(function() {
             var listenerArguments = arguments;
+            if (callbackName) {
+              $log.info('Deleted callback for ' + callbackName);
+            }
             callbacks.forEach(function(callback) {
               callback.apply(this, listenerArguments);
             });
           });
+          return pushedCallback;
         },
         removeListener: function(removeCallback) {
+          if (callbackName) {
+            $log.info('Deleted callback for ' + callbackName);
+          }
           callbacks = callbacks.filter(function(callback) {
             return callback !== removeCallback;
           });
@@ -1018,7 +1025,7 @@ angular.module('op.live-conference')
   }])
   .factory('easyRTCService', ['$rootScope', '$log', 'webrtcFactory', 'tokenAPI', 'session',
     'ioSocketConnection', 'ioConnectionManager', '$timeout', 'easyRTCBitRates', 'currentConferenceState',
-    'LOCAL_VIDEO_ID', 'REMOTE_VIDEO_IDS', 'EASYRTC_APPLICATION_NAME', 'EASYRTC_EVENTS', '$q', 'addListenerFactory',
+    'LOCAL_VIDEO_ID', 'REMOTE_VIDEO_IDS', 'EASYRTC_APPLICATION_NAME', 'EASYRTC_EVENTS', '$q', 'listenerFactory',
     function($rootScope, $log, webrtcFactory, tokenAPI, session, ioSocketConnection, ioConnectionManager, $timeout, easyRTCBitRates, currentConferenceState,
              LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, EASYRTC_APPLICATION_NAME, EASYRTC_EVENTS, $q, listenerFactory) {
       var easyrtc = webrtcFactory.get();
@@ -1403,7 +1410,7 @@ angular.module('op.live-conference')
       function connection() {
         return $q(function(resolve, reject) {
           onConnectionCallback(function(errorCode, message) {
-            if (errorCode) {
+            if (!errorCode) {
               resolve();
             } else {
               reject(errorCode, message);
@@ -1418,23 +1425,29 @@ angular.module('op.live-conference')
         });
       }
       var tmp;
-      tmp = listenerFactory(easyrtc.setDataChannelOpenListener);
+      tmp = listenerFactory(easyrtc.setDataChannelOpenListener, 'dataChannelOpenListener');
       var addDataChannelOpenListener = tmp.addListener,
         removeDataChannelOpenListener = tmp.removeListener;
       tmp = (function() {
-        var peerListener = listenerFactory(easyrtc.setPeerListener);
-        return function(callback, acceptMsgType) {
-          var decoratedCallback = function(easyrtcid, msgType, msgData, targeting) {
-            if (acceptMsgType !== undefined && msgType === acceptMsgType) {
-              callback.apply(this, arguments);
-            }
-          };
-          peerListener(decoratedCallback);
+        var listener = listenerFactory(easyrtc.setPeerListener, 'peerListener');
+        return {
+          addListener: function(callback, acceptMsgType) {
+            var decoratedCallback = function(easyrtcid, msgType, msgData, targeting) {
+              if (acceptMsgType !== undefined && msgType === acceptMsgType) {
+                callback.apply(this, arguments);
+              }
+            };
+            listener.addListener(decoratedCallback);
+            return decoratedCallback;
+          },
+          removeListener: function(callback) {
+            listener.removeListener(callback);
+          }
         };
       })();
       var addPeerListener = tmp.addListener,
         removePeerListener = tmp.removeListener;
-      tmp = listenerFactory(easyrtc.setDataChannelCloseListener);
+      tmp = listenerFactory(easyrtc.setDataChannelCloseListener, 'dataChanelCloseListener');
       var addDataChannelCloseListener = tmp.addListener,
         removeDataChannelCloseListener = tmp.removeListener;
 
