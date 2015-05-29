@@ -133,7 +133,7 @@ angular.module('op.live-conference')
             } else if (!connected && failed === false) {
               callback = newCallback;
             } else {
-              newCallback(failed.errorCode, failed.message);
+              newCallback(failed);
             }
           }
           function callOnConnectedSuccess() {
@@ -145,11 +145,11 @@ angular.module('op.live-conference')
           function callOnConnectedError(errorCode, message) {
             failed = {errorCode: errorCode, message: message};
             if (callback !== undefined) {
-              callback(errorCode, message);
+              callback(failed);
             }
           }
           return {
-            onConnectionCallback: onConnectionCallbackHelper,
+            onConnectionCallback: listenerFactory(onConnectionCallbackHelper).addListener,
             callOnConnectedSuccess: callOnConnectedSuccess,
             callOnConnectedError: callOnConnectedError
           };

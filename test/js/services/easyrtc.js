@@ -408,6 +408,30 @@ describe('easyRTCService service', function() {
 
       $scope.$apply();
     });
+
+    it('should accept multiple callbacks', function(done) {
+      easyrtc.easyApp = function(EASYRTC_APPLICATION_NAME,
+                                 LOCAL_VIDEO_ID,
+                                 REMOTE_VIDEO_IDS,
+                                 onLoginSuccess,
+                                 onLoginFailure) {
+        onLoginSuccess();
+      };
+
+      service.connection().then(callMe.call, dontCallMe.call);
+      service.connect(currentConferenceState);
+      service.connection().then(callMe.call, dontCallMe.call);
+
+
+      $scope.$apply();
+
+
+      expect(callMe.called()).to.equal(2);
+      expect(dontCallMe.called()).to.equal(0);
+
+      done();
+
+    });
   });
 
   describe('getOpenedDataChannels function', function() {
