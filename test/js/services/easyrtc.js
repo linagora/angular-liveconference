@@ -290,6 +290,20 @@ describe('easyRTCService service', function() {
         });
       }
     );
+
+    describe('addPeerListener', function() {
+      it('should only accept one type of message', function(done) {
+        var callMe = new CountCall(), goodMsgType = 'foo',
+          badMsgType = 'bar';
+        service.addPeerListener(callMe.call, goodMsgType);
+        easyrtc.extra.callPeerListener('someRtcId', goodMsgType,
+          'some data', 'someRtcId as target');
+        easyrtc.extra.callPeerListener('someRtcId', badMsgType,
+          'some data', 'someRtcId as target');
+        expect(callMe.called()).to.equal(1);
+        done();
+      });
+    });
   });
 
 });
