@@ -23,8 +23,7 @@ var DummyCallbackConstructor = function() {
       callback = cb;
     },
     callCallback: function() {
-      console.log(callback);
-      callback();
+      callback.apply(this, arguments);
     }
   };
 };
