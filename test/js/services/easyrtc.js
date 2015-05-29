@@ -3,6 +3,31 @@
 /* global chai: false */
 
 var expect = chai.expect;
+var CountCall = function() {
+  var count = 0;
+  return {
+    call: function() {
+      count++;
+    },
+    called: function() {
+      return count;
+    }
+  };
+};
+
+
+var DummyCallbackConstructor = function() {
+  var callback;
+  return {
+    setCallback: function(cb) {
+      callback = cb;
+    },
+    callCallback: function() {
+      console.log(callback);
+      callback();
+    }
+  };
+};
 
 describe('easyRTCService service', function() {
   var service, tokenAPI, session, webrtcFactory, easyrtc, currentConferenceState, disconnectCallback;
@@ -10,16 +35,28 @@ describe('easyRTCService service', function() {
   beforeEach(angular.mock.module('op.live-conference'));
 
   beforeEach(function() {
+    var dummyDataOpenListener = new DummyCallbackConstructor(),
+      dummyDataCloseListener = new DummyCallbackConstructor(),
+      dummyPeerListener = new DummyCallbackConstructor();
     currentConferenceState = {};
     easyrtc = {
       setGotMedia: function() {},
-      setDataChannelCloseListener: function() {},
+      setDataChannelOpenListener: dummyDataOpenListener.setCallback,
+      setDataChannelCloseListener: dummyDataCloseListener.setCallback,
+      setPeerListener: dummyPeerListener.setCallback,
+      addDataChannelOpenListener: function() {},
+      addDataChannelCloseListener: function() {},
       setCallCancelled: function() {},
       setOnStreamClosed: function() {},
       getVideoSourceList: function() {},
       enableDataChannels: function() {},
       setDisconnectListener: function(callback) { disconnectCallback = callback; },
-      myEasyrtcid: 'myself'
+      myEasyrtcid: 'myself',
+      extra: {
+        callDataChannelOpenListener: dummyDataOpenListener.callCallback,
+        callDataChannelCloseListener: dummyDataCloseListener.callCallback,
+        callPeerListener: dummyPeerListener.callCallback
+      }
     };
     tokenAPI = {};
     session = {
@@ -197,34 +234,69 @@ describe('easyRTCService service', function() {
     });
   });
 
+  describe('listeners', function() {
+    [
+      {
+        name: 'DataChannelOpen listener',
+        remove: 'removeDataChannelOpenListener',
+        add: 'addDataChannelOpenListener',
+        call: 'callDataChannelOpenListener'
+      },
+      {
+        name: 'DataChannelClose listener',
+        add: 'addDataChannelCloseListener',
+        remove: 'removeDataChannelCloseListener',
+        call: 'callDataChannelCloseListener'
+      },
+      {
+        name: 'peer listener',
+        add: 'addPeerListener',
+        remove: 'removePeerListener',
+        call: 'callPeerListener'
+      }
+    ].forEach(function(listener) {
+        describe('add/remove ' + listener.name + ' functions', function() {
+          it('should call the function on each event', function(done) {
+            var callMe = new CountCall(), callMeToo = new CountCall();
+            service[listener.add](callMe.call);
+            service[listener.add](callMeToo.call);
+
+            expect(callMe.called()).to.equal(0);
+            expect(callMeToo.called()).to.equal(0);
+
+            easyrtc.extra[listener.call]();
+            expect(callMe.called()).to.equal(1);
+            expect(callMeToo.called()).to.equal(1);
+
+            easyrtc.extra[listener.call]();
+            expect(callMe.called()).to.equal(2);
+
+            done();
+          });
+
+          it('should remove listener', function(done) {
+            var callMe = new CountCall(), removeMe;
+            removeMe = service[listener.add](callMe.call);
+            expect(callMe.called()).to.equal(0);
+
+            easyrtc.extra[listener.call]();
+            expect(callMe.called()).to.equal(1);
+
+            service[listener.remove](removeMe);
+            easyrtc.extra[listener.call]();
+            expect(callMe.called()).to.equal(1);
+
+            done();
+          });
+        });
+      }
+    );
+  });
+
 });
 
 describe('listenerFactory factory', function() {
-  var service, DummyCallbackConstructor, dummyCallback, CountCall, listen, emptyFunction;
-
-  DummyCallbackConstructor = function() {
-    var callback;
-    return {
-      setCallback: function(cb) {
-        callback = cb;
-      },
-      callCallback: function() {
-        console.log(callback);
-        callback();
-      }
-    };
-  };
-  CountCall = function() {
-    var count = 0;
-    return {
-      call: function() {
-        count++;
-      },
-      called: function() {
-        return count;
-      }
-    };
-  };
+  var service, dummyCallback, listen, emptyFunction;
 
   beforeEach(angular.mock.module('op.live-conference'));
 
@@ -270,19 +342,19 @@ describe('listenerFactory factory', function() {
 
   it('should be able to remove callbacks', function(done) {
     var callOnce = new CountCall(),
-      noCall = new CountCall();
+      callTwice = new CountCall();
 
-    listen.addListener(noCall.call);
-    listen.addListener(noCall.call);
-    listen.addListener(noCall.call);
+    listen.addListener(callTwice.call);
+    listen.addListener(callTwice.call);
+    listen.addListener(callTwice.call);
 
     listen.addListener(callOnce.call);
-    listen.removeListener(noCall.call);
+    listen.removeListener(callTwice.call);
 
     dummyCallback.callCallback();
 
     expect(callOnce.called()).to.equal(1);
-    expect(noCall.called()).to.equal(0);
+    expect(callTwice.called()).to.equal(2);
     done();
   });
 });

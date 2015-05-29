@@ -1004,7 +1004,7 @@ angular.module('op.live-conference')
           addListenerFunction(function() {
             var listenerArguments = arguments;
             if (callbackName) {
-              $log.info('Deleted callback for ' + callbackName);
+              $log.debug('Added callback for ' + callbackName);
             }
             callbacks.forEach(function(callback) {
               callback.apply(this, listenerArguments);
@@ -1014,11 +1014,12 @@ angular.module('op.live-conference')
         },
         removeListener: function(removeCallback) {
           if (callbackName) {
-            $log.info('Deleted callback for ' + callbackName);
+            $log.debug('Deleted callback for ' + callbackName);
           }
-          callbacks = callbacks.filter(function(callback) {
-            return callback !== removeCallback;
-          });
+          var index = callbacks.indexOf(removeCallback);
+          if (index > -1) {
+            callbacks.splice(index, 1);
+          }
         }
       };
     };
@@ -1130,7 +1131,7 @@ angular.module('op.live-conference')
           }
           function callOnConnectedSuccess() {
             connected = true;
-            callback(null);
+            callback();
           }
           function callOnConnectedError(errorCode, message) {
             failed = {errorCode: errorCode, message: message};
@@ -1219,7 +1220,6 @@ angular.module('op.live-conference')
             if (callback) {
               callback(null);
             }
-            // Call the manually registered callbacks
             callOnConnectedSuccess();
           }
 
@@ -1433,7 +1433,7 @@ angular.module('op.live-conference')
         return {
           addListener: function(callback, acceptMsgType) {
             var decoratedCallback = function(easyrtcid, msgType, msgData, targeting) {
-              if (acceptMsgType !== undefined && msgType === acceptMsgType) {
+              if (acceptMsgType === undefined || msgType === acceptMsgType) {
                 callback.apply(this, arguments);
               }
             };
