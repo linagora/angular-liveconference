@@ -1122,7 +1122,7 @@ angular.module('op.live-conference')
 
           function onConnectionCallbackHelper(newCallback) {
             if (connected && failed === false) {
-              newCallback(null);
+              newCallback();
             } else if (!connected && failed === false) {
               callback = newCallback;
             } else {
@@ -1131,14 +1131,18 @@ angular.module('op.live-conference')
           }
           function callOnConnectedSuccess() {
             connected = true;
-            callback();
+            if (callback !== undefined) {
+              callback();
+            }
           }
           function callOnConnectedError(errorCode, message) {
             failed = {errorCode: errorCode, message: message};
-            callback(errorCode, message);
+            if (callback !== undefined) {
+              callback(errorCode, message);
+            }
           }
           return {
-            onConnectionCallback: listenerFactory(onConnectionCallbackHelper).addListener,
+            onConnectionCallback: onConnectionCallbackHelper,
             callOnConnectedSuccess: callOnConnectedSuccess,
             callOnConnectedError: callOnConnectedError
           };
@@ -1408,15 +1412,15 @@ angular.module('op.live-conference')
       }
 
       function connection() {
-        return $q(function(resolve, reject) {
-          onConnectionCallback(function(errorCode, message) {
-            if (!errorCode) {
-              resolve();
-            } else {
-              reject(errorCode, message);
-            }
-          });
+        var defer = $q.defer();
+        onConnectionCallback(function(errorCode, message) {
+          if (!errorCode) {
+            defer.resolve();
+          } else {
+            defer.reject(errorCode);
+          }
         });
+        return defer.promise;
       }
 
       function getOpenedDataChannels() {
@@ -1424,6 +1428,7 @@ angular.module('op.live-conference')
           return easyrtc.doesDataChannelWork(peer);
         });
       }
+
       var tmp;
       tmp = listenerFactory(easyrtc.setDataChannelOpenListener, 'dataChannelOpenListener');
       var addDataChannelOpenListener = tmp.addListener,
