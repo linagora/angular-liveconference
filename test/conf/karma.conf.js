@@ -13,6 +13,7 @@ module.exports = function(config) {
       'bower_components/underscore/underscore.js',
       'bower_components/restangular/dist/restangular.js',
       'bower_components/chai/chai.js',
+      'bower_components/chai-spies/chai-spies.js',
       'bower_components/angular-sanitize/angular-sanitize.min.js',
       'test/module.js',
       'src/**/*.js',

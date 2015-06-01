@@ -3,18 +3,6 @@
 /* global chai: false */
 
 var expect = chai.expect;
-var CountCall = function() {
-  var count = 0;
-  return {
-    call: function() {
-      count++;
-    },
-    called: function() {
-      return count;
-    }
-  };
-};
-
 
 var DummyCallbackConstructor = function() {
   var callback;
@@ -269,34 +257,36 @@ describe('easyRTCService service', function() {
   ].forEach(function(listener) {
       describe('add/remove ' + listener.name + ' functions', function() {
         it('should call the function on each event', function(done) {
-          var callMe = new CountCall(), callMeToo = new CountCall();
-          service[listener.add](callMe.call);
-          service[listener.add](callMeToo.call);
+          var callMe = chai.spy(),
+            callMeToo = chai.spy();
+          service[listener.add](callMe);
+          service[listener.add](callMeToo);
 
-          expect(callMe.called()).to.equal(0);
-          expect(callMeToo.called()).to.equal(0);
-
-          easyrtc.extra[listener.call]();
-          expect(callMe.called()).to.equal(1);
-          expect(callMeToo.called()).to.equal(1);
+          expect(callMe).to.have.been.called.exactly(0);
+          expect(callMeToo).to.have.been.called.exactly(0);
 
           easyrtc.extra[listener.call]();
-          expect(callMe.called()).to.equal(2);
+          expect(callMe).to.have.been.called.once;
+          expect(callMeToo).to.have.been.called.once;
 
-            done();
+          easyrtc.extra[listener.call]();
+          expect(callMe).to.have.been.called.twice;
+          expect(callMeToo).to.have.been.called.twice;
+
+          done();
         });
 
         it('should remove listener', function(done) {
-          var callMe = new CountCall(), removeMe;
-          removeMe = service[listener.add](callMe.call);
-          expect(callMe.called()).to.equal(0);
+          var callMe = chai.spy(), removeMe;
+          removeMe = service[listener.add](callMe);
+          expect(callMe).to.have.been.called.exactly(0);
 
           easyrtc.extra[listener.call]();
-          expect(callMe.called()).to.equal(1);
+          expect(callMe).to.have.been.called.once;
 
           service[listener.remove](removeMe);
           easyrtc.extra[listener.call]();
-          expect(callMe.called()).to.equal(1);
+          expect(callMe).to.have.been.called.once;
 
             done();
         });
@@ -306,14 +296,16 @@ describe('easyRTCService service', function() {
   describe('addPeerListener', function() {
 
     it('should only accept one type of message', function(done) {
-      var callMe = new CountCall(), goodMsgType = 'foo',
+      var callMe = chai.spy(), goodMsgType = 'foo',
         badMsgType = 'bar';
-      service.addPeerListener(callMe.call, goodMsgType);
+      service.addPeerListener(callMe, goodMsgType);
+
       easyrtc.extra.callPeerListener('someRtcId', goodMsgType,
         'some data', 'someRtcId as target');
       easyrtc.extra.callPeerListener('someRtcId', badMsgType,
         'some data', 'someRtcId as target');
-      expect(callMe.called()).to.equal(1);
+
+      expect(callMe).to.have.been.called.once;
       done();
     });
 
@@ -323,8 +315,8 @@ describe('easyRTCService service', function() {
     var callMe, dontCallMe;
 
     beforeEach(function() {
-      callMe = new CountCall();
-      dontCallMe = new CountCall();
+      callMe = chai.spy(),
+      dontCallMe = chai.spy(),
       currentConferenceState = {
           conference: {
             _id: null
@@ -337,10 +329,10 @@ describe('easyRTCService service', function() {
     });
 
     it('should do nothing if no connection starts', function(done) {
-      service.connection().then(callMe.call, dontCallMe.call);
+      service.connection().then(callMe, dontCallMe);
 
-      expect(callMe.called()).to.equal(0);
-      expect(dontCallMe.called()).to.equal(0);
+      expect(callMe).to.have.been.called.exactly(0);
+      expect(dontCallMe).to.have.been.called.exactly(0);
 
       done();
       });
@@ -418,16 +410,15 @@ describe('easyRTCService service', function() {
         onLoginSuccess();
       };
 
-      service.connection().then(callMe.call, dontCallMe.call);
+      service.connection().then(callMe, dontCallMe);
       service.connect(currentConferenceState);
-      service.connection().then(callMe.call, dontCallMe.call);
+      service.connection().then(callMe, dontCallMe);
 
 
       $scope.$apply();
 
-
-      expect(callMe.called()).to.equal(2);
-      expect(dontCallMe.called()).to.equal(0);
+      expect(callMe).to.have.been.called.twice;
+      expect(dontCallMe).to.have.been.called.exactly(0);
 
       done();
 
@@ -487,34 +478,35 @@ describe('listenerFactory factory', function() {
 
   it('should call each callback once', function(done) {
 
-    var callOnce = new CountCall(), callTwice = new CountCall();
+    var callOnce = chai.spy(),
+      callTwice = chai.spy();
 
-    listen.addListener(callOnce.call);
-    listen.addListener(callTwice.call);
-    listen.addListener(callTwice.call);
+    listen.addListener(callOnce);
+    listen.addListener(callTwice);
+    listen.addListener(callTwice);
 
     dummyCallback.callCallback();
 
-    expect(callOnce.called()).to.equal(1);
-    expect(callTwice.called()).to.equal(2);
+    expect(callOnce).to.have.been.called.once;
+    expect(callTwice).to.have.been.called.twice;
     done();
   });
 
   it('should be able to remove callbacks', function(done) {
-    var callOnce = new CountCall(),
-      callTwice = new CountCall();
+    var callOnce = chai.spy(),
+      callTwice = chai.spy();
 
-    listen.addListener(callTwice.call);
-    listen.addListener(callTwice.call);
-    listen.addListener(callTwice.call);
+    listen.addListener(callTwice);
+    listen.addListener(callTwice);
+    listen.addListener(callTwice);
 
-    listen.addListener(callOnce.call);
-    listen.removeListener(callTwice.call);
+    listen.addListener(callOnce);
+    listen.removeListener(callTwice);
 
     dummyCallback.callCallback();
 
-    expect(callOnce.called()).to.equal(1);
-    expect(callTwice.called()).to.equal(2);
+    expect(callOnce).to.have.been.called.once;
+    expect(callTwice).to.have.been.called.twice;
     done();
   });
 });
