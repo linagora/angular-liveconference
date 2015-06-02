@@ -21,16 +21,19 @@ angular.module('op.live-conference')
           stopAnimation = function() {};
         }
 
+        function drawVideoInCancas() {
+          canvas[0].width = mainVideo[0].videoWidth || DEFAULT_AVATAR_SIZE;
+          canvas[0].height = mainVideo[0].videoHeight || DEFAULT_AVATAR_SIZE;
+          stopAnimation = drawVideo(context, mainVideo[0], canvas[0].width, canvas[0].height);
+
+          $rootScope.$broadcast('localVideoId:ready', mainVideo[0].id);
+        }
+
         $timeout(function() {
           canvas = element.find('canvas#mainVideoCanvas');
           context = canvas[0].getContext('2d');
           mainVideo = element.find('video#' + LOCAL_VIDEO_ID);
           mainVideo.on('loadedmetadata', function() {
-            function drawVideoInCancas() {
-              canvas[0].width = mainVideo[0].videoWidth || DEFAULT_AVATAR_SIZE;
-              canvas[0].height = mainVideo[0].videoHeight || DEFAULT_AVATAR_SIZE;
-              stopAnimation = drawVideo(context, mainVideo[0], canvas[0].width, canvas[0].height);
-            }
             if ($window.mozRequestAnimationFrame) {
               // see https://bugzilla.mozilla.org/show_bug.cgi?id=926753
               // Firefox needs this timeout.
@@ -40,7 +43,6 @@ angular.module('op.live-conference')
             } else {
               drawVideoInCancas();
             }
-            $rootScope.$broadcast('localVideoId:ready', LOCAL_VIDEO_ID);
           });
         }, 1000);
 
@@ -52,10 +54,7 @@ angular.module('op.live-conference')
             return;
           }
           mainVideo = element.find('video#' + newVideoId);
-          canvas[0].width = mainVideo[0].videoWidth || DEFAULT_AVATAR_SIZE;
-          canvas[0].height = mainVideo[0].videoHeight || DEFAULT_AVATAR_SIZE;
-          stopAnimation = drawVideo(context, mainVideo[0], canvas[0].width, canvas[0].height);
-          $rootScope.$broadcast('localVideoId:ready', newVideoId);
+          drawVideoInCancas();
         });
 
         scope.streamToMainCanvas = function(index) {
