@@ -42,7 +42,7 @@ angular.module('op.live-conference')
       var bitRates, room, disconnectCallbacks = [];
       var videoEnabled = true;
 
-      var checkFirefoxEnumerateDevices = navigator.mozGetUserMedia && navigator.mediaDevices.enumerateDevices;
+      var checkFirefoxEnumerateDevices = navigator.mozGetUserMedia && navigator.mediaDevices && navigator.mediaDevices.enumerateDevices;
       var isChromeBrowser = window.webrtcDetectedBrowser === 'chrome';
       var canEnumerateDevices = checkFirefoxEnumerateDevices || isChromeBrowser;
 
