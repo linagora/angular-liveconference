@@ -493,7 +493,8 @@ angular.module('op.live-conference')
       scope: {
         showInvitation: '=',
         onLeave: '=',
-        conferenceState: '='
+        conferenceState: '=',
+        showEditor: '='
       },
       link: function($scope) {
         $scope.muted = false;
@@ -993,12 +994,41 @@ angular.module('op.live-conference')
 'use strict';
 
 angular.module('op.live-conference')
+  .factory('listenerFactory', ['$log', function($log) {
+    return function(addListenerFunction, callbackName) {
+      var callbacks = [];
+      return {
+        addListener: function(pushedCallback) {
+          callbacks.push(pushedCallback);
 
+          addListenerFunction(function() {
+            var listenerArguments = arguments;
+            if (callbackName) {
+              $log.debug('Added callback for ' + callbackName);
+            }
+            callbacks.forEach(function(callback) {
+              callback.apply(this, listenerArguments);
+            });
+          });
+          return pushedCallback;
+        },
+        removeListener: function(removeCallback) {
+          if (callbackName) {
+            $log.debug('Deleted callback for ' + callbackName);
+          }
+          var index = callbacks.indexOf(removeCallback);
+          if (index > -1) {
+            callbacks.splice(index, 1);
+          }
+        }
+      };
+    };
+  }])
   .factory('easyRTCService', ['$rootScope', '$log', 'webrtcFactory', 'tokenAPI', 'session',
     'ioSocketConnection', 'ioConnectionManager', '$timeout', 'easyRTCBitRates', 'currentConferenceState',
-    'LOCAL_VIDEO_ID', 'REMOTE_VIDEO_IDS', 'EASYRTC_APPLICATION_NAME', 'EASYRTC_EVENTS',
+    'LOCAL_VIDEO_ID', 'REMOTE_VIDEO_IDS', 'EASYRTC_APPLICATION_NAME', 'EASYRTC_EVENTS', '$q', 'listenerFactory',
     function($rootScope, $log, webrtcFactory, tokenAPI, session, ioSocketConnection, ioConnectionManager, $timeout, easyRTCBitRates, currentConferenceState,
-             LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, EASYRTC_APPLICATION_NAME, EASYRTC_EVENTS) {
+             LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, EASYRTC_APPLICATION_NAME, EASYRTC_EVENTS, $q, listenerFactory) {
       var easyrtc = webrtcFactory.get();
       easyrtc.enableDataChannels(true);
 
@@ -1085,6 +1115,42 @@ angular.module('op.live-conference')
         easyrtc.call(otherEasyrtcid, onSuccess, onFailure);
       }
 
+      // This function will be called when the connection has occured
+      var ret = (function() {
+          var callback,
+            connected = false, failed = false;
+
+          function onConnectionCallbackHelper(newCallback) {
+            if (connected && failed === false) {
+              newCallback();
+            } else if (!connected && failed === false) {
+              callback = newCallback;
+            } else {
+              newCallback(failed);
+            }
+          }
+          function callOnConnectedSuccess() {
+            connected = true;
+            if (callback !== undefined) {
+              callback();
+            }
+          }
+          function callOnConnectedError(errorCode, message) {
+            failed = {errorCode: errorCode, message: message};
+            if (callback !== undefined) {
+              callback(failed);
+            }
+          }
+          return {
+            onConnectionCallback: listenerFactory(onConnectionCallbackHelper).addListener,
+            callOnConnectedSuccess: callOnConnectedSuccess,
+            callOnConnectedError: callOnConnectedError
+          };
+        })(),
+        onConnectionCallback = ret.onConnectionCallback,
+        callOnConnectedSuccess = ret.callOnConnectedSuccess,
+        callOnConnectedError = ret.callOnConnectedError;
+
       function connect(conferenceState, callback) {
 
         function entryListener(entry, roomName) {
@@ -1158,6 +1224,7 @@ angular.module('op.live-conference')
             if (callback) {
               callback(null);
             }
+            callOnConnectedSuccess();
           }
 
           function onLoginFailure(errorCode, message) {
@@ -1165,6 +1232,7 @@ angular.module('op.live-conference')
             if (callback) {
               callback(errorCode);
             }
+            callOnConnectedError(errorCode, message);
           }
 
           easyrtc.setOnError(function(errorObject) {
@@ -1186,7 +1254,7 @@ angular.module('op.live-conference')
             $rootScope.$apply();
           });
 
-          easyrtc.setDataChannelOpenListener(function(easyrtcid) {
+          addDataChannelOpenListener(function(easyrtcid) {
             var data = {
               id: session.getUserId(),
               displayName: session.getUsername(),
@@ -1204,7 +1272,7 @@ angular.module('op.live-conference')
             $rootScope.$apply();
           });
 
-          easyrtc.setPeerListener(function(easyrtcid, msgType, msgData) {
+          addPeerListener(function(easyrtcid, msgType, msgData) {
             $log.debug('Event %s received from %s with data: ', EASYRTC_EVENTS.attendeeUpdate, easyrtcid, msgData);
             conferenceState.updateAttendeeByEasyrtcid(easyrtcid, msgData);
           }, EASYRTC_EVENTS.attendeeUpdate);
@@ -1268,6 +1336,7 @@ angular.module('op.live-conference')
       }
 
       function setPeerListener(handler, msgType) {
+        $log.warn('If you use setPeerListener, only the last handler will be executed!');
         easyrtc.setPeerListener(handler, msgType);
       }
 
@@ -1342,17 +1411,50 @@ angular.module('op.live-conference')
         easyrtc.setGotMedia(cb);
       }
 
-      function setDataChannelOpenListener(fun) {
-        easyrtc.setDataChannelOpenListener(fun);
+      function connection() {
+        var defer = $q.defer();
+        onConnectionCallback(function(errorCode, message) {
+          if (!errorCode) {
+            defer.resolve();
+          } else {
+            defer.reject(errorCode);
+          }
+        });
+        return defer.promise;
       }
 
-      function setDataChannelCloseListener(fun) {
-        easyrtc.setDataChannelCloseListener(fun);
+      function getOpenedDataChannels() {
+        return (easyrtc.getRoomOccupantsAsArray(room) || []).filter(function(peer) {
+          return easyrtc.doesDataChannelWork(peer);
+        });
       }
 
-      function setGotConnection(fun) {
-        easyrtc.setGotConnection(fun);
-      }
+      var tmp;
+      tmp = listenerFactory(easyrtc.setDataChannelOpenListener, 'dataChannelOpenListener');
+      var addDataChannelOpenListener = tmp.addListener,
+        removeDataChannelOpenListener = tmp.removeListener;
+      tmp = (function() {
+        var listener = listenerFactory(easyrtc.setPeerListener, 'peerListener');
+        return {
+          addListener: function(callback, acceptMsgType) {
+            var decoratedCallback = function(easyrtcid, msgType, msgData, targeting) {
+              if (acceptMsgType === undefined || msgType === acceptMsgType) {
+                callback.apply(this, arguments);
+              }
+            };
+            listener.addListener(decoratedCallback);
+            return decoratedCallback;
+          },
+          removeListener: function(callback) {
+            listener.removeListener(callback);
+          }
+        };
+      })();
+      var addPeerListener = tmp.addListener,
+        removePeerListener = tmp.removeListener;
+      tmp = listenerFactory(easyrtc.setDataChannelCloseListener, 'dataChanelCloseListener');
+      var addDataChannelCloseListener = tmp.addListener,
+        removeDataChannelCloseListener = tmp.removeListener;
 
       return {
         leaveRoom: leaveRoom,
@@ -1380,9 +1482,14 @@ angular.module('op.live-conference')
         NOT_CONNECTED: easyrtc.NOT_CONNECTED,
         BECOMING_CONNECTED: easyrtc.BECOMING_CONNECTED,
         IS_CONNECTED: easyrtc.IS_CONNECTED,
-        setDataChannelOpenListener: setDataChannelOpenListener,
-        setDataChannelCloseListener: setDataChannelCloseListener,
-        setGotConnection: setGotConnection
+        addDataChannelOpenListener: addDataChannelOpenListener,
+        addDataChannelCloseListener: addDataChannelCloseListener,
+        removeDataChannelOpenListener: removeDataChannelOpenListener,
+        removeDataChannelCloseListener: removeDataChannelCloseListener,
+        addPeerListener: addPeerListener,
+        removePeerListener: removePeerListener,
+        connection: connection,
+        getOpenedDataChannels: getOpenedDataChannels
       };
     }]);
 'use strict';

@@ -4,22 +4,54 @@
 
 var expect = chai.expect;
 
+var DummyCallbackConstructor = function() {
+  var callback;
+  return {
+    setCallback: function(cb) {
+      callback = cb;
+    },
+    callCallback: function() {
+      callback.apply(this, arguments);
+    }
+  };
+};
+
 describe('easyRTCService service', function() {
-  var service, tokenAPI, session, webrtcFactory, easyrtc, currentConferenceState, disconnectCallback;
+  var service, tokenAPI, session, webrtcFactory, easyrtc, currentConferenceState, disconnectCallback, $rootScope, $scope;
 
   beforeEach(angular.mock.module('op.live-conference'));
 
   beforeEach(function() {
+    var dummyDataOpenListener = new DummyCallbackConstructor(),
+      dummyDataCloseListener = new DummyCallbackConstructor(),
+      dummyPeerListener = new DummyCallbackConstructor();
     currentConferenceState = {};
+
     easyrtc = {
       setGotMedia: function() {},
-      setDataChannelCloseListener: function() {},
+      setDataChannelOpenListener: dummyDataOpenListener.setCallback,
+      setDataChannelCloseListener: dummyDataCloseListener.setCallback,
+      setPeerListener: dummyPeerListener.setCallback,
+      setRoomOccupantListener: function() {},
+      setRoomEntryListener: function() {},
+      addDataChannelOpenListener: function() {},
+      addDataChannelCloseListener: function() {},
       setCallCancelled: function() {},
       setOnStreamClosed: function() {},
       getVideoSourceList: function() {},
       enableDataChannels: function() {},
+      useThisSocketConnection: function() {},
+      setOnError: function() {},
+      setVideoDims: function() {},
+      setOnCall: function() {},
+      setOnHangup: function() {},
       setDisconnectListener: function(callback) { disconnectCallback = callback; },
-      myEasyrtcid: 'myself'
+      myEasyrtcid: 'myself',
+      extra: {
+        callDataChannelOpenListener: dummyDataOpenListener.callCallback,
+        callDataChannelCloseListener: dummyDataCloseListener.callCallback,
+        callPeerListener: dummyPeerListener.callCallback
+      }
     };
     tokenAPI = {};
     session = {
@@ -43,13 +75,19 @@ describe('easyRTCService service', function() {
       $provide.value('tokenAPI', {});
       $provide.value('session', session);
       $provide.value('webrtcFactory', webrtcFactory);
-      $provide.value('ioSocketConnection', {});
+      $provide.value('ioSocketConnection', {
+        isConnected: function() { return true; },
+        addConnectCallback: function() {},
+        getSio: function() { return {}; }
+      });
       $provide.value('ioConnectionManager', {});
       $provide.value('currentConferenceState', currentConferenceState);
     });
 
-    inject(function($injector) {
+    inject(function($injector, _$rootScope_) {
       service = $injector.get('easyRTCService');
+      $rootScope = _$rootScope_;
+      $scope = $rootScope.$new();
     });
   });
 
@@ -197,4 +235,278 @@ describe('easyRTCService service', function() {
     });
   });
 
+  [
+    {
+      name: 'DataChannelOpen listener',
+      remove: 'removeDataChannelOpenListener',
+      add: 'addDataChannelOpenListener',
+      call: 'callDataChannelOpenListener'
+    },
+    {
+      name: 'DataChannelClose listener',
+      add: 'addDataChannelCloseListener',
+      remove: 'removeDataChannelCloseListener',
+      call: 'callDataChannelCloseListener'
+    },
+    {
+      name: 'peer listener',
+      add: 'addPeerListener',
+      remove: 'removePeerListener',
+      call: 'callPeerListener'
+      }
+  ].forEach(function(listener) {
+      describe('add/remove ' + listener.name + ' functions', function() {
+        it('should call the function on each event', function(done) {
+          var callMe = chai.spy(),
+            callMeToo = chai.spy();
+          service[listener.add](callMe);
+          service[listener.add](callMeToo);
+
+          expect(callMe).to.have.been.called.exactly(0);
+          expect(callMeToo).to.have.been.called.exactly(0);
+
+          easyrtc.extra[listener.call]();
+          expect(callMe).to.have.been.called.once;
+          expect(callMeToo).to.have.been.called.once;
+
+          easyrtc.extra[listener.call]();
+          expect(callMe).to.have.been.called.twice;
+          expect(callMeToo).to.have.been.called.twice;
+
+          done();
+        });
+
+        it('should remove listener', function(done) {
+          var callMe = chai.spy(), removeMe;
+          removeMe = service[listener.add](callMe);
+          expect(callMe).to.have.been.called.exactly(0);
+
+          easyrtc.extra[listener.call]();
+          expect(callMe).to.have.been.called.once;
+
+          service[listener.remove](removeMe);
+          easyrtc.extra[listener.call]();
+          expect(callMe).to.have.been.called.once;
+
+            done();
+        });
+      });
+    });
+
+  describe('addPeerListener', function() {
+
+    it('should only accept one type of message', function(done) {
+      var callMe = chai.spy(), goodMsgType = 'foo',
+        badMsgType = 'bar';
+      service.addPeerListener(callMe, goodMsgType);
+
+      easyrtc.extra.callPeerListener('someRtcId', goodMsgType,
+        'some data', 'someRtcId as target');
+      easyrtc.extra.callPeerListener('someRtcId', badMsgType,
+        'some data', 'someRtcId as target');
+
+      expect(callMe).to.have.been.called.once;
+      done();
+    });
+
+  });
+
+  describe('connection promise', function() {
+    var callMe, dontCallMe;
+
+    beforeEach(function() {
+      callMe = chai.spy(),
+      dontCallMe = chai.spy(),
+      currentConferenceState = {
+          conference: {
+            _id: null
+          },
+        pushAttendee: function() {},
+        updateMuteVideoFromIndex: function() {}
+      };
+      easyrtc.roomJoin = [];
+      easyrtc.joinRoom = function() {};
+    });
+
+    it('should do nothing if no connection starts', function(done) {
+      service.connection().then(callMe, dontCallMe);
+
+      expect(callMe).to.have.been.called.exactly(0);
+      expect(dontCallMe).to.have.been.called.exactly(0);
+
+      done();
+      });
+
+    it('should fullfill a lately defined promise on success', function(done) {
+      easyrtc.easyApp = function(EASYRTC_APPLICATION_NAME,
+                                 LOCAL_VIDEO_ID,
+                                 REMOTE_VIDEO_IDS,
+                                 onLoginSuccess,
+                                 onLoginFailure) {
+        onLoginSuccess();
+      };
+
+      service.connect(currentConferenceState);
+      service.connection().then(function() { done(); },
+        function() { });
+
+      $scope.$apply();
+    });
+
+    it('should fullfill a previous promise on success', function(done) {
+      easyrtc.easyApp = function(EASYRTC_APPLICATION_NAME,
+                                 LOCAL_VIDEO_ID,
+                                 REMOTE_VIDEO_IDS,
+                                 onLoginSuccess,
+                                 onLoginFailure) {
+        onLoginSuccess();
+      };
+
+      service.connection().then(function() { done();},
+        function() {});
+      service.connect(currentConferenceState);
+
+      $scope.$apply();
+    });
+
+    it('should fail a lately defined promise on success', function(done) {
+      easyrtc.easyApp = function(EASYRTC_APPLICATION_NAME,
+                                 LOCAL_VIDEO_ID,
+                                 REMOTE_VIDEO_IDS,
+                                 onLoginSuccess,
+                                 onLoginFailure) {
+        onLoginFailure('Some error');
+      };
+
+      service.connect(currentConferenceState);
+      service.connection().then(function() { },
+        function() { done(); });
+
+      $scope.$apply();
+    });
+
+    it('should fail a previously defined promise on success', function(done) {
+      easyrtc.easyApp = function(EASYRTC_APPLICATION_NAME,
+                                 LOCAL_VIDEO_ID,
+                                 REMOTE_VIDEO_IDS,
+                                 onLoginSuccess,
+                                 onLoginFailure) {
+        onLoginFailure('Some error');
+      };
+
+      service.connection().then(function() { },
+        function() { done(); });
+      service.connect(currentConferenceState);
+
+      $scope.$apply();
+    });
+
+    it('should accept multiple callbacks', function(done) {
+      easyrtc.easyApp = function(EASYRTC_APPLICATION_NAME,
+                                 LOCAL_VIDEO_ID,
+                                 REMOTE_VIDEO_IDS,
+                                 onLoginSuccess,
+                                 onLoginFailure) {
+        onLoginSuccess();
+      };
+
+      service.connection().then(callMe, dontCallMe);
+      service.connect(currentConferenceState);
+      service.connection().then(callMe, dontCallMe);
+
+
+      $scope.$apply();
+
+      expect(callMe).to.have.been.called.twice;
+      expect(dontCallMe).to.have.been.called.exactly(0);
+
+      done();
+
+    });
+  });
+
+  describe('getOpenedDataChannels function', function() {
+
+    it('should list all opened data channels', function(done) {
+      var peerList = ['myself', 'other1', 'other2', 'other3'];
+      easyrtc.getRoomOccupantsAsArray = function() { return peerList; };
+      easyrtc.doesDataChannelWork = function(peer) {
+        if (peerList.indexOf(peer) < 2) {
+          return true;
+        } else {
+          return false;
+        }
+      };
+
+      var channels = service.getOpenedDataChannels();
+      expect(channels.length).to.equal(2);
+      done();
+    });
+
+  });
+});
+
+describe('listenerFactory factory', function() {
+  var service, dummyCallback, listen, emptyFunction;
+
+  beforeEach(angular.mock.module('op.live-conference'));
+
+  beforeEach(function() {
+    inject(function($injector) {
+      service = $injector.get('listenerFactory');
+    });
+
+    dummyCallback = new DummyCallbackConstructor();
+    listen = service(dummyCallback.setCallback);
+    emptyFunction = function() { };
+  });
+
+  it('should return an object', function(done) {
+    expect(listen.addListener).to.be.a('function');
+    expect(listen.removeListener).to.be.a('function');
+    done();
+  });
+
+  describe('addListener function', function() {
+
+    it('should return the last added function', function(done) {
+      expect(listen.addListener(emptyFunction)).to.equal(emptyFunction);
+      done();
+    });
+
+  });
+
+  it('should call each callback once', function(done) {
+
+    var callOnce = chai.spy(),
+      callTwice = chai.spy();
+
+    listen.addListener(callOnce);
+    listen.addListener(callTwice);
+    listen.addListener(callTwice);
+
+    dummyCallback.callCallback();
+
+    expect(callOnce).to.have.been.called.once;
+    expect(callTwice).to.have.been.called.twice;
+    done();
+  });
+
+  it('should be able to remove callbacks', function(done) {
+    var callOnce = chai.spy(),
+      callTwice = chai.spy();
+
+    listen.addListener(callTwice);
+    listen.addListener(callTwice);
+    listen.addListener(callTwice);
+
+    listen.addListener(callOnce);
+    listen.removeListener(callTwice);
+
+    dummyCallback.callCallback();
+
+    expect(callOnce).to.have.been.called.once;
+    expect(callTwice).to.have.been.called.twice;
+    done();
+  });
 });
