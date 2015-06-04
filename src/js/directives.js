@@ -336,4 +336,60 @@ angular.module('op.live-conference')
         });
       }
     };
+  }])
+  .directive('smartFit', ['$rootScope', function($rootScope) {
+    return {
+      restrict: 'A',
+      replace: true,
+      link: function(scope, element, attrs) {
+        if (element[0].tagName !== 'CANVAS') {
+          throw new Error('The smartFit directive can only be applied to a HTML Canvas.');
+        }
+
+        var unregisterRootScopeListener,
+            source = angular.element(attrs.from),
+            toPreserve = angular.element(attrs.preserve);
+
+        function smartFit() {
+          var canvas = element[0],
+            availWidth = source.width(),
+            availHeight = source.height(),
+            width = canvas.width,
+            height = canvas.height,
+            videoAspectRatio = width / height,
+            containerAspectRatio = availWidth / availHeight;
+
+          function fitWidth() {
+            width = availWidth;
+            height = Math.floor(width / videoAspectRatio);
+          }
+
+          function fitHeight() {
+            height = availHeight;
+            width = Math.floor(height * videoAspectRatio);
+          }
+
+          if (videoAspectRatio > containerAspectRatio) {
+            fitWidth();
+          } else {
+            fitHeight();
+          }
+
+          canvas.style.width = width + 'px';
+          canvas.style.height = height + 'px';
+
+          if (toPreserve.length) {
+            canvas.style['margin-top'] = Math.max(0, (toPreserve.position().top - height) / 2) + 'px';
+          }
+        }
+
+        source.resize(smartFit);
+        unregisterRootScopeListener = $rootScope.$on('localVideoId:ready', smartFit);
+
+        scope.$on('$destroy', function() {
+          source.off('resize', smartFit);
+          unregisterRootScopeListener();
+        });
+      }
+    };
   }]);
