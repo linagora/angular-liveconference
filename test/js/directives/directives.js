@@ -263,4 +263,45 @@ describe('Directives', function() {
     });
   });
 
+  describe('The conferenceVideo directive', function() {
+
+    var $rootScope, $compile, $timeout, $window;
+
+    beforeEach(module(function($provide) {
+      $provide.value('session', {});
+      $provide.value('easyRTCService', {
+        isVideoEnabled: function() { return true; }
+      });
+      $provide.value('$modal', function() {});
+      $provide.value('matchmedia', {
+        isDesktop: function() { return true; }
+      });
+      $provide.value('currentConferenceState', {
+        videoIds: ['video-thumb0'],
+        attendees: [{}]
+      });
+    }));
+
+    beforeEach(inject(function(_$compile_, _$rootScope_, _$timeout_, _$window_) {
+      $compile = _$compile_;
+      $rootScope = _$rootScope_;
+      $timeout = _$timeout_;
+      $window = _$window_;
+
+      $window.requestAnimationFrame = function() {}; // PhantomJS doesn't have it...
+
+      $compile('<conference-video />')($rootScope);
+      $rootScope.$digest();
+      $timeout.flush();
+    }));
+
+    it('should redraw the main video when orientation changes', function(done) {
+      $rootScope.$on('localVideoId:ready', function() {
+        done();
+      });
+
+      angular.element($window).trigger('orientationchange');
+    });
+  });
+
 });

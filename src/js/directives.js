@@ -1,8 +1,8 @@
 'use strict';
 
 angular.module('op.live-conference')
-  .directive('conferenceVideo', ['$timeout', '$window', '$rootScope', 'drawVideo', 'LOCAL_VIDEO_ID', 'DEFAULT_AVATAR_SIZE',
-  function($timeout, $window, $rootScope, drawVideo, LOCAL_VIDEO_ID, DEFAULT_AVATAR_SIZE) {
+  .directive('conferenceVideo', ['$timeout', '$window', '$rootScope', 'drawVideo', 'currentConferenceState', 'LOCAL_VIDEO_ID', 'DEFAULT_AVATAR_SIZE',
+  function($timeout, $window, $rootScope, drawVideo, currentConferenceState, LOCAL_VIDEO_ID, DEFAULT_AVATAR_SIZE) {
     return {
       restrict: 'E',
       replace: true,
@@ -46,6 +46,8 @@ angular.module('op.live-conference')
           });
         }, 1000);
 
+        scope.conferenceState = currentConferenceState;
+
         scope.$on('conferencestate:localVideoId:update', function(event, newVideoId) {
           // Reject the first watch of the mainVideoId
           // when clicking on a new video, loadedmetadata event is not
@@ -72,6 +74,8 @@ angular.module('op.live-conference')
           }
 
         });
+
+        angular.element($window).on('orientationchange', drawVideoInCancas);
       }
     };
   }])
