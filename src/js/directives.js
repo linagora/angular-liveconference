@@ -21,7 +21,7 @@ angular.module('op.live-conference')
           stopAnimation = function() {};
         }
 
-        function drawVideoInCancas() {
+        function drawVideoInCanvas() {
           canvas[0].width = mainVideo[0].videoWidth || DEFAULT_AVATAR_SIZE;
           canvas[0].height = mainVideo[0].videoHeight || DEFAULT_AVATAR_SIZE;
           stopAnimation = drawVideo(context, mainVideo[0], canvas[0].width, canvas[0].height);
@@ -38,10 +38,10 @@ angular.module('op.live-conference')
               // see https://bugzilla.mozilla.org/show_bug.cgi?id=926753
               // Firefox needs this timeout.
               $timeout(function() {
-                drawVideoInCancas();
+                drawVideoInCanvas();
               }, 500);
             } else {
-              drawVideoInCancas();
+              drawVideoInCanvas();
             }
           });
         }, 1000);
@@ -56,7 +56,7 @@ angular.module('op.live-conference')
             return;
           }
           mainVideo = element.find('video#' + newVideoId);
-          drawVideoInCancas();
+          drawVideoInCanvas();
         });
 
         scope.streamToMainCanvas = function(index) {
@@ -75,7 +75,7 @@ angular.module('op.live-conference')
 
         });
 
-        angular.element($window).on('orientationchange', drawVideoInCancas);
+        angular.element($window).on('orientationchange', drawVideoInCanvas);
       }
     };
   }])
