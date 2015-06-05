@@ -58,14 +58,13 @@
     margin:auto;
   }
 
-  .fa-microphone-slash, .fa-eye-slash, .conference-toggle-invite-button:hover, .conference-toggle-video-button:hover,
-  .conference-mute-button:hover, .conference-toggle-terminate-call-button:hover {
-    color: @overActionColor !important;
-  }
-
-  .conference-toggle-invite-button, .conference-mute-button, .conference-toggle-video-button, .conference-toggle-fullscreen-button {
+  .conference-light-button {
     color: white;
     z-index: 3;
+
+    &:hover {
+      color: @overActionColor !important;
+    }
   }
 
   .conference-toggle-terminate-call-button {
