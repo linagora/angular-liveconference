@@ -10,6 +10,8 @@
 @attendee-bar-height-md: 130px;
 @attendee-bar-height-lg: 160px;
 
+@control-bar-opacity: 0.5;
+
 .conference-container {
   .container-fluid {
     padding: 0;
@@ -40,7 +42,7 @@
 }
 
 .conference-user-control-bar {
-  background-color: #1b1b1b;
+  background-color: rgba(27, 27, 27, @control-bar-opacity);
   z-index: 3;
   padding: 0.8em;
   position: absolute;
@@ -48,11 +50,7 @@
   right: 0;
   height: @user-control-bar-height;
   margin: 0 auto;
-
-  bottom: @attendee-bar-height-xs;
-  @media (min-width: @screen-sm) {
-    bottom: 0;
-  }
+  bottom: 0;
 
   ul {
     margin:auto;
@@ -82,7 +80,7 @@
 }
 
 .conference-attendees-bar {
-  bottom: 0;
+  bottom: @user-control-bar-height;
   padding: 0px;
   z-index: 4;
 
@@ -93,11 +91,9 @@
   position: absolute;
   overflow-x: auto;
   overflow-y: hidden;
-  background-color: #1b1b1b;
+  background-color: transparent;
 
   @media (min-width: @screen-sm) {
-    bottom: @user-control-bar-height;
-    background-color: transparent;
     height: @attendee-bar-height-sm;
   }
 
@@ -236,21 +232,6 @@
   .user-video {
     height: 100%;
   }
-
-  @media all and (orientation:portrait) {
-    .conference-main-video-multi {
-      margin: auto 0;
-      width: 100%;
-      height: auto;
-    }
-  }
-  @media all and (orientation:landscape) {
-    .conference-main-video-multi {
-      margin: 0 auto;
-      height: 100%;
-      width: auto;
-    }
-  }
 }
 
 
@@ -261,11 +242,7 @@
   right: 0;
   top: 0;
   bottom: 0;
-
-  padding-bottom: @attendee-bar-height-xs + @user-control-bar-height;
-  @media (min-width: @screen-sm) {
-    padding-bottom: @user-control-bar-height;
-  }
+  margin: auto;
 }
 
 .conference-attendee-video-multi {

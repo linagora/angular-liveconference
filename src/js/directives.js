@@ -1,8 +1,8 @@
 'use strict';
 
 angular.module('op.live-conference')
-  .directive('conferenceVideo', ['$timeout', '$window', '$rootScope', 'drawVideo', 'LOCAL_VIDEO_ID', 'DEFAULT_AVATAR_SIZE',
-  function($timeout, $window, $rootScope, drawVideo, LOCAL_VIDEO_ID, DEFAULT_AVATAR_SIZE) {
+  .directive('conferenceVideo', ['$timeout', '$window', '$rootScope', 'drawVideo', 'currentConferenceState', 'LOCAL_VIDEO_ID', 'DEFAULT_AVATAR_SIZE',
+  function($timeout, $window, $rootScope, drawVideo, currentConferenceState, LOCAL_VIDEO_ID, DEFAULT_AVATAR_SIZE) {
     return {
       restrict: 'E',
       replace: true,
@@ -21,28 +21,32 @@ angular.module('op.live-conference')
           stopAnimation = function() {};
         }
 
+        function drawVideoInCanvas() {
+          canvas[0].width = mainVideo[0].videoWidth || DEFAULT_AVATAR_SIZE;
+          canvas[0].height = mainVideo[0].videoHeight || DEFAULT_AVATAR_SIZE;
+          stopAnimation = drawVideo(context, mainVideo[0], canvas[0].width, canvas[0].height);
+
+          $rootScope.$broadcast('localVideoId:ready', mainVideo[0].id);
+        }
+
         $timeout(function() {
           canvas = element.find('canvas#mainVideoCanvas');
           context = canvas[0].getContext('2d');
           mainVideo = element.find('video#' + LOCAL_VIDEO_ID);
           mainVideo.on('loadedmetadata', function() {
-            function drawVideoInCancas() {
-              canvas[0].width = mainVideo[0].videoWidth || DEFAULT_AVATAR_SIZE;
-              canvas[0].height = mainVideo[0].videoHeight || DEFAULT_AVATAR_SIZE;
-              stopAnimation = drawVideo(context, mainVideo[0], canvas[0].width, canvas[0].height);
-            }
             if ($window.mozRequestAnimationFrame) {
               // see https://bugzilla.mozilla.org/show_bug.cgi?id=926753
               // Firefox needs this timeout.
               $timeout(function() {
-                drawVideoInCancas();
+                drawVideoInCanvas();
               }, 500);
             } else {
-              drawVideoInCancas();
+              drawVideoInCanvas();
             }
-            $rootScope.$broadcast('localVideoId:ready', LOCAL_VIDEO_ID);
           });
         }, 1000);
+
+        scope.conferenceState = currentConferenceState;
 
         scope.$on('conferencestate:localVideoId:update', function(event, newVideoId) {
           // Reject the first watch of the mainVideoId
@@ -52,10 +56,7 @@ angular.module('op.live-conference')
             return;
           }
           mainVideo = element.find('video#' + newVideoId);
-          canvas[0].width = mainVideo[0].videoWidth || DEFAULT_AVATAR_SIZE;
-          canvas[0].height = mainVideo[0].videoHeight || DEFAULT_AVATAR_SIZE;
-          stopAnimation = drawVideo(context, mainVideo[0], canvas[0].width, canvas[0].height);
-          $rootScope.$broadcast('localVideoId:ready', newVideoId);
+          drawVideoInCanvas();
         });
 
         scope.streamToMainCanvas = function(index) {
@@ -73,6 +74,8 @@ angular.module('op.live-conference')
           }
 
         });
+
+        angular.element($window).on('orientationchange', drawVideoInCanvas);
       }
     };
   }])
@@ -334,6 +337,62 @@ angular.module('op.live-conference')
         var unreg = $rootScope.$on('localMediaStream', function() {
           unreg();
           new AutoVideoSwitcher(currentConferenceState);
+        });
+      }
+    };
+  }])
+  .directive('smartFit', ['$rootScope', function($rootScope) {
+    return {
+      restrict: 'A',
+      replace: true,
+      link: function(scope, element, attrs) {
+        if (element[0].tagName !== 'CANVAS') {
+          throw new Error('The smartFit directive can only be applied to a HTML Canvas.');
+        }
+
+        var unregisterRootScopeListener,
+            source = angular.element(attrs.from),
+            toPreserve = angular.element(attrs.preserve);
+
+        function smartFit() {
+          var canvas = element[0],
+            availWidth = source.width(),
+            availHeight = source.height(),
+            width = canvas.width,
+            height = canvas.height,
+            videoAspectRatio = width / height,
+            containerAspectRatio = availWidth / availHeight;
+
+          function fitWidth() {
+            width = availWidth;
+            height = Math.floor(width / videoAspectRatio);
+          }
+
+          function fitHeight() {
+            height = availHeight;
+            width = Math.floor(height * videoAspectRatio);
+          }
+
+          if (videoAspectRatio > containerAspectRatio) {
+            fitWidth();
+          } else {
+            fitHeight();
+          }
+
+          canvas.style.width = width + 'px';
+          canvas.style.height = height + 'px';
+
+          if (toPreserve.length) {
+            canvas.style['margin-top'] = Math.max(0, (toPreserve.position().top - height) / 2) + 'px';
+          }
+        }
+
+        source.resize(smartFit);
+        unregisterRootScopeListener = $rootScope.$on('localVideoId:ready', smartFit);
+
+        scope.$on('$destroy', function() {
+          source.off('resize', smartFit);
+          unregisterRootScopeListener();
         });
       }
     };
