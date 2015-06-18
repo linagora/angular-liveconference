@@ -2,7 +2,7 @@ div.conference-video.fullscreen#multiparty-conference(local-speak-emitter,
 auto-video-switcher, ng-style="paneStyle")
   conference-user-video
   .conference-attendees-bar(ng-style="attendeesBarStyle")
-    ul.content(scale-to-canvas)
+    ul.content(scale-to-canvas, ng-style="attendeesBarContentStyle")
       li(ng-repeat="id in conferenceState.videoIds", ng-hide="!conferenceState.attendees[$index]")
         conference-attendee-video(video-index="$index", on-video-click="streamToMainCanvas", video-id="{{id}}", attendee="conferenceState.attendees[$index]", show-report='showReport')
   chat-window
