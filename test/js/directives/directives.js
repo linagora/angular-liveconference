@@ -310,6 +310,14 @@ describe('Directives', function() {
       var attendeesBar = this.conferenceVideo.find('.conference-attendees-bar');
       expect(attendeesBar.css('width')).to.equal('70%');
     });
+    it('should resize the attendees bar contents when receiving attendeesBarSize.marginRight', function() {
+      $rootScope.$emit('attendeesBarSize', {marginRight: '30px'});
+      $rootScope.$apply();
+
+      var attendeesBar = this.conferenceVideo.find('.conference-attendees-bar > .content');
+      expect(attendeesBar.css('marginRight')).to.equal('30px');
+    });
+
   });
 
 });

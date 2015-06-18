@@ -83,6 +83,10 @@ angular.module('op.live-conference')
             scope.attendeesBarStyle = {width: (100 - paneSize.height) + '%'};
           }
 
+          if (paneSize.marginRight !== undefined) {
+            scope.attendeesBarContentStyle = {'margin-right': paneSize.marginRight};
+          }
+
         });
 
         angular.element($window).on('orientationchange', drawVideoInCanvas);
