@@ -75,6 +75,16 @@ angular.module('op.live-conference')
 
         });
 
+        $rootScope.$on('attendeesBarSize', function(event, paneSize) {
+          if (paneSize.width !== undefined) {
+            scope.attendeesBarStyle = {width: (100 - paneSize.width) + '%'};
+          }
+          if (paneSize.height !== undefined) {
+            scope.attendeesBarStyle = {width: (100 - paneSize.height) + '%'};
+          }
+
+        });
+
         angular.element($window).on('orientationchange', drawVideoInCanvas);
       }
     };
