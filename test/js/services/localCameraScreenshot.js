@@ -66,14 +66,14 @@ describe('The localCameraScreenshot service', function() {
     });
 
     it('should return null if the attendee has video muted', function() {
-      currentConferenceState.getAttendeeByVideoId = function() { return { videoMuted: true}; };
+      currentConferenceState.getAttendeeByVideoId = function() { return { muteVideo: true}; };
 
       expect(localCameraScreenshot.shoot()).to.equal(null);
     });
 
     it('should return null if the thumbnail cannot be found', function() {
       thumbnail.setAttribute('data-video-id', 'notTheCorrectVideoId');
-      currentConferenceState.getAttendeeByVideoId = function() { return { videoMuted: true}; };
+      currentConferenceState.getAttendeeByVideoId = function() { return { muteVideo: true}; };
 
       expect(localCameraScreenshot.shoot()).to.equal(null);
     });
