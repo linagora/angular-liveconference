@@ -290,7 +290,7 @@ describe('Directives', function() {
 
       $window.requestAnimationFrame = function() {}; // PhantomJS doesn't have it...
 
-      $compile('<conference-video />')($rootScope);
+      this.conferenceVideo = $compile('<conference-video />')($rootScope);
       $rootScope.$digest();
       $timeout.flush();
     }));
@@ -301,6 +301,14 @@ describe('Directives', function() {
       });
 
       angular.element($window).trigger('orientationchange');
+    });
+
+    it('should resize the attendees bar when receiving attendeesBarSize', function() {
+      $rootScope.$emit('attendeesBarSize', {width: 30});
+      $rootScope.$apply();
+
+      var attendeesBar = this.conferenceVideo.find('.conference-attendees-bar');
+      expect(attendeesBar.css('width')).to.equal('70%');
     });
   });
 
