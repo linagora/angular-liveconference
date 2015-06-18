@@ -1569,7 +1569,7 @@ angular.module('op.live-conference')
       function shoot(screenshotEdgePx) {
         var attendee = currentConferenceState.getAttendeeByVideoId(LOCAL_VIDEO_ID);
 
-        if (!attendee || attendee.videoMuted) {
+        if (!attendee || attendee.muteVideo) {
           return null;
         }
 
