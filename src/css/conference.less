@@ -1,7 +1,3 @@
-@screen-sm: 768px;
-@screen-md: 992px;
-@screen-lg: 1200px;
-
 @user-control-bar-height: 50px;
 @user-control-bar-button: 28px;
 
@@ -31,13 +27,6 @@
   .btn {
     margin-top: 20px;
     margin-bottom: 10px;
-  }
-  @media (min-width: @screen-md) {
-    .ResizeImage(@defaultImageSizeMedium, auto);
-    .btn {
-      margin-top: 0px;
-      margin-bottom: 0px;
-    }
   }
 }
 
@@ -91,18 +80,6 @@
   position: absolute;
   background-color: transparent;
 
-  @media (min-width: @screen-sm) {
-    height: @attendee-bar-height-sm;
-  }
-
-  @media (min-width: @screen-md) {
-    height: @attendee-bar-height-md;
-  }
-
-  @media (min-width: @screen-lg) {
-    height: @attendee-bar-height-lg;
-  }
-
   .content {
     width: auto !important;
     margin: 0;
@@ -115,9 +92,6 @@
       position: relative;
       list-style: none;
       padding-right: 5px;
-      @media (min-width: @screen-sm) {
-        padding-right: 10px;
-      }
     }
   }
 }
@@ -171,18 +145,6 @@
     box-shadow: 0 0 6px @conference-background;
     border: 1px solid @conference-background-semitransparent;
     transition: border 0.3s, box-shadow 0.3s;
-    @media (min-width: @screen-sm) {
-      height: 105px;
-      width: 105px;
-    }
-    @media (min-width: @screen-md) {
-      height: 120px;
-      width: 120px;
-    }
-    @media (min-width: @screen-lg) {
-      height: 150px;
-      width: 150px;
-    }
 
     &.speaking {
       box-shadow: 0 0 6px @brand-primary;
@@ -198,15 +160,6 @@
     color: white;
     margin: 0;
     width: 100px;
-    @media (min-width: @screen-sm) {
-      width: 105px;
-    }
-    @media (min-width: @screen-md) {
-      width: 120px;
-    }
-    @media (min-width: @screen-lg) {
-      width: 150px;
-    }
   }
 }
 
@@ -245,36 +198,10 @@
   margin: auto;
 }
 
-.conference-attendee-video-multi {
-  height: 100px;
-  width: 100px;
-  @media (min-width: @screen-sm) {
-    height: 105px;
-    width: 105px;
-  }
-  @media (min-width: @screen-md) {
-    height: 120px;
-    width: 120px;
-  }
-  @media (min-width: @screen-lg) {
-    height: 150px;
-    width: 150px;
-  }
-}
-
 .conference-attendee-name {
   white-space: nowrap;
   color: white;
   margin: 0;
-  @media (min-width: @screen-sm) {
-    width: 105px;
-  }
-  @media (min-width: @screen-md) {
-    width: 120px;
-  }
-  @media (min-width: @screen-lg) {
-    width: 150px;
-  }
 }
 
 .ResizeImage(@width, @height) {
@@ -336,10 +263,71 @@
   }
 }
 
-@media (min-width: @screen-sm) {
+#multiparty-conference[min-width^='1200px'] {
+  .conference-attendees-bar {
+    height: @attendee-bar-height-lg;
+  }
+
+  .attendee-video {
+    .conference-attendee-video-multi {
+      height: 150px;
+      width: 150px;
+    }
+
+    .conference-attendee-name {
+      width: 150px;
+    }
+  }
+}
+
+#multiparty-conference[min-width^='992px'] {
+  .conference-attendee {
+    .ResizeImage(@defaultImageSizeMedium, auto);
+    .btn {
+      margin-top: 0;
+      margin-bottom: 0;
+    }
+  }
+
+  .conference-attendees-bar {
+    height: @attendee-bar-height-md;
+  }
+
+  .attendee-video {
+    .conference-attendee-video-multi {
+      height: 120px;
+      width: 120px;
+    }
+
+    .conference-attendee-name {
+      width: 120px;
+    }
+  }
+}
+
+#multiparty-conference[min-width^='768px'] {
   .mobile-user-video-control {
     li {
       padding: 0 3em;
+    }
+  }
+
+  .conference-attendees-bar {
+    height: @attendee-bar-height-sm;
+
+    li {
+      padding-right: 10px;
+    }
+  }
+
+  .attendee-video {
+    .conference-attendee-video-multi {
+      height: 105px;
+      width: 105px;
+    }
+
+    .conference-attendee-name {
+      width: 105px;
     }
   }
 }
