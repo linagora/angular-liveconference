@@ -1278,10 +1278,6 @@ angular.module('op.live-conference')
 
         easyrtc.username = session.getUserId();
 
-        easyrtc.debugPrinter = function(message) {
-          $log.debug(message);
-        };
-
         function onWebsocket() {
           var sio = ioSocketConnection.getSio();
           sio.socket = {connected: true};
