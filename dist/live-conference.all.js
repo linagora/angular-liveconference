@@ -1112,6 +1112,8 @@ angular.module('op.live-conference')
       var isChromeBrowser = window.webrtcDetectedBrowser === 'chrome';
       var canEnumerateDevices = checkFirefoxEnumerateDevices || isChromeBrowser;
 
+      easyrtc.setMaxP2PMessageLength(10000);
+      
       easyrtc.getVideoSourceList(function(results) {
         if (isChromeBrowser) {
           if (results.length === 0) {
@@ -1385,15 +1387,15 @@ angular.module('op.live-conference')
       }
 
       function sendDataP2P(easyrtcid, msgType, data) {
-        easyrtc.sendDataP2P(easyrtcid, msgType, JSON.stringify(data));
+        easyrtc.sendDataP2P(easyrtcid, msgType, data);
       }
 
       function sendDataWS(easyrtcid, msgType, data, ackhandler) {
-        easyrtc.sendDataWS(easyrtcid, msgType, JSON.stringify(data), ackhandler);
+        easyrtc.sendDataWS(easyrtcid, msgType, data, ackhandler);
       }
 
       function sendData(easyrtcid, msgType, data, ackhandler) {
-        easyrtc.sendData(easyrtcid, msgType, JSON.stringify(data), ackhandler);
+        easyrtc.sendData(easyrtcid, msgType, data, ackhandler);
       }
 
       function getP2PConnectionStatus(easyrtcid) {
