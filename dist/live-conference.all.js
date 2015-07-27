@@ -1113,7 +1113,6 @@ angular.module('op.live-conference')
       var canEnumerateDevices = checkFirefoxEnumerateDevices || isChromeBrowser;
 
       easyrtc.setMaxP2PMessageLength(10000);
-      
       easyrtc.getVideoSourceList(function(results) {
         if (isChromeBrowser) {
           if (results.length === 0) {
