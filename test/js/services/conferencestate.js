@@ -471,7 +471,8 @@ describe('The ConferenceState module', function() {
         setCallCancelled: function() {},
         setOnStreamClosed: function() {},
         setOnError: function() {},
-        setVideoDims: function() {}
+        setVideoDims: function() {},
+        setMaxP2PMessageLength: function() {}
       };
 
       webrtcFactory = {
@@ -640,7 +641,7 @@ describe('The ConferenceState module', function() {
         webrtcObject.sendDataP2P = function(idarg, typearg, dataarg) {
           expect(idarg).to.equal(id);
           expect(typearg).to.equal(type);
-          expect(dataarg).to.equal(JSON.stringify(data));
+          expect(dataarg).to.equal(data);
           done();
         };
         module(function($provide) {
@@ -659,7 +660,7 @@ describe('The ConferenceState module', function() {
         webrtcObject.sendDataWS = function(idarg, typearg, dataarg) {
           expect(idarg).to.equal(id);
           expect(typearg).to.equal(type);
-          expect(dataarg).to.equal(JSON.stringify(data));
+          expect(dataarg).to.equal(data);
           done();
         };
         module(function($provide) {

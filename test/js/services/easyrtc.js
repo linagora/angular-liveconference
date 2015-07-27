@@ -19,7 +19,9 @@ var DummyCallbackConstructor = function() {
 describe('easyRTCService service', function() {
   var service, tokenAPI, session, webrtcFactory, easyrtc, currentConferenceState, disconnectCallback, $rootScope, $scope;
 
-  beforeEach(angular.mock.module('op.live-conference'));
+  beforeEach(function() {
+    angular.mock.module('op.live-conference');
+  });
 
   beforeEach(function() {
     var dummyDataOpenListener = new DummyCallbackConstructor(),
@@ -51,7 +53,8 @@ describe('easyRTCService service', function() {
         callDataChannelOpenListener: dummyDataOpenListener.callCallback,
         callDataChannelCloseListener: dummyDataCloseListener.callCallback,
         callPeerListener: dummyPeerListener.callCallback
-      }
+      },
+      setMaxP2PMessageLength: function() {}
     };
     tokenAPI = {};
     session = {
@@ -226,7 +229,7 @@ describe('easyRTCService service', function() {
       easyrtc.sendData = function(easyrtcid, msgType, data, ackhandler) {
         expect(easyrtcid).to.equal(testId);
         expect(msgType).to.equal(testMsgType);
-        expect(data).to.equal(JSON.stringify(testData));
+        expect(data).to.equal(testData);
         expect(ackhandler).to.deep.equal(testHandler);
         done();
       };
