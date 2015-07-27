@@ -30,4 +30,5 @@ angular.module('op.live-conference')
   .constant('EASYRTC_EVENTS', {
     attendeeUpdate: 'attendee:update'
   })
-  .constant('DEFAULT_AVATAR_SIZE', 500);
+  .constant('DEFAULT_AVATAR_SIZE', 500)
+  .constant('MAX_P2P_MESSAGE_LENGTH', 10000);
