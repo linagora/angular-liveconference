@@ -16,6 +16,7 @@ module.exports = function(config) {
       'bower_components/chai/chai.js',
       'bower_components/chai-spies/chai-spies.js',
       'bower_components/angular-sanitize/angular-sanitize.min.js',
+      'node_modules/om-webrtc-backend/node_modules/easyrtc/api/easyrtc.js',
       'test/module.js',
       'src/**/*.js',
       'test/**/*.js',
