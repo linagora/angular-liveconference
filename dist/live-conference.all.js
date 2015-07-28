@@ -304,7 +304,8 @@ angular.module('op.live-conference')
   .constant('EASYRTC_EVENTS', {
     attendeeUpdate: 'attendee:update'
   })
-  .constant('DEFAULT_AVATAR_SIZE', 500);
+  .constant('DEFAULT_AVATAR_SIZE', 500)
+  .constant('MAX_P2P_MESSAGE_LENGTH', 10000);
 'use strict';
 
 angular.module('op.live-conference')
@@ -1099,9 +1100,9 @@ angular.module('op.live-conference')
   }])
   .factory('easyRTCService', ['$rootScope', '$log', 'webrtcFactory', 'tokenAPI', 'session',
     'ioSocketConnection', 'ioConnectionManager', '$timeout', 'easyRTCBitRates', 'currentConferenceState',
-    'LOCAL_VIDEO_ID', 'REMOTE_VIDEO_IDS', 'EASYRTC_APPLICATION_NAME', 'EASYRTC_EVENTS', '$q', 'listenerFactory',
+    'LOCAL_VIDEO_ID', 'REMOTE_VIDEO_IDS', 'EASYRTC_APPLICATION_NAME', 'EASYRTC_EVENTS', '$q', 'listenerFactory', 'MAX_P2P_MESSAGE_LENGTH',
     function($rootScope, $log, webrtcFactory, tokenAPI, session, ioSocketConnection, ioConnectionManager, $timeout, easyRTCBitRates, currentConferenceState,
-             LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, EASYRTC_APPLICATION_NAME, EASYRTC_EVENTS, $q, listenerFactory) {
+             LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, EASYRTC_APPLICATION_NAME, EASYRTC_EVENTS, $q, listenerFactory, MAX_P2P_MESSAGE_LENGTH) {
       var easyrtc = webrtcFactory.get();
       easyrtc.enableDataChannels(true);
 
@@ -1112,6 +1113,7 @@ angular.module('op.live-conference')
       var isChromeBrowser = window.webrtcDetectedBrowser === 'chrome';
       var canEnumerateDevices = checkFirefoxEnumerateDevices || isChromeBrowser;
 
+      easyrtc.setMaxP2PMessageLength(MAX_P2P_MESSAGE_LENGTH);
       easyrtc.getVideoSourceList(function(results) {
         if (isChromeBrowser) {
           if (results.length === 0) {
@@ -1385,15 +1387,15 @@ angular.module('op.live-conference')
       }
 
       function sendDataP2P(easyrtcid, msgType, data) {
-        easyrtc.sendDataP2P(easyrtcid, msgType, JSON.stringify(data));
+        easyrtc.sendDataP2P(easyrtcid, msgType, data);
       }
 
       function sendDataWS(easyrtcid, msgType, data, ackhandler) {
-        easyrtc.sendDataWS(easyrtcid, msgType, JSON.stringify(data), ackhandler);
+        easyrtc.sendDataWS(easyrtcid, msgType, data, ackhandler);
       }
 
       function sendData(easyrtcid, msgType, data, ackhandler) {
-        easyrtc.sendData(easyrtcid, msgType, JSON.stringify(data), ackhandler);
+        easyrtc.sendData(easyrtcid, msgType, data, ackhandler);
       }
 
       function getP2PConnectionStatus(easyrtcid) {
