@@ -46,7 +46,11 @@ describe('The ConferenceState module', function() {
         'video-thumb7',
         'video-thumb8'
       ]);
-      expect(conferenceState.videoElements[0]).to.be.exist;
+      var videoElements = [];
+      for (var i = 0; i < 9; i++) {
+        videoElements.push(angular.element('<video id="video-thumb' + i + '" autoplay="autoplay" style="display:none;"></video>'));
+      }
+      expect(conferenceState.videoElements).to.deep.equal(videoElements);
     });
 
     describe('getAttendeeByEasyrtcid method', function() {
