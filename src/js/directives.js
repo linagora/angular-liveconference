@@ -1,8 +1,8 @@
 'use strict';
 
 angular.module('op.live-conference')
-  .directive('conferenceVideo', ['$timeout', '$window', '$rootScope', 'drawVideo', 'currentConferenceState', 'LOCAL_VIDEO_ID', 'DEFAULT_AVATAR_SIZE',
-  function($timeout, $window, $rootScope, drawVideo, currentConferenceState, LOCAL_VIDEO_ID, DEFAULT_AVATAR_SIZE) {
+  .directive('conferenceVideo', ['$timeout', '$window', '$rootScope', 'drawVideo', 'currentConferenceState', 'LOCAL_VIDEO_ID', 'DEFAULT_AVATAR_SIZE', '$state',
+  function($timeout, $window, $rootScope, drawVideo, currentConferenceState, LOCAL_VIDEO_ID, DEFAULT_AVATAR_SIZE, $state) {
     return {
       restrict: 'E',
       replace: true,
@@ -11,6 +11,7 @@ angular.module('op.live-conference')
         var canvas = {};
         var context = {};
         var mainVideo = {};
+        var currentVideoId = LOCAL_VIDEO_ID;
         var stopAnimation = function() {};
 
         function garbage() {
@@ -32,30 +33,34 @@ angular.module('op.live-conference')
         $timeout(function() {
           canvas = element.find('canvas#mainVideoCanvas');
           context = canvas[0].getContext('2d');
-          mainVideo = element.find('video#' + LOCAL_VIDEO_ID);
-          mainVideo.on('loadedmetadata', function() {
-            if ($window.mozRequestAnimationFrame) {
-              // see https://bugzilla.mozilla.org/show_bug.cgi?id=926753
-              // Firefox needs this timeout.
-              $timeout(function() {
+          mainVideo = currentConferenceState.getVideoElementById(LOCAL_VIDEO_ID);
+          if ($state.current.data.hasVideo) {
+            drawVideoInCanvas();
+          } else {
+            mainVideo.on('loadedmetadata', function() {
+              $state.current.data.hasVideo = true;
+              if ($window.mozRequestAnimationFrame) {
+                // see https://bugzilla.mozilla.org/show_bug.cgi?id=926753
+                // Firefox needs this timeout.
+                $timeout(function() {
+                  drawVideoInCanvas();
+                }, 500);
+              } else {
                 drawVideoInCanvas();
-              }, 500);
-            } else {
-              drawVideoInCanvas();
-            }
-          });
+              }
+            });}
         }, 1000);
 
         scope.conferenceState = currentConferenceState;
-
         scope.$on('conferencestate:localVideoId:update', function(event, newVideoId) {
           // Reject the first watch of the mainVideoId
           // when clicking on a new video, loadedmetadata event is not
           // fired.
-          if (!mainVideo[0]) {
+          if (!mainVideo[0] || newVideoId === currentVideoId) {
             return;
           }
-          mainVideo = element.find('video#' + newVideoId);
+          currentVideoId = newVideoId;
+          mainVideo = currentConferenceState.getVideoElementById(newVideoId);
           drawVideoInCanvas();
         });
 
@@ -93,6 +98,47 @@ angular.module('op.live-conference')
       }
     };
   }])
+  .directive('conferenceMobileVideo', ['$timeout', '$window', '$rootScope', 'drawVideo', 'currentConferenceState',
+    function($timeout, $window, $rootScope, drawVideo, currentConferenceState) {
+      return {
+        restrict: 'E',
+        replace: true,
+        templateUrl: 'templates/mobile-video.jade',
+        link: function(scope, element) {
+          var mainVideo;
+          var canvas, context;
+          var stopAnimation = function() {};
+          canvas = element[0];
+          function garbage() {
+            stopAnimation();
+            canvas = {};
+            context = {};
+            mainVideo = {};
+            stopAnimation = function() {};
+          }
+
+          function drawMobileVideo() {
+            stopAnimation = drawVideo(context, mainVideo[0], canvas.width, canvas.height);
+          }
+
+          $timeout(function() {
+            context = canvas.getContext('2d');
+            mainVideo = currentConferenceState.getVideoElementById(currentConferenceState.localVideoId);
+            $timeout(drawMobileVideo);
+          }, 500);
+
+          scope.$on('conferencestate:localVideoId:update', function(event, newVideoId) {
+            if (!mainVideo[0]) {
+              return;
+            }
+            mainVideo = currentConferenceState.getVideoElementById(newVideoId);
+            $timeout(drawMobileVideo);
+          });
+
+          scope.$on('$destroy', garbage);
+        }
+      };
+    }])
 
   .directive('conferenceAttendee', function() {
     return {
@@ -101,7 +147,7 @@ angular.module('op.live-conference')
     };
   })
 
-  .directive('conferenceAttendeeVideo', ['easyRTCService', 'currentConferenceState', 'matchmedia', function(easyRTCService, currentConferenceState, matchmedia) {
+  .directive('conferenceAttendeeVideo', ['easyRTCService', 'currentConferenceState', 'matchmedia', '$timeout', 'drawVideo', function(easyRTCService, currentConferenceState, matchmedia, $timeout, drawVideo) {
     return {
       restrict: 'E',
       replace: true,
@@ -159,7 +205,7 @@ angular.module('op.live-conference')
 
         var mainVideo = {};
         var videoElement = {};
-        var watcher = {};
+        var watcher;
 
         scope.$on('localVideoId:ready', function(event, videoId) {
           if (watcher instanceof Function) {
@@ -167,7 +213,7 @@ angular.module('op.live-conference')
             // if it has been initialized first
             watcher();
           }
-          mainVideo = $('video#' + videoId);
+          mainVideo = currentConferenceState.getVideoElementById(videoId);
           videoElement = mainVideo[0];
           scope.muted = videoElement.muted;
 
@@ -244,8 +290,8 @@ angular.module('op.live-conference')
       }
     };
   })
-  .directive('scaleToCanvas', ['$interval', '$window', 'cropDimensions', 'drawAvatarIfVideoMuted', 'drawHelper',
-    function($interval, $window, cropDimensions, drawAvatarIfVideoMuted, drawHelper) {
+  .directive('scaleToCanvas', ['$interval', '$window', 'cropDimensions', 'drawAvatarIfVideoMuted', 'drawHelper', 'currentConferenceState',
+    function($interval, $window, cropDimensions, drawAvatarIfVideoMuted, drawHelper, currentConferenceState) {
 
     var requestAnimationFrame =
       $window.requestAnimationFrame ||
@@ -280,10 +326,10 @@ angular.module('op.live-conference')
       }
 
       $interval(function cacheWidgets() {
-        element.find('video').each(function(index, vid) {
-          var canvas = element.find('canvas[data-video-id=' + vid.id + ']').get(0);
+        currentConferenceState.videoElements.forEach(function(vid) {
+          var canvas = element.find('canvas[data-video-id=' + vid[0].id + ']').get(0);
           widgets.push({
-            video: vid,
+            video: vid[0],
             canvas: canvas,
             context: canvas.getContext('2d')
           });

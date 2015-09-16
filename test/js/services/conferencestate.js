@@ -46,6 +46,11 @@ describe('The ConferenceState module', function() {
         'video-thumb7',
         'video-thumb8'
       ]);
+      var videoElements = [];
+      for (var i = 0; i < 9; i++) {
+        videoElements.push(angular.element('<video id="video-thumb' + i + '" autoplay="autoplay" style="display:none;"></video>'));
+      }
+      expect(conferenceState.videoElements).to.deep.equal(videoElements);
     });
 
     describe('getAttendeeByEasyrtcid method', function() {
@@ -393,6 +398,14 @@ describe('The ConferenceState module', function() {
         conferenceState.attendees = [{ easyrtcid: 'easyrtcid' }, { easyrtcid: 'easyrtcid2' }];
         conferenceState.updateLocalMuteFromEasyrtcid('easyrtcid', true);
         expect(conferenceState.attendees[0].localmute).to.be.true;
+      });
+    });
+
+    describe('getVideoElementById function', function() {
+      it('should return an video element ', function() {
+        var video = angular.element('<video id="video-thumb1" autoplay="autoplay" style="display:none;"></video>');
+        var videoElement = conferenceState.getVideoElementById('video-thumb1');
+        expect(videoElement).to.deep.equal(video);
       });
     });
 

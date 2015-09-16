@@ -309,8 +309,8 @@ angular.module('op.live-conference')
 'use strict';
 
 angular.module('op.live-conference')
-  .directive('conferenceVideo', ['$timeout', '$window', '$rootScope', 'drawVideo', 'currentConferenceState', 'LOCAL_VIDEO_ID', 'DEFAULT_AVATAR_SIZE',
-  function($timeout, $window, $rootScope, drawVideo, currentConferenceState, LOCAL_VIDEO_ID, DEFAULT_AVATAR_SIZE) {
+  .directive('conferenceVideo', ['$timeout', '$window', '$rootScope', 'drawVideo', 'currentConferenceState', 'LOCAL_VIDEO_ID', 'DEFAULT_AVATAR_SIZE', '$state',
+  function($timeout, $window, $rootScope, drawVideo, currentConferenceState, LOCAL_VIDEO_ID, DEFAULT_AVATAR_SIZE, $state) {
     return {
       restrict: 'E',
       replace: true,
@@ -319,6 +319,7 @@ angular.module('op.live-conference')
         var canvas = {};
         var context = {};
         var mainVideo = {};
+        var currentVideoId = LOCAL_VIDEO_ID;
         var stopAnimation = function() {};
 
         function garbage() {
@@ -340,30 +341,34 @@ angular.module('op.live-conference')
         $timeout(function() {
           canvas = element.find('canvas#mainVideoCanvas');
           context = canvas[0].getContext('2d');
-          mainVideo = element.find('video#' + LOCAL_VIDEO_ID);
-          mainVideo.on('loadedmetadata', function() {
-            if ($window.mozRequestAnimationFrame) {
-              // see https://bugzilla.mozilla.org/show_bug.cgi?id=926753
-              // Firefox needs this timeout.
-              $timeout(function() {
+          mainVideo = currentConferenceState.getVideoElementById(LOCAL_VIDEO_ID);
+          if ($state.current.data.hasVideo) {
+            drawVideoInCanvas();
+          } else {
+            mainVideo.on('loadedmetadata', function() {
+              $state.current.data.hasVideo = true;
+              if ($window.mozRequestAnimationFrame) {
+                // see https://bugzilla.mozilla.org/show_bug.cgi?id=926753
+                // Firefox needs this timeout.
+                $timeout(function() {
+                  drawVideoInCanvas();
+                }, 500);
+              } else {
                 drawVideoInCanvas();
-              }, 500);
-            } else {
-              drawVideoInCanvas();
-            }
-          });
+              }
+            });}
         }, 1000);
 
         scope.conferenceState = currentConferenceState;
-
         scope.$on('conferencestate:localVideoId:update', function(event, newVideoId) {
           // Reject the first watch of the mainVideoId
           // when clicking on a new video, loadedmetadata event is not
           // fired.
-          if (!mainVideo[0]) {
+          if (!mainVideo[0] || newVideoId === currentVideoId) {
             return;
           }
-          mainVideo = element.find('video#' + newVideoId);
+          currentVideoId = newVideoId;
+          mainVideo = currentConferenceState.getVideoElementById(newVideoId);
           drawVideoInCanvas();
         });
 
@@ -401,6 +406,47 @@ angular.module('op.live-conference')
       }
     };
   }])
+  .directive('conferenceMobileVideo', ['$timeout', '$window', '$rootScope', 'drawVideo', 'currentConferenceState',
+    function($timeout, $window, $rootScope, drawVideo, currentConferenceState) {
+      return {
+        restrict: 'E',
+        replace: true,
+        templateUrl: 'templates/mobile-video.jade',
+        link: function(scope, element) {
+          var mainVideo;
+          var canvas, context;
+          var stopAnimation = function() {};
+          canvas = element[0];
+          function garbage() {
+            stopAnimation();
+            canvas = {};
+            context = {};
+            mainVideo = {};
+            stopAnimation = function() {};
+          }
+
+          function drawMobileVideo() {
+            stopAnimation = drawVideo(context, mainVideo[0], canvas.width, canvas.height);
+          }
+
+          $timeout(function() {
+            context = canvas.getContext('2d');
+            mainVideo = currentConferenceState.getVideoElementById(currentConferenceState.localVideoId);
+            $timeout(drawMobileVideo);
+          }, 500);
+
+          scope.$on('conferencestate:localVideoId:update', function(event, newVideoId) {
+            if (!mainVideo[0]) {
+              return;
+            }
+            mainVideo = currentConferenceState.getVideoElementById(newVideoId);
+            $timeout(drawMobileVideo);
+          });
+
+          scope.$on('$destroy', garbage);
+        }
+      };
+    }])
 
   .directive('conferenceAttendee', function() {
     return {
@@ -409,7 +455,7 @@ angular.module('op.live-conference')
     };
   })
 
-  .directive('conferenceAttendeeVideo', ['easyRTCService', 'currentConferenceState', 'matchmedia', function(easyRTCService, currentConferenceState, matchmedia) {
+  .directive('conferenceAttendeeVideo', ['easyRTCService', 'currentConferenceState', 'matchmedia', '$timeout', 'drawVideo', function(easyRTCService, currentConferenceState, matchmedia, $timeout, drawVideo) {
     return {
       restrict: 'E',
       replace: true,
@@ -467,7 +513,7 @@ angular.module('op.live-conference')
 
         var mainVideo = {};
         var videoElement = {};
-        var watcher = {};
+        var watcher;
 
         scope.$on('localVideoId:ready', function(event, videoId) {
           if (watcher instanceof Function) {
@@ -475,7 +521,7 @@ angular.module('op.live-conference')
             // if it has been initialized first
             watcher();
           }
-          mainVideo = $('video#' + videoId);
+          mainVideo = currentConferenceState.getVideoElementById(videoId);
           videoElement = mainVideo[0];
           scope.muted = videoElement.muted;
 
@@ -552,8 +598,8 @@ angular.module('op.live-conference')
       }
     };
   })
-  .directive('scaleToCanvas', ['$interval', '$window', 'cropDimensions', 'drawAvatarIfVideoMuted', 'drawHelper',
-    function($interval, $window, cropDimensions, drawAvatarIfVideoMuted, drawHelper) {
+  .directive('scaleToCanvas', ['$interval', '$window', 'cropDimensions', 'drawAvatarIfVideoMuted', 'drawHelper', 'currentConferenceState',
+    function($interval, $window, cropDimensions, drawAvatarIfVideoMuted, drawHelper, currentConferenceState) {
 
     var requestAnimationFrame =
       $window.requestAnimationFrame ||
@@ -588,10 +634,10 @@ angular.module('op.live-conference')
       }
 
       $interval(function cacheWidgets() {
-        element.find('video').each(function(index, vid) {
-          var canvas = element.find('canvas[data-video-id=' + vid.id + ']').get(0);
+        currentConferenceState.videoElements.forEach(function(vid) {
+          var canvas = element.find('canvas[data-video-id=' + vid[0].id + ']').get(0);
           widgets.push({
-            video: vid,
+            video: vid[0],
             canvas: canvas,
             context: canvas.getContext('2d')
           });
@@ -774,6 +820,7 @@ angular.module('op.live-conference')
       this.attendees = [];
       this.localVideoId = LOCAL_VIDEO_ID;
       this.videoIds = [LOCAL_VIDEO_ID].concat(REMOTE_VIDEO_IDS);
+      this.videoElements = this.videoIds.map(function(id) { return angular.element('<video id="' + id + '" autoplay="autoplay" style="display:none;"/>'); });
       this.avatarCache = [];
     }
 
@@ -901,6 +948,10 @@ angular.module('op.live-conference')
 
     ConferenceState.prototype.getAttendees = function() {
       return angular.copy(this.attendees);
+    };
+
+    ConferenceState.prototype.getVideoElementById = function(id) {
+      return this.videoElements[this.videoIds.indexOf(id)];
     };
 
     return ConferenceState;
@@ -1685,7 +1736,7 @@ angular.module('op.liveconference-templates', []).run(['$templateCache', functio
   $templateCache.put("templates/attendee-settings-dropdown.jade",
     "<ul role=\"menu\" class=\"dropdown-menu attendee-settings-dropdown\"><li role=\"presentation\" ng-class=\"{'disabled': attendee.mute &amp;&amp; !attendee.localmute}\"><a href=\"\" ng-click=\"toggleAttendeeMute()\" role=\"menuitem\" target=\"_blank\"><i ng-class=\"{'fa-microphone': !attendee.mute &amp;&amp; !attendee.localmute, 'fa-microphone-slash': attendee.mute || attendee.localmute}\" class=\"fa fa-fw conference-mute-button\"></i><span ng-if=\"attendee.localmute\">Unmute</span><span ng-if=\"!attendee.localmute\">Mute</span></a></li><li role=\"presentation\"><a href=\"\" ng-click=\"showReportPopup()\" role=\"menuitem\" target=\"_blank\"><i class=\"fa fa-fw fa-exclamation-triangle conference-report-button\"></i>&nbsp;Report</a></li></ul>");
   $templateCache.put("templates/attendee-video.jade",
-    "<div class=\"attendee-video\"><canvas chat-message-bubble data-video-id=\"{{videoId}}\" width=\"150\" height=\"150\" ng-click=\"onVideoClick(videoIndex)\" ng-mouseenter=\"thumbhover = true\" ng-mouseleave=\"thumbhover = false\" ng-init=\"count=0\" ng-class=\"{thumbhover: thumbhover, speaking: attendee.speaking &amp;&amp; (!attendee.mute &amp;&amp; !attendee.localmute)}\" class=\"conference-attendee-video-multi\"></canvas><video id=\"{{videoId}}\" autoplay=\"autoplay\"></video><a href=\"\" target=\"_blank\" ng-show=\"videoId !== 'video-thumb0' &amp;&amp; thumbhover\" ng-mouseenter=\"thumbhover = true\" ng-mouseleave=\"thumbhover = true\" ng-class=\"{'hidden': !isDesktop}\" class=\"hidden-xs\"><i data-placement=\"right-bottom\" data-html=\"true\" data-animation=\"am-flip-x\" bs-dropdown template=\"templates/attendee-settings-dropdown.jade\" class=\"fa fa-2x fa-cog conference-settings-button\"></i></a><i ng-show=\"attendee.mute || attendee.localmute\" class=\"fa fa-2x fa-microphone-slash conference-secondary-mute-button\"></i><i ng-show=\"false\" class=\"fa fa-2x fa-eye-slash conference-secondary-toggle-video-button\"></i><p class=\"text-center conference-attendee-name ellipsis\">{{attendee.displayName}}</p></div>");
+    "<div class=\"attendee-video\"><canvas chat-message-bubble data-video-id=\"{{videoId}}\" width=\"150\" height=\"150\" ng-click=\"onVideoClick(videoIndex)\" ng-mouseenter=\"thumbhover = true\" ng-mouseleave=\"thumbhover = false\" ng-init=\"count=0\" ng-class=\"{thumbhover: thumbhover, speaking: attendee.speaking &amp;&amp; (!attendee.mute &amp;&amp; !attendee.localmute)}\" class=\"conference-attendee-video-multi\"></canvas><a href=\"\" target=\"_blank\" ng-show=\"videoId !== 'video-thumb0' &amp;&amp; thumbhover\" ng-mouseenter=\"thumbhover = true\" ng-mouseleave=\"thumbhover = true\" ng-class=\"{'hidden': !isDesktop}\" class=\"hidden-xs\"><i data-placement=\"right-bottom\" data-html=\"true\" data-animation=\"am-flip-x\" bs-dropdown template=\"templates/attendee-settings-dropdown.jade\" class=\"fa fa-2x fa-cog conference-settings-button\"></i></a><i ng-show=\"attendee.mute || attendee.localmute\" class=\"fa fa-2x fa-microphone-slash conference-secondary-mute-button\"></i><i ng-show=\"false\" class=\"fa fa-2x fa-eye-slash conference-secondary-toggle-video-button\"></i><p class=\"text-center conference-attendee-name ellipsis\">{{attendee.displayName}}</p></div>");
   $templateCache.put("templates/attendee.jade",
     "<div class=\"col-xs-12 media nopadding conference-attendee\"><a href=\"#\" class=\"pull-left\"><img src=\"/images/user.png\" ng-src=\"/api/users/{{user._id}}/profile/avatar\" class=\"media-object thumbnail\"></a><div class=\"media-body\"><h6 class=\"media-heading\">{{user.firstname}} {{user.lastname}}</h6><button type=\"submit\" ng-disabled=\"invited\" ng-click=\"inviteCall(user); invited=true\" class=\"btn btn-primary nopadding\">Invite</button></div><div class=\"horiz-space\"></div></div>");
   $templateCache.put("templates/conference-video.jade",
@@ -1696,6 +1747,8 @@ angular.module('op.liveconference-templates', []).run(['$templateCache', functio
     "<div class=\"col-xs-12\"><conference-video easyrtc=\"easyrtc\"></conference-video><conference-notification conference-id=\"{{conference._id}}\"></conference-notification></div>");
   $templateCache.put("templates/mobile-user-video-quadrant-control.jade",
     "<ul class=\"list-inline mobile-user-video-control\"><li><a href=\"\" ng-click=\"mute()\"><i ng-class=\"{'fa-microphone': !muted, 'fa-microphone-slash': muted}\" class=\"fa fa-5x fa-fw\"></i></a></li><li><a href=\"\" ng-click=\"onMobileToggleControls()\"><i class=\"fa fa-5x fa-fw fa-times\"></i></a></li><li><a href=\"\" ng-click=\"showReportPopup()\"><i class=\"fa fa-5x fa-fw fa-exclamation-triangle\"></i></a></li></ul>");
+  $templateCache.put("templates/mobile-video.jade",
+    "<canvas local-speak-emitter auto-video-switcher id=\"mobileVideo\" width=\"150\" height=\"150\"></canvas>");
   $templateCache.put("templates/user-control-bar.jade",
     "<div class=\"conference-user-control-bar text-center\"><ul class=\"list-inline\"><li><a href=\"\" ng-click=\"toggleSound()\"><i ng-class=\"{'fa-microphone': !muted, 'fa-microphone-slash': muted}\" class=\"fa fa-2x conference-mute-button conference-light-button\"></i></a></li><li ng-class=\"{'hidden': noVideo}\"><a href=\"\" ng-click=\"toggleCamera()\"><i ng-class=\"{'fa-eye': !videoMuted, 'fa-eye-slash': videoMuted}\" class=\"fa fa-2x conference-toggle-video-button conference-light-button\"></i></a></li><li><a href=\"\" ng-click=\"leaveConference()\"><i class=\"fa fa-phone fa-2x conference-toggle-terminate-call-button conference-light-button\"></i></a></li><li><a href=\"\" ng-click=\"showInvitationPanel()\"><i class=\"fa fa-users fa-2x conference-toggle-invite-button conference-light-button\"></i></a></li><editor-toggle-element></editor-toggle-element><chat-icon></chat-icon></ul></div>");
   $templateCache.put("templates/user-video.jade",

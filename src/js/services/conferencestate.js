@@ -29,6 +29,7 @@ angular.module('op.live-conference')
       this.attendees = [];
       this.localVideoId = LOCAL_VIDEO_ID;
       this.videoIds = [LOCAL_VIDEO_ID].concat(REMOTE_VIDEO_IDS);
+      this.videoElements = this.videoIds.map(function(id) { return angular.element('<video id="' + id + '" autoplay="autoplay" style="display:none;"/>'); });
       this.avatarCache = [];
     }
 
@@ -156,6 +157,10 @@ angular.module('op.live-conference')
 
     ConferenceState.prototype.getAttendees = function() {
       return angular.copy(this.attendees);
+    };
+
+    ConferenceState.prototype.getVideoElementById = function(id) {
+      return this.videoElements[this.videoIds.indexOf(id)];
     };
 
     return ConferenceState;

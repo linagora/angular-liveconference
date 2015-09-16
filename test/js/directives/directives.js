@@ -18,7 +18,11 @@ describe('Directives', function() {
     var element, scope, conferenceState, $modal, matchmedia, callback;
 
     beforeEach(module(function($provide) {
-      conferenceState = {};
+      conferenceState = {
+        getVideoElementById: function() {
+          return 'video-thumb0';
+        }
+      };
       $modal = function() {
         return {
           $promise: {
@@ -102,6 +106,49 @@ describe('Directives', function() {
         scope.showReportPopup();
         done();
       });
+    });
+  });
+
+  describe('conferenceMobileVideo directive', function() {
+
+    var element, scope, drawVideo, $timeout;
+    window.$ = function() {
+      return [{
+        getContext: function() {
+        }}];
+    };
+
+    beforeEach(module(function($provide) {
+      drawVideo = function() {};
+      $provide.value('session', {});
+      $provide.value('easyRTCService', {});
+      $provide.value('currentConferenceState', {
+        getVideoElementById: function() {
+          return 'video-thumb0';
+        },
+        videoIds: ['video-thumb0'],
+        attendees: [{}]
+      });
+      $provide.value('drawVideo', drawVideo);
+    }));
+
+    beforeEach(inject(function($compile, _$timeout_, $rootScope) {
+      $timeout = _$timeout_;
+      scope = $rootScope.$new();
+      element = $compile('<conference-mobile-video/>')(scope);
+      $rootScope.$digest();
+      $timeout.flush();
+    }));
+
+    it('should drawVideo when init', function(done) {
+      drawVideo = done();
+      scope.$digest();
+    });
+
+    it('should redraw video when update', function(done) {
+      scope.$emit('conferencestate:localVideoId:update');
+      drawVideo = done();
+      scope.$digest();
     });
   });
 
@@ -265,18 +312,39 @@ describe('Directives', function() {
 
   describe('The conferenceVideo directive', function() {
 
-    var $rootScope, $compile, $timeout, $window;
-
+    var $rootScope, $compile, $timeout, $window, hasVideo = false;
+    var mainVideo = {
+      0: {
+        getContext: function() {
+        }
+      },
+      on: function() {
+        hasVideo = true;
+      }
+    };
+    window.$ = function() {
+      return mainVideo;
+    };
     beforeEach(module(function($provide) {
       $provide.value('session', {});
       $provide.value('easyRTCService', {
         isVideoEnabled: function() { return true; }
       });
       $provide.value('$modal', function() {});
+      $provide.value('$state', {
+        current: {
+          data: {
+            hasVideo: false
+          }
+        }
+      });
       $provide.value('matchmedia', {
         isDesktop: function() { return true; }
       });
       $provide.value('currentConferenceState', {
+        getVideoElementById: function() {
+          return mainVideo;
+        },
         videoIds: ['video-thumb0'],
         attendees: [{}]
       });
@@ -310,6 +378,7 @@ describe('Directives', function() {
       var attendeesBar = this.conferenceVideo.find('.conference-attendees-bar');
       expect(attendeesBar.css('width')).to.equal('70%');
     });
+
     it('should resize the attendees bar contents when receiving attendeesBarSize.marginRight', function() {
       $rootScope.$emit('attendeesBarSize', {marginRight: '30px'});
       $rootScope.$apply();
@@ -318,6 +387,9 @@ describe('Directives', function() {
       expect(attendeesBar.css('marginRight')).to.equal('30px');
     });
 
+    it('should change state data when video loaded', function() {
+      expect(hasVideo).is.true;
+    });
   });
 
 });
