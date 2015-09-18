@@ -6,7 +6,7 @@ var expect = chai.expect;
 
 describe('The localCameraScreenshot service', function() {
   var localCameraScreenshot, newImage, newCanvas, currentConferenceState,
-      LOCAL_VIDEO_ID, thumbnail, width, height, CHAT_AVATAR_SIZE = 48;
+      LOCAL_VIDEO_ID, thumbnail, width, height, DEFAULT_AVATAR_SIZE;
 
   beforeEach(angular.mock.module('op.live-conference'));
 
@@ -37,12 +37,12 @@ describe('The localCameraScreenshot service', function() {
         return newCanvas;
       });
       $provide.value('currentConferenceState', currentConferenceState);
-      $provide.value('CHAT_AVATAR_SIZE', CHAT_AVATAR_SIZE);
     });
 
-    inject(function(_localCameraScreenshot_, _LOCAL_VIDEO_ID_) {
+    inject(function(_localCameraScreenshot_, _LOCAL_VIDEO_ID_, _DEFAULT_AVATAR_SIZE_) {
       localCameraScreenshot = _localCameraScreenshot_;
       LOCAL_VIDEO_ID = _LOCAL_VIDEO_ID_;
+      DEFAULT_AVATAR_SIZE = _DEFAULT_AVATAR_SIZE_;
     });
   });
 
@@ -90,7 +90,7 @@ describe('The localCameraScreenshot service', function() {
       currentConferenceState.getAttendeeByVideoId = function() { return {}; };
 
       expect(localCameraScreenshot.shoot()).to.deep.equal({
-        src: 'data:' + CHAT_AVATAR_SIZE + ',' + CHAT_AVATAR_SIZE
+        src: 'data:' + DEFAULT_AVATAR_SIZE + ',' + DEFAULT_AVATAR_SIZE
       });
     });
 
@@ -98,7 +98,7 @@ describe('The localCameraScreenshot service', function() {
       currentConferenceState.getAttendeeByVideoId = function() { return {}; };
 
       expect(localCameraScreenshot.shoot()).to.deep.equal({
-        src: 'data:' + CHAT_AVATAR_SIZE + ',' + CHAT_AVATAR_SIZE
+        src: 'data:' + DEFAULT_AVATAR_SIZE + ',' + DEFAULT_AVATAR_SIZE
       });
     });
 
