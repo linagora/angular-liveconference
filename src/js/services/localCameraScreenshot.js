@@ -11,8 +11,8 @@ angular.module('op.live-conference')
       return canvas;
     };
   }])
-  .factory('localCameraScreenshot', ['LOCAL_VIDEO_ID', 'CHAT_AVATAR_SIZE', 'currentConferenceState', 'newCanvas', 'newImage',
-    function(LOCAL_VIDEO_ID, CHAT_AVATAR_SIZE, currentConferenceState, newCanvas, newImage) {
+  .factory('localCameraScreenshot', ['LOCAL_VIDEO_ID', 'DEFAULT_AVATAR_SIZE', 'currentConferenceState', 'newCanvas', 'newImage',
+    function(LOCAL_VIDEO_ID, DEFAULT_AVATAR_SIZE, currentConferenceState, newCanvas, newImage) {
       function shoot(screenshotEdgePx) {
         var attendee = currentConferenceState.getAttendeeByVideoId(LOCAL_VIDEO_ID);
 
@@ -20,7 +20,7 @@ angular.module('op.live-conference')
           return null;
         }
 
-        var size = screenshotEdgePx || CHAT_AVATAR_SIZE,
+        var size = screenshotEdgePx || DEFAULT_AVATAR_SIZE,
             thumbnail = angular.element('canvas[data-video-id=' + LOCAL_VIDEO_ID + ']');
 
         if (!thumbnail.length) {
