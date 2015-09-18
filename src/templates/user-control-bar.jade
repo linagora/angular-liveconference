@@ -1,5 +1,5 @@
 .conference-user-control-bar.text-center
-  ul.list-inline
+  ul.list-inline(dynamic-directive='live-conference-control-bar-items')
     li
       a(href="", ng-click="toggleSound()")
         i.fa.fa-2x.conference-mute-button.conference-light-button(ng-class="{'fa-microphone': !muted, 'fa-microphone-slash': muted}")
@@ -13,4 +13,3 @@
       a(href="", ng-click="showInvitationPanel()")
         i.fa.fa-users.fa-2x.conference-toggle-invite-button.conference-light-button
     editor-toggle-element
-    chat-icon
