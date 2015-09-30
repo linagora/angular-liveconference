@@ -406,17 +406,17 @@ angular.module('op.live-conference')
       restrict: 'A',
       replace: true,
       link: function(scope, element, attrs) {
-        if (element[0].tagName !== 'CANVAS') {
-          throw new Error('The smartFit directive can only be applied to a HTML Canvas.');
-        }
 
         var unregisterRootScopeListener,
             source = angular.element(attrs.from),
             toPreserve = angular.element(attrs.preserve);
 
         function smartFit() {
-          var canvas = element[0],
-            availWidth = source.width(),
+          var canvas = element.find('canvas')[0];
+          if (!canvas) {
+            return;
+          }
+          var availWidth = source.width(),
             availHeight = source.height(),
             width = canvas.width,
             height = canvas.height,
@@ -439,11 +439,16 @@ angular.module('op.live-conference')
             fitHeight();
           }
 
-          canvas.style.width = width + 'px';
-          canvas.style.height = height + 'px';
+          element.css({
+            height: height + 'px',
+            width: width + 'px'
+          });
 
           if (toPreserve.length) {
-            canvas.style['margin-top'] = Math.max(0, (toPreserve.position().top - height) / 2) + 'px';
+            element.css(
+              'margin-top',
+              Math.max(0, (toPreserve.position().top - height) / 2) + 'px'
+            );
           }
         }
 
