@@ -259,13 +259,7 @@ angular.module('op.live-conference')
           });
 
           addDataChannelOpenListener(function(easyrtcid) {
-            var data = {
-              id: session.getUserId(),
-              displayName: session.getUsername(),
-              mute: conferenceState.attendees[0].mute,
-              muteVideo: conferenceState.attendees[0].muteVideo
-            };
-
+            var data = prepareAttendeeForBroadcast(conferenceState.attendees[0]);
             $log.debug('Data channel open, sending %s event with data: ', EASYRTC_EVENTS.attendeeUpdate, data);
             easyrtc.sendData(easyrtcid, EASYRTC_EVENTS.attendeeUpdate, data);
           });
