@@ -714,17 +714,17 @@ angular.module('op.live-conference')
       restrict: 'A',
       replace: true,
       link: function(scope, element, attrs) {
-        if (element[0].tagName !== 'CANVAS') {
-          throw new Error('The smartFit directive can only be applied to a HTML Canvas.');
-        }
 
         var unregisterRootScopeListener,
             source = angular.element(attrs.from),
             toPreserve = angular.element(attrs.preserve);
 
         function smartFit() {
-          var canvas = element[0],
-            availWidth = source.width(),
+          var canvas = element.find('canvas')[0];
+          if (!canvas) {
+            return;
+          }
+          var availWidth = source.width(),
             availHeight = source.height(),
             width = canvas.width,
             height = canvas.height,
@@ -747,11 +747,16 @@ angular.module('op.live-conference')
             fitHeight();
           }
 
-          canvas.style.width = width + 'px';
-          canvas.style.height = height + 'px';
+          element.css({
+            height: height + 'px',
+            width: width + 'px'
+          });
 
           if (toPreserve.length) {
-            canvas.style['margin-top'] = Math.max(0, (toPreserve.position().top - height) / 2) + 'px';
+            element.css(
+              'margin-top',
+              Math.max(0, (toPreserve.position().top - height) / 2) + 'px'
+            );
           }
         }
 
@@ -1754,5 +1759,5 @@ angular.module('op.liveconference-templates', []).run(['$templateCache', functio
   $templateCache.put("templates/user-control-bar.jade",
     "<div class=\"conference-user-control-bar text-center\"><ul dynamic-directive=\"live-conference-control-bar-items\" class=\"list-inline\"><li><a href=\"\" ng-click=\"toggleSound()\"><i ng-class=\"{'fa-microphone': !muted, 'fa-microphone-slash': muted}\" class=\"fa fa-2x conference-mute-button conference-light-button\"></i></a></li><li ng-class=\"{'hidden': noVideo}\"><a href=\"\" ng-click=\"toggleCamera()\"><i ng-class=\"{'fa-eye': !videoMuted, 'fa-eye-slash': videoMuted}\" class=\"fa fa-2x conference-toggle-video-button conference-light-button\"></i></a></li><li><a href=\"\" ng-click=\"leaveConference()\"><i class=\"fa fa-phone fa-2x conference-toggle-terminate-call-button conference-light-button\"></i></a></li><li><a href=\"\" ng-click=\"showInvitationPanel()\"><i class=\"fa fa-users fa-2x conference-toggle-invite-button conference-light-button\"></i></a></li><editor-toggle-element></editor-toggle-element></ul></div>");
   $templateCache.put("templates/user-video.jade",
-    "<div class=\"user-video\"><canvas smart-fit from=\"#multiparty-conference\" preserve=\".conference-attendees-bar\" id=\"mainVideoCanvas\" ng-click=\"onMobileToggleControls()\" class=\"conference-main-video-multi\"></canvas></div>");
+    "<div class=\"user-video\"><div smart-fit from=\"#multiparty-conference\" class=\"canvas-container\"><canvas id=\"mainVideoCanvas\" ng-click=\"onMobileToggleControls()\" class=\"conference-main-video-multi\"></canvas></div></div>");
 }]);
