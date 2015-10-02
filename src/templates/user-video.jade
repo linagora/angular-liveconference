@@ -1,2 +1,3 @@
 .user-video
-  canvas.conference-main-video-multi(smart-fit, from="#multiparty-conference", preserve=".conference-attendees-bar", id="mainVideoCanvas", ng-click='onMobileToggleControls()')
+  div.canvas-container(smart-fit, from="#multiparty-conference")
+    canvas.conference-main-video-multi(id="mainVideoCanvas", ng-click='onMobileToggleControls()')

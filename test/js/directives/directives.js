@@ -154,7 +154,7 @@ describe('Directives', function() {
 
   describe('The smartFit directive', function() {
 
-    var $rootScope, $compile, parentElement, canvasElement;
+    var $rootScope, $compile, parentElement, smartFitElement;
 
     beforeEach(inject(function(_$compile_, _$rootScope_) {
       $compile = _$compile_;
@@ -168,14 +168,14 @@ describe('Directives', function() {
     });
 
     function canvas(width, height) {
-      return '<canvas style="position: absolute;" smart-fit from="#parent" preserve="#preserved" width="' + width + '" height="' + height + '"></canvas>';
+      return '<div style="position: absolute;" smart-fit from="#parent" preserve="#preserved"><canvas width="' + width + '" height="' + height + '" style="width: 100%, height: 100%"></canvas></div>';
     }
 
     function compileAndAppendCanvas(width, height) {
       var element = $compile(canvas(width, height))($rootScope);
       $rootScope.$digest();
 
-      canvasElement = parentElement.appendChild(element[0]);
+      smartFitElement = parentElement.appendChild(element[0]);
     }
 
     function appendParentDiv(width, height) {
@@ -204,33 +204,27 @@ describe('Directives', function() {
       angular.element('#parent').resize();
     }
 
-    function expectCanvasSize(width, height) {
-      var canvas = angular.element('canvas');
+    function expectContainerSize(width, height) {
+      var container = angular.element('[smart-fit]');
 
-      expect(canvas.width()).to.equal(Math.floor(width));
-      expect(canvas.height()).to.equal(Math.floor(height));
+      expect(container.width()).to.equal(Math.floor(width));
+      expect(container.height()).to.equal(Math.floor(height));
     }
 
-    it('should throw an error if applied on a non-canvas element', function() {
-      expect(function() {
-        console.log($compile('<div smart-fit></div>')($rootScope));
-      }).to.throw(Error);
-    });
-
-    it('should resize canvas when parent is resized', function() {
+    it('should resize element when parent is resized, respecting the inner canvas aspect ratio', function() {
       appendParentDiv(1980, 1080);
       compileAndAppendCanvas(1280, 720);
       resizeParent();
 
-      expectCanvasSize(1920, 1080);
+      expectContainerSize(1920, 1080);
     });
 
-    it('should resize canvas when localVideoId:ready is broadcast', function() {
+    it('should resize element when localVideoId:ready is broadcast, respecting the inner canvas aspect ratio', function() {
       appendParentDiv(1980, 1080);
       compileAndAppendCanvas(1280, 720);
       $rootScope.$broadcast('localVideoId:ready');
 
-      expectCanvasSize(1920, 1080);
+      expectContainerSize(1920, 1080);
     });
 
     it('Video(480x640) Parent(768x1024) -> Fit height -> 768x1024', function() {
@@ -238,7 +232,7 @@ describe('Directives', function() {
       compileAndAppendCanvas(480, 640);
       resizeParent();
 
-      expectCanvasSize(768, 1024);
+      expectContainerSize(768, 1024);
     });
 
     it('Video(480x640) Parent(1024x768) -> Fit height -> 768x1024', function() {
@@ -246,7 +240,7 @@ describe('Directives', function() {
       compileAndAppendCanvas(480, 640);
       resizeParent();
 
-      expectCanvasSize(576, 768);
+      expectContainerSize(576, 768);
     });
 
     it('Video(640x360) Parent(768x1024) -> Fit width -> 768x432', function() {
@@ -254,7 +248,7 @@ describe('Directives', function() {
       compileAndAppendCanvas(640, 360);
       resizeParent();
 
-      expectCanvasSize(768, 432);
+      expectContainerSize(768, 432);
     });
 
     it('Video(640x360) Parent(1024x768) -> Fit width -> 1024x576', function() {
@@ -262,7 +256,7 @@ describe('Directives', function() {
       compileAndAppendCanvas(640, 360);
       resizeParent();
 
-      expectCanvasSize(1024, 576);
+      expectContainerSize(1024, 576);
     });
 
     it('Video(768x1024) Parent(480x640) -> Fit height -> 480x640', function() {
@@ -270,7 +264,7 @@ describe('Directives', function() {
       compileAndAppendCanvas(768, 1024);
       resizeParent();
 
-      expectCanvasSize(480, 640);
+      expectContainerSize(480, 640);
     });
 
     it('Video(768x1024) Parent(640x480) -> Fit height -> 360x480', function() {
@@ -278,7 +272,7 @@ describe('Directives', function() {
       compileAndAppendCanvas(768, 1024);
       resizeParent();
 
-      expectCanvasSize(360, 480);
+      expectContainerSize(360, 480);
     });
 
     it('Video(1280x720) Parent(600x800) -> Fit width -> 600x337', function() {
@@ -286,7 +280,7 @@ describe('Directives', function() {
       compileAndAppendCanvas(1280, 720);
       resizeParent();
 
-      expectCanvasSize(600, 337);
+      expectContainerSize(600, 337);
     });
 
     it('Video(1280x720) Parent(800x600) -> Fit width -> 800x450', function() {
@@ -294,10 +288,10 @@ describe('Directives', function() {
       compileAndAppendCanvas(1280, 720);
       resizeParent();
 
-      expectCanvasSize(800, 450);
+      expectContainerSize(800, 450);
     });
 
-    it('should center the canvas vertically, preserving the preserved element if present', function() {
+    it('should center the element vertically, preserving the preserved element if present', function() {
       appendParentDiv(600, 800);
       appendPreservedElement(10, 600, 100, 100);
       compileAndAppendCanvas(1280, 720);
@@ -306,7 +300,7 @@ describe('Directives', function() {
       // Computed video height: 337 (see test 'Video(1280x720) Parent(600x800)')
       // Preserved element is top=600
       // 600 - 337 / 2 -> 131.5
-      expect(canvasElement.style['margin-top']).to.equal('131.5px');
+      expect(smartFitElement.style['margin-top']).to.equal('131.5px');
     });
   });
 
