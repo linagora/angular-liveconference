@@ -221,6 +221,7 @@ angular.module('op.live-conference')
           function onLoginSuccess(easyrtcid) {
             $log.debug('Successfully logged: ' + easyrtcid);
             conferenceState.pushAttendee(0, easyrtcid, session.getUserId(), session.getUsername());
+            conferenceState.updateTimezoneOffsetFromIndex(0, new Date().getTimezoneOffset());
             $rootScope.$apply();
             if (!videoEnabled) {
               conferenceState.updateMuteVideoFromIndex(0, true);
@@ -359,7 +360,8 @@ angular.module('op.live-conference')
           avatar: attendee.avatar,
           mute: attendee.mute,
           muteVideo: attendee.muteVideo,
-          speaking: attendee.speaking
+          speaking: attendee.speaking,
+          timezoneOffset: attendee.timezoneOffset
         };
       }
 

@@ -461,4 +461,36 @@ angular.module('op.live-conference')
         });
       }
     };
-  }]);
+  }])
+  .directive('userTime', function($interval, currentConferenceState, LOCAL_VIDEO_ID, moment) {
+    function link(scope, element) {
+      function formatRemoteTime() {
+        if (angular.isDefined(scope.timezoneOffsetDiff)) {
+          scope.remoteHour = moment().add(scope.timezoneOffsetDiff, 'm').format('hh:mm a');
+        } else {
+          scope.remoteHour = null;
+        }
+      }
+
+      function onVideoUpdate() {
+        var localTimezoneOffset = currentConferenceState.getAttendeeByVideoId(LOCAL_VIDEO_ID).timezoneOffset;
+        var remoteTimezoneOffset = currentConferenceState.getAttendeeByVideoId(currentConferenceState.localVideoId).timezoneOffset;
+        if (angular.isDefined(localTimezoneOffset) &&
+            angular.isDefined(remoteTimezoneOffset) &&
+            localTimezoneOffset !== remoteTimezoneOffset) {
+          scope.timezoneOffsetDiff = localTimezoneOffset - remoteTimezoneOffset;
+        } else {
+          scope.timezoneOffsetDiff = undefined;
+        }
+        formatRemoteTime();
+      }
+
+      scope.$on('conferencestate:localVideoId:update', onVideoUpdate);
+      scope.$on('$destroy', $interval(formatRemoteTime, 60000));
+    }
+
+    return {
+      restrict: 'A',
+      link: link
+    };
+  });

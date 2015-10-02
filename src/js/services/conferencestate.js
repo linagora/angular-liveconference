@@ -127,6 +127,10 @@ angular.module('op.live-conference')
       this.updateAttendeeByIndex(index, { muteVideo: mute });
     };
 
+    ConferenceState.prototype.updateTimezoneOffsetFromIndex = function(index, timezoneOffset) {
+      this.updateAttendeeByIndex(index, { timezoneOffset: timezoneOffset });
+    };
+
     ConferenceState.prototype.updateMuteVideoFromEasyrtcid = function(easyrtcid, mute) {
       this.updateAttendeeByEasyrtcid(easyrtcid, { muteVideo: mute });
     };
