@@ -769,7 +769,39 @@ angular.module('op.live-conference')
         });
       }
     };
-  }]);
+  }])
+  .directive('userTime', function($interval, currentConferenceState, LOCAL_VIDEO_ID, moment) {
+    function link(scope, element) {
+      function formatRemoteTime() {
+        if (angular.isDefined(scope.timezoneOffsetDiff)) {
+          scope.remoteHour = moment().add(scope.timezoneOffsetDiff, 'm').format('hh:mm a');
+        } else {
+          scope.remoteHour = null;
+        }
+      }
+
+      function onVideoUpdate() {
+        var localTimezoneOffset = currentConferenceState.getAttendeeByVideoId(LOCAL_VIDEO_ID).timezoneOffset;
+        var remoteTimezoneOffset = currentConferenceState.getAttendeeByVideoId(currentConferenceState.localVideoId).timezoneOffset;
+        if (angular.isDefined(localTimezoneOffset) &&
+            angular.isDefined(remoteTimezoneOffset) &&
+            localTimezoneOffset !== remoteTimezoneOffset) {
+          scope.timezoneOffsetDiff = localTimezoneOffset - remoteTimezoneOffset;
+        } else {
+          scope.timezoneOffsetDiff = undefined;
+        }
+        formatRemoteTime();
+      }
+
+      scope.$on('conferencestate:localVideoId:update', onVideoUpdate);
+      scope.$on('$destroy', $interval(formatRemoteTime, 60000));
+    }
+
+    return {
+      restrict: 'A',
+      link: link
+    };
+  });
 'use strict';
 
 angular.module('op.live-conference')
@@ -921,6 +953,10 @@ angular.module('op.live-conference')
 
     ConferenceState.prototype.updateMuteVideoFromIndex = function(index, mute) {
       this.updateAttendeeByIndex(index, { muteVideo: mute });
+    };
+
+    ConferenceState.prototype.updateTimezoneOffsetFromIndex = function(index, timezoneOffset) {
+      this.updateAttendeeByIndex(index, { timezoneOffset: timezoneOffset });
     };
 
     ConferenceState.prototype.updateMuteVideoFromEasyrtcid = function(easyrtcid, mute) {
@@ -1344,6 +1380,7 @@ angular.module('op.live-conference')
           function onLoginSuccess(easyrtcid) {
             $log.debug('Successfully logged: ' + easyrtcid);
             conferenceState.pushAttendee(0, easyrtcid, session.getUserId(), session.getUsername());
+            conferenceState.updateTimezoneOffsetFromIndex(0, new Date().getTimezoneOffset());
             $rootScope.$apply();
             if (!videoEnabled) {
               conferenceState.updateMuteVideoFromIndex(0, true);
@@ -1382,13 +1419,7 @@ angular.module('op.live-conference')
           });
 
           addDataChannelOpenListener(function(easyrtcid) {
-            var data = {
-              id: session.getUserId(),
-              displayName: session.getUsername(),
-              mute: conferenceState.attendees[0].mute,
-              muteVideo: conferenceState.attendees[0].muteVideo
-            };
-
+            var data = prepareAttendeeForBroadcast(conferenceState.attendees[0]);
             $log.debug('Data channel open, sending %s event with data: ', EASYRTC_EVENTS.attendeeUpdate, data);
             easyrtc.sendData(easyrtcid, EASYRTC_EVENTS.attendeeUpdate, data);
           });
@@ -1488,7 +1519,8 @@ angular.module('op.live-conference')
           avatar: attendee.avatar,
           mute: attendee.mute,
           muteVideo: attendee.muteVideo,
-          speaking: attendee.speaking
+          speaking: attendee.speaking,
+          timezoneOffset: attendee.timezoneOffset
         };
       }
 
@@ -1759,5 +1791,5 @@ angular.module('op.liveconference-templates', []).run(['$templateCache', functio
   $templateCache.put("templates/user-control-bar.jade",
     "<div class=\"conference-user-control-bar text-center\"><ul dynamic-directive=\"live-conference-control-bar-items\" class=\"list-inline\"><li><a href=\"\" ng-click=\"toggleSound()\"><i ng-class=\"{'fa-microphone': !muted, 'fa-microphone-slash': muted}\" class=\"fa fa-2x conference-mute-button conference-light-button\"></i></a></li><li ng-class=\"{'hidden': noVideo}\"><a href=\"\" ng-click=\"toggleCamera()\"><i ng-class=\"{'fa-eye': !videoMuted, 'fa-eye-slash': videoMuted}\" class=\"fa fa-2x conference-toggle-video-button conference-light-button\"></i></a></li><li><a href=\"\" ng-click=\"leaveConference()\"><i class=\"fa fa-phone fa-2x conference-toggle-terminate-call-button conference-light-button\"></i></a></li><li><a href=\"\" ng-click=\"showInvitationPanel()\"><i class=\"fa fa-users fa-2x conference-toggle-invite-button conference-light-button\"></i></a></li><editor-toggle-element></editor-toggle-element></ul></div>");
   $templateCache.put("templates/user-video.jade",
-    "<div class=\"user-video\"><div smart-fit from=\"#multiparty-conference\" class=\"canvas-container\"><canvas id=\"mainVideoCanvas\" ng-click=\"onMobileToggleControls()\" class=\"conference-main-video-multi\"></canvas></div></div>");
+    "<div class=\"user-video\"><div smart-fit from=\"#multiparty-conference\" class=\"canvas-container\"><canvas id=\"mainVideoCanvas\" ng-click=\"onMobileToggleControls()\" class=\"conference-main-video-multi\"></canvas><div user-time ng-show=\"remoteHour\" class=\"user-time\">{{remoteHour}}</div></div></div>");
 }]);
