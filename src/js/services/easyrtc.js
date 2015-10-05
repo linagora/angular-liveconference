@@ -221,6 +221,7 @@ angular.module('op.live-conference')
           function onLoginSuccess(easyrtcid) {
             $log.debug('Successfully logged: ' + easyrtcid);
             conferenceState.pushAttendee(0, easyrtcid, session.getUserId(), session.getUsername());
+            conferenceState.updateTimezoneOffsetFromIndex(0, new Date().getTimezoneOffset());
             $rootScope.$apply();
             if (!videoEnabled) {
               conferenceState.updateMuteVideoFromIndex(0, true);
@@ -259,13 +260,7 @@ angular.module('op.live-conference')
           });
 
           addDataChannelOpenListener(function(easyrtcid) {
-            var data = {
-              id: session.getUserId(),
-              displayName: session.getUsername(),
-              mute: conferenceState.attendees[0].mute,
-              muteVideo: conferenceState.attendees[0].muteVideo
-            };
-
+            var data = prepareAttendeeForBroadcast(conferenceState.attendees[0]);
             $log.debug('Data channel open, sending %s event with data: ', EASYRTC_EVENTS.attendeeUpdate, data);
             easyrtc.sendData(easyrtcid, EASYRTC_EVENTS.attendeeUpdate, data);
           });
@@ -365,7 +360,8 @@ angular.module('op.live-conference')
           avatar: attendee.avatar,
           mute: attendee.mute,
           muteVideo: attendee.muteVideo,
-          speaking: attendee.speaking
+          speaking: attendee.speaking,
+          timezoneOffset: attendee.timezoneOffset
         };
       }
 

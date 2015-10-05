@@ -419,6 +419,14 @@ describe('The ConferenceState module', function() {
         expect(attendeesCopy).to.not.have.property('test');
       });
     });
+
+    describe('updateTimezoneOffsetFromIndex method', function() {
+      it('should update timezoneOffset property of attendee and $rootScope.$broadcast', function() {
+        conferenceState.attendees = [{easyrtcid: 'user1'}, { easyrtcid: 'easyrtcid', videoId: 'videoId'}];
+        conferenceState.updateTimezoneOffsetFromIndex(1, -120);
+        expect(conferenceState.attendees).to.deep.equal([{easyrtcid: 'user1'}, { easyrtcid: 'easyrtcid', videoId: 'videoId', timezoneOffset: -120}]);
+      });
+    });
   });
 
   describe('The newImage service', function() {

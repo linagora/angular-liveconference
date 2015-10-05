@@ -135,6 +135,7 @@ describe('easyRTCService service', function() {
           mute: true,
           muteVideo: false,
           speaking: false,
+          timezoneOffset: 120,
           foo: 'bar'
         };
       };
@@ -147,7 +148,8 @@ describe('easyRTCService service', function() {
           avatar: 'avatar',
           mute: true,
           muteVideo: false,
-          speaking: false
+          speaking: false,
+          timezoneOffset: 120
         });
       };
 
@@ -325,7 +327,8 @@ describe('easyRTCService service', function() {
             _id: null
           },
         pushAttendee: function() {},
-        updateMuteVideoFromIndex: function() {}
+        updateMuteVideoFromIndex: function() {},
+        updateTimezoneOffsetFromIndex: function() {}
       };
       easyrtc.roomJoin = [];
       easyrtc.joinRoom = function() {};

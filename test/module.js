@@ -1,3 +1,3 @@
 'use strict';
 
-angular.module('op.live-conference', []);
+angular.module('op.live-conference', ['angularMoment']);
