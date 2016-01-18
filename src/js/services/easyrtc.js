@@ -93,7 +93,7 @@ angular.module('op.live-conference')
       function stopLocalStream() {
         var stream = easyrtc.getLocalStream();
         if (stream) {
-          stream.stop();
+          stream.getTracks().forEach(function(track) { track.stop(); });
         }
       }
 

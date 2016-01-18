@@ -212,6 +212,31 @@ describe('easyRTCService service', function() {
     });
   });
 
+  describe('leaveRoom function', function() {
+
+    it('should call stopLocalStream to stop all tracks', function() {
+      var stopSpy = chai.spy();
+      var conference = { _id: 'conference_id' };
+      easyrtc.getLocalStream = function() {
+        return {
+          getTracks: function() {
+            return [{
+              stop: stopSpy
+            }, {
+              stop: stopSpy
+            }];
+          }
+        };
+      };
+      easyrtc.leaveRoom = function(id) {
+        expect(id).to.equal(conference._id);
+      };
+      service.leaveRoom(conference);
+      expect(stopSpy).to.have.been.called.twice;
+    });
+
+  });
+
   describe('sendData function', function() {
 
     it('should forward the call to easyrtc.sendData', function(done) {
