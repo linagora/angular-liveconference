@@ -807,8 +807,12 @@ angular.module('op.live-conference')
         formatRemoteTime();
       }
 
+      var removeIntervalLoop = $interval(formatRemoteTime, 60000);
+
       scope.$on('conferencestate:localVideoId:update', onVideoUpdate);
-      scope.$on('$destroy', $interval(formatRemoteTime, 60000));
+      scope.$on('$destroy', function() {
+        $interval.cancel(removeIntervalLoop);
+      });
     }
 
     return {
