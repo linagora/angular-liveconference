@@ -7,7 +7,7 @@ var expect = chai.expect;
 
 describe('Directives', function() {
   var momentInjection = angular.noop();
-  var $interval, currentConferenceState, LOCAL_VIDEO_ID, $rootScope, $compile;
+  var currentConferenceState, LOCAL_VIDEO_ID, $rootScope, $compile;
   var htmlTemplate = '<div user-time>{{remoteHour}}</div>';
 
   beforeEach(function() {
@@ -19,6 +19,8 @@ describe('Directives', function() {
 
   describe('userTime directive', function() {
     beforeEach(function() {
+      this.$interval = angular.noop;
+      var self = this;
       module(function($provide) {
         $provide.constant('moment', function() {
           return momentInjection();
@@ -26,9 +28,10 @@ describe('Directives', function() {
         $provide.value('session', {
           conference: {}
         });
+
+        $provide.value('$interval', self.$interval);
       });
-      inject(function(_$interval_, _currentConferenceState_, _LOCAL_VIDEO_ID_, _$rootScope_, _$compile_) {
-        $interval = _$interval_;
+      inject(function(_currentConferenceState_, _LOCAL_VIDEO_ID_, _$rootScope_, _$compile_) {
         currentConferenceState = _currentConferenceState_;
         LOCAL_VIDEO_ID = _LOCAL_VIDEO_ID_;
         $rootScope = _$rootScope_;
@@ -54,6 +57,14 @@ describe('Directives', function() {
         }
       };
       $compile(htmlTemplate)(scope);
+    });
+
+    it('should stop the interval on "$destroy"', function() {
+      var scope = $rootScope.$new();
+      $compile(htmlTemplate)(scope);
+      this.$interval.cancel = chai.spy();
+      scope.$destroy();
+      expect(this.$interval.cancel).to.have.been.called.once;
     });
 
     describe('conferencestate:localVideoId:update event handler', function() {
