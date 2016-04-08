@@ -63,6 +63,20 @@ describe('Directives', function() {
       scope.onMobileToggleControls();
     });
 
+    it('should change attendee.mute when mute', function() {
+      var attendee = {};
+      var localVideoId = 'video1';
+
+      conferenceState.getAttendeeByVideoId = function() {
+        return attendee;
+      };
+
+      scope.$emit('localVideoId:ready', localVideoId);
+      scope.$digest();
+      scope.mute();
+      expect(attendee.mute).to.deep.equal(true);
+    });
+
     describe('The showReportPopup fn', function() {
       window.$ = function() {return [{}];};
 

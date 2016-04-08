@@ -220,6 +220,11 @@ angular.module('op.live-conference')
           scope.mute = function() {
             videoElement.muted = !videoElement.muted;
             scope.onMobileToggleControls();
+            var attendee = currentConferenceState.getAttendeeByVideoId(videoId);
+            if (!attendee) {
+              return;
+            }
+            attendee.mute = !attendee.mute;
           };
 
           scope.showReportPopup = function() {
