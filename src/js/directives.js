@@ -467,14 +467,21 @@ angular.module('op.live-conference')
       }
     };
   }])
-  .directive('userTime', function($interval, currentConferenceState, LOCAL_VIDEO_ID, moment) {
+  .directive('userTime', ['attendeeColorsService', '$interval', 'currentConferenceState', 'LOCAL_VIDEO_ID', 'moment', function(attendeeColorsService, $interval, currentConferenceState, LOCAL_VIDEO_ID, moment) {
     function link(scope, element) {
       function formatRemoteTime() {
+
+        var attendee = currentConferenceState.getAttendeeByVideoId(currentConferenceState.localVideoId);
+        var color = attendeeColorsService.getColorForAttendeeAtIndex(attendee.index);
+        var DEFAULT_COLOR = 'black';
+
         if (angular.isDefined(scope.timezoneOffsetDiff)) {
           scope.remoteHour = moment().add(scope.timezoneOffsetDiff, 'm').format('hh:mm a');
         } else {
           scope.remoteHour = null;
         }
+
+        scope.color = attendee.muteVideo ? color : DEFAULT_COLOR;
       }
 
       function onVideoUpdate() {
@@ -497,9 +504,8 @@ angular.module('op.live-conference')
         $interval.cancel(removeIntervalLoop);
       });
     }
-
     return {
       restrict: 'A',
       link: link
     };
-  });
+  }]);

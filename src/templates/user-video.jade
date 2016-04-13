@@ -1,4 +1,4 @@
 .user-video
   div.canvas-container(smart-fit, from="#multiparty-conference")
     canvas.conference-main-video-multi(id="mainVideoCanvas", ng-click='onMobileToggleControls()')
-    .user-time(user-time, ng-show='remoteHour') {{remoteHour}}
+    .user-time(user-time, ng-show='remoteHour', ng-style="{'color' : color}") {{remoteHour}}
