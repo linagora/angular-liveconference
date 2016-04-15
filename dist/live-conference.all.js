@@ -796,7 +796,7 @@ angular.module('op.live-conference')
         var attendee = currentConferenceState.getAttendeeByVideoId(currentConferenceState.localVideoId);
         var color = attendeeColorsService.getColorForAttendeeAtIndex(attendee.index);
         var DEFAULT_COLOR = 'black';
-        
+
         if (angular.isDefined(scope.timezoneOffsetDiff)) {
           scope.remoteHour = moment().add(scope.timezoneOffsetDiff, 'm').format('hh:mm a');
         } else {
