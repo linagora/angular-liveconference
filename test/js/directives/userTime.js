@@ -67,6 +67,18 @@ describe('Directives', function() {
       expect(this.$interval.cancel).to.have.been.called.once;
     });
 
+    it('should change scope.color when attendee video is turned off', function() {
+      var scope = $rootScope.$new();
+      $compile(htmlTemplate)(scope);
+      scope.color = 'black';
+      currentConferenceState.getAttendeeByVideoId = function() {
+        return {muteVideo: true};
+      };
+      scope.$emit('conferencestate:localVideoId:update');
+      scope.$digest();
+      expect(scope.color).to.not.equal('black');
+    });
+
     describe('conferencestate:localVideoId:update event handler', function() {
       var element, scope;
       beforeEach(function() {
@@ -90,7 +102,8 @@ describe('Directives', function() {
         it('should set scope.remoteHour to the time difference', function() {
           var attendees = [
             {timezoneOffset: -120},
-            {timezoneOffset: -330}
+            {timezoneOffset: -330},
+            {timezoneOffset: -220}
           ];
           momentInjection = function() {
             return moment.tz('2015-09-30 11:00', 'Europe/Paris');
