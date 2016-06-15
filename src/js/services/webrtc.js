@@ -36,7 +36,7 @@ angular.module('op.live-conference')
         removeDataChannelCloseListener: adapter.removeDataChannelCloseListener,
         addPeerListener: adapter.addPeerListener,
         removePeerListener: adapter.removePeerListener,
-        connection: connection,
+        connection: adapter.connection,
         getOpenedDataChannels: adapter.getOpenedDataChannels
     };
   }]);
