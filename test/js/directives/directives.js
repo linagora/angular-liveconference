@@ -135,7 +135,7 @@ describe('Directives', function() {
     beforeEach(module(function($provide) {
       drawVideo = function() {};
       $provide.value('session', {});
-      $provide.value('easyRTCService', {});
+      $provide.value('webRTCService', {});
       $provide.value('currentConferenceState', {
         getVideoElementById: function() {
           return 'video-thumb0';
@@ -335,7 +335,7 @@ describe('Directives', function() {
     };
     beforeEach(module(function($provide) {
       $provide.value('session', {});
-      $provide.value('easyRTCService', {
+      $provide.value('webRTCService', {
         isVideoEnabled: function() { return true; }
       });
       $provide.value('$modal', function() {});
