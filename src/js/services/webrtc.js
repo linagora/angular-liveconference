@@ -6,7 +6,7 @@ angular.module('op.live-conference')
 
     return {
         leaveRoom: adapter.leaveRoom,
-        performCall: adapter.performCall,   
+        performCall: adapter.performCall,
         connect: adapter.connect,
         canEnumerateDevices: adapter.canEnumerateDevices,
         enableMicrophone: adapter.enableMicrophone,

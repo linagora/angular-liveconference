@@ -1304,12 +1304,12 @@ angular.module('op.live-conference')
 'use strict';
 
 angular.module('op.live-conference')
-  .factory('webRTCService', ['easyRTCAdapter', '$q', function(easyRTCAdapter,$q) {
+  .factory('webRTCService', ['easyRTCAdapter', function(easyRTCAdapter) {
     var adapter = easyRTCAdapter;
 
     return {
         leaveRoom: adapter.leaveRoom,
-        performCall: adapter.performCall,   
+        performCall: adapter.performCall,
         connect: adapter.connect,
         canEnumerateDevices: adapter.canEnumerateDevices,
         enableMicrophone: adapter.enableMicrophone,
@@ -1339,7 +1339,7 @@ angular.module('op.live-conference')
         removeDataChannelCloseListener: adapter.removeDataChannelCloseListener,
         addPeerListener: adapter.addPeerListener,
         removePeerListener: adapter.removePeerListener,
-        connection: connection,
+        connection: adapter.connection,
         getOpenedDataChannels: adapter.getOpenedDataChannels
     };
   }]);
