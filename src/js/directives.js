@@ -147,7 +147,7 @@ angular.module('op.live-conference')
     };
   })
 
-  .directive('conferenceAttendeeVideo', ['easyRTCService', 'currentConferenceState', 'matchmedia', '$timeout', 'drawVideo', function(easyRTCService, currentConferenceState, matchmedia, $timeout, drawVideo) {
+  .directive('conferenceAttendeeVideo', ['webRTCService', 'currentConferenceState', 'matchmedia', '$timeout', 'drawVideo', function(webRTCService, currentConferenceState, matchmedia, $timeout, drawVideo) {
     return {
       restrict: 'E',
       replace: true,
@@ -167,7 +167,7 @@ angular.module('op.live-conference')
 
         scope.toggleAttendeeMute = function() {
           var mute = scope.attendee.localmute;
-          easyRTCService.muteRemoteMicrophone(scope.attendee.easyrtcid, !mute);
+          webRTCService.muteRemoteMicrophone(scope.attendee.easyrtcid, !mute);
           currentConferenceState.updateLocalMuteFromEasyrtcid(scope.attendee.easyrtcid, !mute);
         };
 
@@ -246,7 +246,7 @@ angular.module('op.live-conference')
     };
   }])
 
-  .directive('conferenceUserControlBar', function($log, easyRTCService) {
+  .directive('conferenceUserControlBar', function($log, webRTCService) {
     return {
       restrict: 'E',
       replace: true,
@@ -261,25 +261,25 @@ angular.module('op.live-conference')
         $scope.muted = false;
         $scope.videoMuted = false;
 
-        $scope.noVideo = !easyRTCService.isVideoEnabled();
+        $scope.noVideo = !webRTCService.isVideoEnabled();
 
         $scope.toggleSound = function() {
-          easyRTCService.enableMicrophone($scope.muted);
+          webRTCService.enableMicrophone($scope.muted);
 
           $scope.muted = !$scope.muted;
           $scope.conferenceState.updateMuteFromIndex(0, $scope.muted);
 
-          easyRTCService.broadcastMe();
+          webRTCService.broadcastMe();
         };
 
         $scope.toggleCamera = function() {
-          easyRTCService.enableCamera($scope.videoMuted);
-          easyRTCService.enableVideo($scope.videoMuted);
+          webRTCService.enableCamera($scope.videoMuted);
+          webRTCService.enableVideo($scope.videoMuted);
 
           $scope.videoMuted = !$scope.videoMuted;
           $scope.conferenceState.updateMuteVideoFromIndex(0, $scope.videoMuted);
 
-          easyRTCService.broadcastMe();
+          webRTCService.broadcastMe();
         };
 
         $scope.showInvitationPanel = function() {
@@ -366,7 +366,7 @@ angular.module('op.live-conference')
       link: link
     };
   }])
-  .directive('localSpeakEmitter', ['$rootScope', 'session', 'currentConferenceState', 'easyRTCService', 'speechDetector', function($rootScope, session, currentConferenceState, easyRTCService, speechDetector) {
+  .directive('localSpeakEmitter', ['$rootScope', 'session', 'currentConferenceState', 'webRTCService', 'speechDetector', function($rootScope, session, currentConferenceState, webRTCService, speechDetector) {
     function link(scope) {
       function createLocalEmitter(stream) {
         var detector = speechDetector(stream);
@@ -375,12 +375,12 @@ angular.module('op.live-conference')
           detector = null;
         });
         detector.on('speaking', function() {
-          currentConferenceState.updateSpeaking(easyRTCService.myEasyrtcid(), true);
-          easyRTCService.broadcastMe();
+          currentConferenceState.updateSpeaking(webRTCService.myEasyrtcid(), true);
+          webRTCService.broadcastMe();
         });
         detector.on('stopped_speaking', function() {
-          currentConferenceState.updateSpeaking(easyRTCService.myEasyrtcid(), false);
-          easyRTCService.broadcastMe();
+          currentConferenceState.updateSpeaking(webRTCService.myEasyrtcid(), false);
+          webRTCService.broadcastMe();
         });
       }
 
