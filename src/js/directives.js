@@ -471,9 +471,12 @@ angular.module('op.live-conference')
     function link(scope, element) {
       function formatRemoteTime() {
 
-        var attendee = currentConferenceState.getAttendeeByVideoId(currentConferenceState.localVideoId);
-        var color = attendeeColorsService.getColorForAttendeeAtIndex(attendee.index);
         var DEFAULT_COLOR = 'black';
+        var attendee = currentConferenceState.getAttendeeByVideoId(currentConferenceState.localVideoId);
+        if (attendee) {
+          var color = attendeeColorsService.getColorForAttendeeAtIndex(attendee.index);
+          scope.color = attendee.muteVideo ? color : DEFAULT_COLOR;
+        }
 
         if (angular.isDefined(scope.timezoneOffsetDiff)) {
           scope.remoteHour = moment().add(scope.timezoneOffsetDiff, 'm').format('hh:mm a');
@@ -481,7 +484,6 @@ angular.module('op.live-conference')
           scope.remoteHour = null;
         }
 
-        scope.color = attendee.muteVideo ? color : DEFAULT_COLOR;
       }
 
       function onVideoUpdate() {
