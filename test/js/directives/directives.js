@@ -77,6 +77,24 @@ describe('Directives', function() {
       expect(attendee.mute).to.deep.equal(true);
     });
 
+    it('should set scope.isMe to false if video stream is not from current user video', function() {
+      var localVideoId = 'video1';
+
+      scope.$emit('localVideoId:ready', localVideoId);
+      scope.$digest();
+
+      expect(scope.isMe).to.be.false;
+    });
+
+    it('should set scope.isMe to true if video stream is from current user video', function() {
+      var localVideoId = 'video0';
+
+      scope.$emit('localVideoId:ready', localVideoId);
+      scope.$digest();
+
+      expect(scope.isMe).to.be.true;
+    });
+
     describe('The showReportPopup fn', function() {
       window.$ = function() {return [{}];};
 
@@ -400,4 +418,56 @@ describe('Directives', function() {
     });
   });
 
+  describe('The conferenceAttendeeVideo directive', function() {
+    var $rootScope, $compile;
+    var conferenceState, matchmedia;
+
+    beforeEach(module(function($provide) {
+      conferenceState = {
+        getVideoElementById: function() {
+          return 'video-thumb0';
+        }
+      };
+      matchmedia = {
+        isDesktop: function() {}
+      };
+      $provide.value('webRTCService', {
+        isVideoEnabled: function() { return true; }
+      });
+      $provide.value('currentConferenceState', conferenceState);
+      $provide.value('matchmedia', matchmedia);
+      $provide.constant('LOCAL_VIDEO_ID', 'video0');
+    }));
+
+    beforeEach(function() {
+      inject(function(_$rootScope_, _$compile_) {
+        $rootScope = _$rootScope_;
+        $compile = _$compile_;
+      });
+    });
+
+    function initDirective(scope, template) {
+      scope = scope|| $rootScope.$new();
+      template = template || '<conference-attendee-video/>';
+      var element = $compile(template)(scope);
+
+      scope.$digest();
+
+      return element;
+    }
+
+    it('should not add mirror class if video stream is not from current user video', function() {
+      var template = '<conference-attendee-video video-id="video1"/>';
+      var element = initDirective(null, template);
+
+      expect(element.find('canvas.mirror')).to.have.length(0);
+    });
+
+    it('should add mirror class if video stream is from current user video', function() {
+      var template = '<conference-attendee-video video-id="video0"/>';
+      var element = initDirective(null, template);
+
+      expect(element.find('canvas.mirror')).to.have.length(1);
+    });
+  });
 });

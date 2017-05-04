@@ -70,7 +70,7 @@ module.exports = function(stream, options) {
   harker.setInterval = function(i) {
     interval = i;
   };
-  
+
   harker.stop = function() {
     running = false;
     harker.emit('volume_change', -100, threshold);
@@ -78,6 +78,8 @@ module.exports = function(stream, options) {
       harker.speaking = false;
       harker.emit('stopped_speaking');
     }
+    analyser.disconnect();
+    sourceNode.disconnect();
   };
   harker.speakingHistory = [];
   for (var i = 0; i < history; i++) {
@@ -88,12 +90,12 @@ module.exports = function(stream, options) {
   // and emit events if changed
   var looper = function() {
     setTimeout(function() {
-    
+
       //check if stop has been called
       if(!running) {
         return;
       }
-      
+
       var currentVolume = getMaxVolume(analyser, fftBins);
 
       harker.emit('volume_change', currentVolume, threshold);
@@ -469,7 +471,7 @@ angular.module('op.live-conference')
     };
   })
 
-  .directive('conferenceAttendeeVideo', ['webRTCService', 'currentConferenceState', 'matchmedia', '$timeout', 'drawVideo', function(webRTCService, currentConferenceState, matchmedia, $timeout, drawVideo) {
+  .directive('conferenceAttendeeVideo', ['webRTCService', 'currentConferenceState', 'matchmedia', '$timeout', 'drawVideo', 'LOCAL_VIDEO_ID', function(webRTCService, currentConferenceState, matchmedia, $timeout, drawVideo, LOCAL_VIDEO_ID) {
     return {
       restrict: 'E',
       replace: true,
@@ -494,6 +496,8 @@ angular.module('op.live-conference')
         };
 
         scope.isDesktop = matchmedia.isDesktop();
+
+        scope.isMe = scope.videoId === LOCAL_VIDEO_ID;
       }
     };
   }])
@@ -557,6 +561,8 @@ angular.module('op.live-conference')
             }
             scope.showReport(attendee);
           };
+
+          scope.isMe = videoId === LOCAL_VIDEO_ID;
 
           watcher = scope.$watch(function() {
             return videoElement.muted;
@@ -795,7 +801,7 @@ angular.module('op.live-conference')
 
         var DEFAULT_COLOR = 'black';
         var attendee = currentConferenceState.getAttendeeByVideoId(currentConferenceState.localVideoId);
-        if(attendee) {
+        if (attendee) {
           var color = attendeeColorsService.getColorForAttendeeAtIndex(attendee.index);
           scope.color = attendee.muteVideo ? color : DEFAULT_COLOR;
         }
@@ -1345,14 +1351,14 @@ angular.module('op.live-conference')
         getOpenedDataChannels: adapter.getOpenedDataChannels
     };
   }]);
-angular.module('op.liveconference-templates', []).run(['$templateCache', function($templateCache) {
+angular.module('op.liveconference-templates', []).run(['$templateCache', function ($templateCache) {
   "use strict";
   $templateCache.put("templates/application.jade",
     "<div class=\"conference-container\"><div class=\"container-fluid\"><div class=\"row\"><div ng-view></div></div></div></div>");
   $templateCache.put("templates/attendee-settings-dropdown.jade",
     "<ul role=\"menu\" class=\"dropdown-menu attendee-settings-dropdown\"><li role=\"presentation\" ng-class=\"{'disabled': attendee.mute &amp;&amp; !attendee.localmute}\"><a href=\"\" ng-click=\"toggleAttendeeMute()\" role=\"menuitem\" target=\"_blank\"><i ng-class=\"{'fa-microphone': !attendee.mute &amp;&amp; !attendee.localmute, 'fa-microphone-slash': attendee.mute || attendee.localmute}\" class=\"fa fa-fw conference-mute-button\"></i><span ng-if=\"attendee.localmute\">Unmute</span><span ng-if=\"!attendee.localmute\">Mute</span></a></li><li role=\"presentation\"><a href=\"\" ng-click=\"showReportPopup()\" role=\"menuitem\" target=\"_blank\"><i class=\"fa fa-fw fa-exclamation-triangle conference-report-button\"></i>&nbsp;Report</a></li></ul>");
   $templateCache.put("templates/attendee-video.jade",
-    "<div dynamic-directive=\"attendee-video\" class=\"attendee-video\"><canvas data-video-id=\"{{videoId}}\" width=\"150\" height=\"150\" ng-click=\"onVideoClick(videoIndex)\" ng-mouseenter=\"thumbhover = true\" ng-mouseleave=\"thumbhover = false\" ng-init=\"count=0\" ng-class=\"{thumbhover: thumbhover, speaking: attendee.speaking &amp;&amp; (!attendee.mute &amp;&amp; !attendee.localmute)}\" class=\"conference-attendee-video-multi\"></canvas><a href=\"\" target=\"_blank\" ng-show=\"videoId !== 'video-thumb0' &amp;&amp; thumbhover\" ng-mouseenter=\"thumbhover = true\" ng-mouseleave=\"thumbhover = true\" ng-class=\"{'hidden': !isDesktop}\" class=\"hidden-xs\"><i data-placement=\"right-bottom\" data-html=\"true\" data-animation=\"am-flip-x\" bs-dropdown template=\"templates/attendee-settings-dropdown.jade\" class=\"fa fa-2x fa-cog conference-settings-button\"></i></a><i ng-show=\"attendee.mute || attendee.localmute\" class=\"fa fa-2x fa-microphone-slash conference-secondary-mute-button\"></i><i ng-show=\"false\" class=\"fa fa-2x fa-eye-slash conference-secondary-toggle-video-button\"></i><p class=\"text-center conference-attendee-name ellipsis\">{{attendee.displayName}}</p></div>");
+    "<div dynamic-directive=\"attendee-video\" class=\"attendee-video\"><canvas data-video-id=\"{{videoId}}\" width=\"150\" height=\"150\" ng-click=\"onVideoClick(videoIndex)\" ng-mouseenter=\"thumbhover = true\" ng-mouseleave=\"thumbhover = false\" ng-init=\"count=0\" ng-class=\"{thumbhover: thumbhover, speaking: attendee.speaking &amp;&amp; (!attendee.mute &amp;&amp; !attendee.localmute), mirror: isMe}\" class=\"conference-attendee-video-multi\"></canvas><a href=\"\" target=\"_blank\" ng-show=\"videoId !== 'video-thumb0' &amp;&amp; thumbhover\" ng-mouseenter=\"thumbhover = true\" ng-mouseleave=\"thumbhover = true\" ng-class=\"{'hidden': !isDesktop}\" class=\"hidden-xs\"><i data-placement=\"right-bottom\" data-html=\"true\" data-animation=\"am-flip-x\" bs-dropdown template=\"templates/attendee-settings-dropdown.jade\" class=\"fa fa-2x fa-cog conference-settings-button\"></i></a><i ng-show=\"attendee.mute || attendee.localmute\" class=\"fa fa-2x fa-microphone-slash conference-secondary-mute-button\"></i><i ng-show=\"false\" class=\"fa fa-2x fa-eye-slash conference-secondary-toggle-video-button\"></i><p class=\"text-center conference-attendee-name ellipsis\">{{attendee.displayName}}</p></div>");
   $templateCache.put("templates/attendee.jade",
     "<div class=\"col-xs-12 media nopadding conference-attendee\"><a href=\"#\" class=\"pull-left\"><img src=\"/images/user.png\" ng-src=\"/api/users/{{user._id}}/profile/avatar\" class=\"media-object thumbnail\"></a><div class=\"media-body\"><h6 class=\"media-heading\">{{user.firstname}} {{user.lastname}}</h6><button type=\"submit\" ng-disabled=\"invited\" ng-click=\"inviteCall(user); invited=true\" class=\"btn btn-primary nopadding\">Invite</button></div><div class=\"horiz-space\"></div></div>");
   $templateCache.put("templates/conference-video.jade",
@@ -1368,5 +1374,5 @@ angular.module('op.liveconference-templates', []).run(['$templateCache', functio
   $templateCache.put("templates/user-control-bar.jade",
     "<div class=\"conference-user-control-bar text-center\"><ul dynamic-directive=\"live-conference-control-bar-items\" class=\"list-inline\"><li><a href=\"\" ng-click=\"toggleSound()\"><i ng-class=\"{'fa-microphone': !muted, 'fa-microphone-slash': muted}\" class=\"fa fa-2x conference-mute-button conference-light-button\"></i></a></li><li ng-class=\"{'hidden': noVideo}\"><a href=\"\" ng-click=\"toggleCamera()\"><i ng-class=\"{'fa-eye': !videoMuted, 'fa-eye-slash': videoMuted}\" class=\"fa fa-2x conference-toggle-video-button conference-light-button\"></i></a></li><li><a href=\"\" ng-click=\"leaveConference()\"><i class=\"fa fa-phone fa-2x conference-toggle-terminate-call-button conference-light-button\"></i></a></li><li><a href=\"\" ng-click=\"showInvitationPanel()\"><i class=\"fa fa-users fa-2x conference-toggle-invite-button conference-light-button\"></i></a></li><editor-toggle-element></editor-toggle-element></ul></div>");
   $templateCache.put("templates/user-video.jade",
-    "<div class=\"user-video\"><div smart-fit from=\"#multiparty-conference\" class=\"canvas-container\"><canvas id=\"mainVideoCanvas\" ng-click=\"onMobileToggleControls()\" class=\"conference-main-video-multi\"></canvas><div user-time ng-show=\"remoteHour\" ng-style=\"{'color' : color}\" class=\"user-time\">{{remoteHour}}</div></div></div>");
+    "<div class=\"user-video\"><div smart-fit from=\"#multiparty-conference\" class=\"canvas-container\"><canvas id=\"mainVideoCanvas\" ng-click=\"onMobileToggleControls()\" ng-class=\"{mirror: isMe}\" class=\"conference-main-video-multi\"></canvas><div user-time ng-show=\"remoteHour\" ng-style=\"{'color' : color}\" class=\"user-time\">{{remoteHour}}</div></div></div>");
 }]);

@@ -147,7 +147,7 @@ angular.module('op.live-conference')
     };
   })
 
-  .directive('conferenceAttendeeVideo', ['webRTCService', 'currentConferenceState', 'matchmedia', '$timeout', 'drawVideo', function(webRTCService, currentConferenceState, matchmedia, $timeout, drawVideo) {
+  .directive('conferenceAttendeeVideo', ['webRTCService', 'currentConferenceState', 'matchmedia', '$timeout', 'drawVideo', 'LOCAL_VIDEO_ID', function(webRTCService, currentConferenceState, matchmedia, $timeout, drawVideo, LOCAL_VIDEO_ID) {
     return {
       restrict: 'E',
       replace: true,
@@ -172,6 +172,8 @@ angular.module('op.live-conference')
         };
 
         scope.isDesktop = matchmedia.isDesktop();
+
+        scope.isMe = scope.videoId === LOCAL_VIDEO_ID;
       }
     };
   }])
@@ -235,6 +237,8 @@ angular.module('op.live-conference')
             }
             scope.showReport(attendee);
           };
+
+          scope.isMe = videoId === LOCAL_VIDEO_ID;
 
           watcher = scope.$watch(function() {
             return videoElement.muted;
