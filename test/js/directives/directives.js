@@ -447,7 +447,7 @@ describe('Directives', function() {
     });
 
     function initDirective(scope, template) {
-      scope = scope|| $rootScope.$new();
+      scope = scope || $rootScope.$new();
       template = template || '<conference-attendee-video/>';
       var element = $compile(template)(scope);
 
