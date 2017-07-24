@@ -12,20 +12,20 @@ describe('The speech module', function() {
         $rootScope,
         $timeout,
         conferenceState,
-        getAttendeeByEasyrtcidSpy,
+        getAttendeeByRtcidSpy,
         updateLocalVideoIdSpy;
 
     beforeEach(function() {
       conferenceState = {
-        getAttendeeByEasyrtcid: function(data) {
-          return getAttendeeByEasyrtcidSpy(data);
+        getAttendeeByRtcid: function(data) {
+          return getAttendeeByRtcidSpy(data);
         },
         updateLocalVideoId: function(videoId) {
           return updateLocalVideoIdSpy(videoId);
         },
         localVideoId: 'video-thumb1'
       };
-      getAttendeeByEasyrtcidSpy = {};
+      getAttendeeByRtcidSpy = {};
       updateLocalVideoIdSpy = {};
 
       var AutoVideoSwitcher = {};
@@ -61,7 +61,7 @@ describe('The speech module', function() {
     describe('onSpeech method', function() {
 
       it('should do nothing if member does not exist', function(done) {
-        getAttendeeByEasyrtcidSpy = function() {
+        getAttendeeByRtcidSpy = function() {
           return null;
         };
 
@@ -76,7 +76,7 @@ describe('The speech module', function() {
       });
 
       it('should do nothing if member.videoId is LOCAL_VIDEO_ID', function(done) {
-        getAttendeeByEasyrtcidSpy = function() {
+        getAttendeeByRtcidSpy = function() {
           return {
             videoId: 'video-thumb0'
           };
@@ -93,7 +93,7 @@ describe('The speech module', function() {
       });
 
       it('should do nothing if member is muted', function(done) {
-        getAttendeeByEasyrtcidSpy = function() {
+        getAttendeeByRtcidSpy = function() {
           return {
             mute: true,
             videoId: 'video-thumb2'
@@ -111,7 +111,7 @@ describe('The speech module', function() {
       });
 
       it('should do nothing if member.videoId is current localVideoId', function(done) {
-        getAttendeeByEasyrtcidSpy = function() {
+        getAttendeeByRtcidSpy = function() {
           return {
             videoId: 'video-thumb1'
           };
@@ -128,10 +128,10 @@ describe('The speech module', function() {
       });
 
       it('should add a new entry to timeouts and call updateLocalVideoId after timeout', function() {
-        getAttendeeByEasyrtcidSpy = function() {
+        getAttendeeByRtcidSpy = function() {
           return {
             videoId: 'video-thumb2',
-            easyrtcid: 'easyrtcid'
+            rtcid: 'rtcid'
           };
         };
 
@@ -140,17 +140,17 @@ describe('The speech module', function() {
         };
 
         $rootScope.$broadcast('conferencestate:speaking', {speaking: true});
-        expect(autoVideoSwitchService.timeouts.easyrtcid).to.exist;
+        expect(autoVideoSwitchService.timeouts.rtcid).to.exist;
         expect(autoVideoSwitchService.conferenceState.localVideoId).to.equal('video-thumb1');
         $timeout.flush();
         expect(autoVideoSwitchService.conferenceState.localVideoId).to.equal('video-thumb2');
       });
 
       it('should add only 1 timeout even avec several broadcast', function() {
-        getAttendeeByEasyrtcidSpy = function() {
+        getAttendeeByRtcidSpy = function() {
           return {
             videoId: 'video-thumb2',
-            easyrtcid: 'easyrtcid'
+            rtcid: 'rtcid'
           };
         };
 
@@ -161,7 +161,7 @@ describe('The speech module', function() {
         $rootScope.$broadcast('conferencestate:speaking', {speaking: true});
         $rootScope.$broadcast('conferencestate:speaking', {speaking: true});
         $rootScope.$broadcast('conferencestate:speaking', {speaking: true});
-        expect(autoVideoSwitchService.timeouts.easyrtcid.$$timeoutId).to.equal(0);
+        expect(autoVideoSwitchService.timeouts.rtcid.$$timeoutId).to.equal(0);
         expect(autoVideoSwitchService.conferenceState.localVideoId).to.equal('video-thumb1');
         $timeout.flush();
         expect(autoVideoSwitchService.conferenceState.localVideoId).to.equal('video-thumb2');
@@ -171,7 +171,7 @@ describe('The speech module', function() {
     describe('onSpeechEnd method', function() {
 
       it('should do nothing if member does not exist', function() {
-        getAttendeeByEasyrtcidSpy = function() {
+        getAttendeeByRtcidSpy = function() {
           return null;
         };
 
@@ -181,9 +181,9 @@ describe('The speech module', function() {
 
       it('should do nothing if no entry in this.timeouts is found', function() {
         autoVideoSwitchService.timeouts.bar = ['fake'];
-        getAttendeeByEasyrtcidSpy = function() {
+        getAttendeeByRtcidSpy = function() {
           return {
-            easyrtcid: 'foo'
+            rtcid: 'foo'
           };
         };
 
@@ -196,9 +196,9 @@ describe('The speech module', function() {
       it('should do nothing if member.videoId is LOCAL_VIDEO_ID', function() {
         autoVideoSwitchService.timeouts.bar = ['fake'];
         autoVideoSwitchService.timeouts.foo = ['fake'];
-        getAttendeeByEasyrtcidSpy = function() {
+        getAttendeeByRtcidSpy = function() {
           return {
-            easyrtcid: 'foo',
+            rtcid: 'foo',
             videoId: 'video-thumb0'
           };
         };
@@ -213,9 +213,9 @@ describe('The speech module', function() {
       it('should set correct this.timeouts to null and cancel it inside $timeout', function() {
         autoVideoSwitchService.timeouts.bar = ['fake'];
         autoVideoSwitchService.timeouts.foo = ['fake'];
-        getAttendeeByEasyrtcidSpy = function() {
+        getAttendeeByRtcidSpy = function() {
           return {
-            easyrtcid: 'foo',
+            rtcid: 'foo',
             videoId: 'video-thumb1'
           };
         };

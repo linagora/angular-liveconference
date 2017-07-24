@@ -53,11 +53,11 @@ describe('The ConferenceState module', function() {
       expect(conferenceState.videoElements).to.deep.equal(videoElements);
     });
 
-    describe('getAttendeeByEasyrtcid method', function() {
+    describe('getAttendeeByRtcid method', function() {
       it('should return the correct attendee', function() {
-        conferenceState.attendees = [{ easyrtcid: 'easyrtcid' }, { easyrtcid: 'easyrtcid2' }, null];
-        expect(conferenceState.getAttendeeByEasyrtcid('easyrtcid')).to.deep.equal({ easyrtcid: 'easyrtcid' });
-        expect(conferenceState.getAttendeeByEasyrtcid('easyrtcid3')).to.be.null;
+        conferenceState.attendees = [{ rtcid: 'rtcid' }, { rtcid: 'rtcid2' }, null];
+        expect(conferenceState.getAttendeeByRtcid('rtcid')).to.deep.equal({ rtcid: 'rtcid' });
+        expect(conferenceState.getAttendeeByRtcid('rtcid3')).to.be.null;
       });
     });
 
@@ -74,7 +74,7 @@ describe('The ConferenceState module', function() {
       it('should update the good attendee, $rootScope.$applyAsync() and $rootScope.$broadcast', function(done) {
         $rootScope.$on('conferencestate:attendees:update', function(event, attendee) {
           var expected = {
-            easyrtcid: 'easyrtcid',
+            rtcid: 'rtcid',
             id: 'id',
             displayName: 'displayName'
           };
@@ -86,8 +86,8 @@ describe('The ConferenceState module', function() {
           done();
         });
 
-        conferenceState.attendees = [{ easyrtcid: 'easyrtcid' }, { easyrtcid: 'easyrtcid2' }];
-        conferenceState.updateAttendeeByEasyrtcid('easyrtcid', {
+        conferenceState.attendees = [{ rtcid: 'rtcid' }, { rtcid: 'rtcid2' }];
+        conferenceState.updateAttendeeByRtcid('rtcid', {
           id: 'id',
           displayName: 'displayName'
         });
@@ -98,16 +98,16 @@ describe('The ConferenceState module', function() {
       it('should $rootScope.$broadcast when the speaking property changes', function(done) {
         $rootScope.$on('conferencestate:speaking', function(event, attendee) {
           expect(attendee).to.deep.equal({
-            id: 'easyrtcid',
+            id: 'rtcid',
             speaking: true
           });
 
           done();
         });
 
-        conferenceState.pushAttendee(0, 'easyrtcid');
-        conferenceState.updateAttendeeByEasyrtcid('easyrtcid', {
-          easyrtcid: 'easyrtcid',
+        conferenceState.pushAttendee(0, 'rtcid');
+        conferenceState.updateAttendeeByRtcid('rtcid', {
+          rtcid: 'rtcid',
           speaking: true
         });
       });
@@ -120,11 +120,11 @@ describe('The ConferenceState module', function() {
         });
 
         conferenceState.attendees = [{
-          easyrtcid: 'easyrtcid',
+          rtcid: 'rtcid',
           speaking: true
         }];
-        conferenceState.updateAttendeeByEasyrtcid('easyrtcid', {
-          easyrtcid: 'easyrtcid',
+        conferenceState.updateAttendeeByRtcid('rtcid', {
+          rtcid: 'rtcid',
           speaking: true
         });
 
@@ -136,16 +136,16 @@ describe('The ConferenceState module', function() {
       it('should $rootScope.$broadcast when the mute property changes', function(done) {
         $rootScope.$on('conferencestate:mute', function(event, attendee) {
           expect(attendee).to.deep.equal({
-            id: 'easyrtcid',
+            id: 'rtcid',
             mute: true
           });
 
           done();
         });
 
-        conferenceState.pushAttendee(0, 'easyrtcid');
-        conferenceState.updateAttendeeByEasyrtcid('easyrtcid', {
-          easyrtcid: 'easyrtcid',
+        conferenceState.pushAttendee(0, 'rtcid');
+        conferenceState.updateAttendeeByRtcid('rtcid', {
+          rtcid: 'rtcid',
           mute: true
         });
       });
@@ -158,11 +158,11 @@ describe('The ConferenceState module', function() {
         });
 
         conferenceState.attendees = [{
-          easyrtcid: 'easyrtcid',
+          rtcid: 'rtcid',
           mute: true
         }];
-        conferenceState.updateAttendeeByEasyrtcid('easyrtcid', {
-          easyrtcid: 'easyrtcid',
+        conferenceState.updateAttendeeByRtcid('rtcid', {
+          rtcid: 'rtcid',
           mute: true
         });
 
@@ -174,16 +174,16 @@ describe('The ConferenceState module', function() {
       it('should $rootScope.$broadcast when the muteVideo property changes', function(done) {
         $rootScope.$on('conferencestate:muteVideo', function(event, attendee) {
           expect(attendee).to.deep.equal({
-            id: 'easyrtcid',
+            id: 'rtcid',
             muteVideo: true
           });
 
           done();
         });
 
-        conferenceState.pushAttendee(0, 'easyrtcid');
-        conferenceState.updateAttendeeByEasyrtcid('easyrtcid', {
-          easyrtcid: 'easyrtcid',
+        conferenceState.pushAttendee(0, 'rtcid');
+        conferenceState.updateAttendeeByRtcid('rtcid', {
+          rtcid: 'rtcid',
           muteVideo: true
         });
       });
@@ -196,11 +196,11 @@ describe('The ConferenceState module', function() {
         });
 
         conferenceState.attendees = [{
-          easyrtcid: 'easyrtcid',
+          rtcid: 'rtcid',
           muteVideo: true
         }];
-        conferenceState.updateAttendeeByEasyrtcid('easyrtcid', {
-          easyrtcid: 'easyrtcid',
+        conferenceState.updateAttendeeByRtcid('rtcid', {
+          rtcid: 'rtcid',
           muteVideo: true
         });
 
@@ -214,7 +214,7 @@ describe('The ConferenceState module', function() {
           var expected = {
             index: 0,
             videoId: 'video-thumb0',
-            easyrtcid: 'easyrtcid',
+            rtcid: 'rtcid',
             id: 'id',
             displayName: 'displayName',
             avatar: '/images/avatar/default.png',
@@ -227,19 +227,19 @@ describe('The ConferenceState module', function() {
         });
 
         conferenceState.attendees = [];
-        conferenceState.pushAttendee(0, 'easyrtcid', 'id', 'displayName');
+        conferenceState.pushAttendee(0, 'rtcid', 'id', 'displayName');
       });
     });
 
     describe('removeAttendee method', function() {
       it('should remove the good attendee and $rootScope.$broadcast', function(done) {
         $rootScope.$on('conferencestate:attendees:remove', function(event, attendee) {
-          expect(attendee).to.deep.equal({ easyrtcid: 'easyrtcid2' });
+          expect(attendee).to.deep.equal({ rtcid: 'rtcid2' });
           expect(conferenceState.attendees[1]).to.be.null;
           done();
         });
 
-        conferenceState.attendees = [{ easyrtcid: 'easyrtcid' }, { easyrtcid: 'easyrtcid2' }];
+        conferenceState.attendees = [{ rtcid: 'rtcid' }, { rtcid: 'rtcid2' }];
         conferenceState.removeAttendee(1);
       });
     });
@@ -275,82 +275,82 @@ describe('The ConferenceState module', function() {
         });
 
         conferenceState.attendees.push({
-          easyrtcid: 'easyrtcid',
+          rtcid: 'rtcid',
           id: 'id',
           displayName: 'displayName'
         });
-        conferenceState.updateSpeaking('easyrtcid2', true);
+        conferenceState.updateSpeaking('rtcid2', true);
       });
 
       it('should update speaking,  $rootScope.$applyAsync and $rootScope.$broadcast', function(done) {
         $rootScope.$on('conferencestate:speaking', function(event, data) {
-          expect(data).to.deep.equal({id: 'easyrtcid2', speaking: true});
+          expect(data).to.deep.equal({id: 'rtcid2', speaking: true});
           expect(conferenceState.attendees[1].speaking).to.be.true;
           done();
         });
 
         conferenceState.attendees.push({
-          easyrtcid: 'easyrtcid',
+          rtcid: 'rtcid',
           id: 'id',
           displayName: 'displayName'
         });
         conferenceState.attendees.push({
-          easyrtcid: 'easyrtcid2',
+          rtcid: 'rtcid2',
           id: 'id2',
           displayName: 'displayName'
         });
-        conferenceState.updateSpeaking('easyrtcid2', true);
+        conferenceState.updateSpeaking('rtcid2', true);
       });
     });
 
-    describe('updateMuteFromEasyrtcid method', function() {
+    describe('updateMuteFromRtcid method', function() {
       it('should update mute property of attendee and $rootScope.$broadcast', function(done) {
         $rootScope.$on('conferencestate:mute', function(event, data) {
-          expect(data).to.deep.equal({id: 'easyrtcid', mute: true});
-          expect(conferenceState.attendees).to.deep.equal([{ easyrtcid: 'easyrtcid', videoId: 'videoId', mute: true}]);
+          expect(data).to.deep.equal({id: 'rtcid', mute: true});
+          expect(conferenceState.attendees).to.deep.equal([{ rtcid: 'rtcid', videoId: 'videoId', mute: true}]);
           done();
         });
 
-        conferenceState.attendees = [{ easyrtcid: 'easyrtcid', videoId: 'videoId'}];
-        conferenceState.updateMuteFromEasyrtcid('easyrtcid', true);
+        conferenceState.attendees = [{ rtcid: 'rtcid', videoId: 'videoId'}];
+        conferenceState.updateMuteFromRtcid('rtcid', true);
       });
     });
 
     describe('updateMuteFromIndex method', function() {
       it('should update mute property of attendee and $rootScope.$broadcast', function(done) {
         $rootScope.$on('conferencestate:mute', function(event, data) {
-          expect(data).to.deep.equal({id: 'easyrtcid', mute: true});
-          expect(conferenceState.attendees).to.deep.equal([{easyrtcid: 'user1'}, { easyrtcid: 'easyrtcid', videoId: 'videoId', mute: true}]);
+          expect(data).to.deep.equal({id: 'rtcid', mute: true});
+          expect(conferenceState.attendees).to.deep.equal([{rtcid: 'user1'}, { rtcid: 'rtcid', videoId: 'videoId', mute: true}]);
           done();
         });
 
-        conferenceState.attendees = [{easyrtcid: 'user1'}, { easyrtcid: 'easyrtcid', videoId: 'videoId'}];
+        conferenceState.attendees = [{rtcid: 'user1'}, { rtcid: 'rtcid', videoId: 'videoId'}];
         conferenceState.updateMuteFromIndex(1, true);
       });
     });
 
-    describe('updateMuteVideoFromEasyrtcid method', function() {
+    describe('updateMuteVideoFromRtcid method', function() {
       it('should update muteVideo property of attendee and $rootScope.$broadcast', function(done) {
         $rootScope.$on('conferencestate:muteVideo', function(event, data) {
-          expect(data).to.deep.equal({id: 'easyrtcid', muteVideo: true});
-          expect(conferenceState.attendees).to.deep.equal([{ easyrtcid: 'easyrtcid', videoId: 'videoId', muteVideo: true}]);
+          expect(data).to.deep.equal({id: 'rtcid', muteVideo: true});
+          expect(conferenceState.attendees).to.deep.equal([{ rtcid: 'rtcid', videoId: 'videoId', muteVideo: true}]);
           done();
         });
 
-        conferenceState.attendees = [{ easyrtcid: 'easyrtcid', videoId: 'videoId'}];
-        conferenceState.updateMuteVideoFromEasyrtcid('easyrtcid', true);
+        conferenceState.attendees = [{ rtcid: 'rtcid', videoId: 'videoId'}];
+        conferenceState.updateMuteVideoFromRtcid('rtcid', true);
       });
     });
 
     describe('updateMuteVideoFromIndex method', function() {
       it('should update muteVideo property of attendee and $rootScope.$broadcast', function(done) {
         $rootScope.$on('conferencestate:muteVideo', function(event, data) {
-          expect(data).to.deep.equal({id: 'easyrtcid', muteVideo: true});
-          expect(conferenceState.attendees).to.deep.equal([{easyrtcid: 'user1'}, { easyrtcid: 'easyrtcid', videoId: 'videoId', muteVideo: true}]);
+          expect(data).to.deep.equal({id: 'rtcid', muteVideo: true});
+          expect(conferenceState.attendees).to.deep.equal([{rtcid: 'user1'}, { rtcid: 'rtcid', videoId: 'videoId', muteVideo: true}]);
           done();
         });
 
-        conferenceState.attendees = [{easyrtcid: 'user1'}, { easyrtcid: 'easyrtcid', videoId: 'videoId'}];
+        conferenceState.attendees = [{rtcid: 'user1'}, { rtcid: 'rtcid', videoId: 'videoId'}];
         conferenceState.updateMuteVideoFromIndex(1, true);
       });
     });
@@ -367,7 +367,7 @@ describe('The ConferenceState module', function() {
 
       it('should send back the cached image if available', function(done) {
         conferenceState.avatarCache[0] = { image: 'loaded' };
-        conferenceState.pushAttendee(0, 'easyrtcid');
+        conferenceState.pushAttendee(0, 'rtcid');
 
         conferenceState.getAvatarImageByIndex(0, function(err, image) {
           expect(err).to.not.exist;
@@ -380,7 +380,7 @@ describe('The ConferenceState module', function() {
       });
 
       it('should send back a new image when it is fully loaded', function(done) {
-        conferenceState.pushAttendee(0, 'easyrtcid');
+        conferenceState.pushAttendee(0, 'rtcid');
 
         conferenceState.getAvatarImageByIndex(0, function(err, image) {
           expect(err).to.not.exist;
@@ -393,10 +393,10 @@ describe('The ConferenceState module', function() {
 
     });
 
-    describe('updateLocalMuteFromEasyrtcid function', function() {
+    describe('updateLocalMuteFromRtcid function', function() {
       it('should update localmute property of attendee', function() {
-        conferenceState.attendees = [{ easyrtcid: 'easyrtcid' }, { easyrtcid: 'easyrtcid2' }];
-        conferenceState.updateLocalMuteFromEasyrtcid('easyrtcid', true);
+        conferenceState.attendees = [{ rtcid: 'rtcid' }, { rtcid: 'rtcid2' }];
+        conferenceState.updateLocalMuteFromRtcid('rtcid', true);
         expect(conferenceState.attendees[0].localmute).to.be.true;
       });
     });
@@ -411,7 +411,7 @@ describe('The ConferenceState module', function() {
 
     describe('getAttendees() method', function() {
       it('should return a copy of the attendees array', function() {
-        var attendees = [{easyrtcid: 'user1'}, { easyrtcid: 'easyrtcid', videoIds: 'videoId'}];
+        var attendees = [{rtcid: 'user1'}, { rtcid: 'rtcid', videoIds: 'videoId'}];
         conferenceState.attendees = attendees;
         var attendeesCopy = conferenceState.getAttendees();
         expect(attendeesCopy).to.deep.equal(attendees);
@@ -422,9 +422,9 @@ describe('The ConferenceState module', function() {
 
     describe('updateTimezoneOffsetFromIndex method', function() {
       it('should update timezoneOffset property of attendee and $rootScope.$broadcast', function() {
-        conferenceState.attendees = [{easyrtcid: 'user1'}, { easyrtcid: 'easyrtcid', videoId: 'videoId'}];
+        conferenceState.attendees = [{rtcid: 'user1'}, { rtcid: 'rtcid', videoId: 'videoId'}];
         conferenceState.updateTimezoneOffsetFromIndex(1, -120);
-        expect(conferenceState.attendees).to.deep.equal([{easyrtcid: 'user1'}, { easyrtcid: 'easyrtcid', videoId: 'videoId', timezoneOffset: -120}]);
+        expect(conferenceState.attendees).to.deep.equal([{rtcid: 'user1'}, { rtcid: 'rtcid', videoId: 'videoId', timezoneOffset: -120}]);
       });
     });
   });
