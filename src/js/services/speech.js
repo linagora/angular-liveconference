@@ -41,12 +41,12 @@ angular.module('op.live-conference')
 
       AutoVideoSwitcher.prototype.onSpeech = function(evt, data) {
         var member = this.getMemberFromData(data);
-        if (!member || this.timeouts[member.easyrtcid] || member.videoId === LOCAL_VIDEO_ID || member.mute || member.videoId === this.conferenceState.localVideoId) {
+        if (!member || this.timeouts[member.rtcid] || member.videoId === LOCAL_VIDEO_ID || member.mute || member.videoId === this.conferenceState.localVideoId) {
           return;
         }
-        var easyrtcid = member.easyrtcid;
+        var rtcid = member.rtcid;
 
-        this.timeouts[easyrtcid] = $timeout(function() {
+        this.timeouts[rtcid] = $timeout(function() {
           var member = this.getMemberFromData(data);
           if (!member) {
             return;
@@ -58,15 +58,15 @@ angular.module('op.live-conference')
 
       AutoVideoSwitcher.prototype.onSpeechEnd = function(evt, data) {
         var member = this.getMemberFromData(data);
-        if (!member || !this.timeouts[member.easyrtcid] || member.videoId === LOCAL_VIDEO_ID) {
+        if (!member || !this.timeouts[member.rtcid] || member.videoId === LOCAL_VIDEO_ID) {
           return;
         }
-        $timeout.cancel(this.timeouts[member.easyrtcid]);
-        this.timeouts[member.easyrtcid] = null;
+        $timeout.cancel(this.timeouts[member.rtcid]);
+        this.timeouts[member.rtcid] = null;
       };
 
       AutoVideoSwitcher.prototype.getMemberFromData = function(data) {
-        return this.conferenceState.getAttendeeByEasyrtcid(data.id);
+        return this.conferenceState.getAttendeeByRtcid(data.id);
       };
 
       return AutoVideoSwitcher;

@@ -19,7 +19,7 @@ angular.module('op.live-conference')
      * attendees : [{
      *   videoId:
      *   id:
-     *   easyrtcid:
+     *   rtcid:
      *   displayName:
      *   avatar:
      * }]
@@ -33,9 +33,9 @@ angular.module('op.live-conference')
       this.avatarCache = [];
     }
 
-    ConferenceState.prototype.getAttendeeByEasyrtcid = function(easyrtcid) {
+    ConferenceState.prototype.getAttendeeByRtcid = function(rtcid) {
       return this.attendees.filter(function(attendee) {
-          return attendee && attendee.easyrtcid === easyrtcid;
+          return attendee && attendee.rtcid === rtcid;
         })[0] || null;
     };
 
@@ -66,7 +66,7 @@ angular.module('op.live-conference')
 
       Object.keys(oldProperties).forEach(function(property) {
         if (oldProperties[property] !== attendee[property]) {
-          $rootScope.$broadcast('conferencestate:' + property, (function(o) { o[property] = attendee[property]; return o; })({ id: attendee.easyrtcid }));
+          $rootScope.$broadcast('conferencestate:' + property, (function(o) { o[property] = attendee[property]; return o; })({ id: attendee.rtcid }));
         }
       });
     }
@@ -75,16 +75,16 @@ angular.module('op.live-conference')
       updateAttendee(this.attendees[index], properties);
     };
 
-    ConferenceState.prototype.updateAttendeeByEasyrtcid = function(easyrtcid, properties) {
-      updateAttendee(this.getAttendeeByEasyrtcid(easyrtcid), properties);
+    ConferenceState.prototype.updateAttendeeByRtcid = function(rtcid, properties) {
+      updateAttendee(this.getAttendeeByRtcid(rtcid), properties);
     };
 
-    ConferenceState.prototype.pushAttendee = function(index, easyrtcid, id, displayName) {
+    ConferenceState.prototype.pushAttendee = function(index, rtcid, id, displayName) {
       var attendee = {
         index: index,
         videoId: this.videoIds[index],
         id: id,
-        easyrtcid: easyrtcid,
+        rtcid: rtcid,
         displayName: displayName,
         // This needs to be served by the webapp embedding angular-liveconference
         avatar: '/images/avatar/default.png',
@@ -111,16 +111,16 @@ angular.module('op.live-conference')
       $rootScope.$broadcast('conferencestate:localVideoId:update', this.localVideoId);
     };
 
-    ConferenceState.prototype.updateSpeaking = function(easyrtcid, speaking) {
-      this.updateAttendeeByEasyrtcid(easyrtcid, { speaking: speaking });
+    ConferenceState.prototype.updateSpeaking = function(rtcid, speaking) {
+      this.updateAttendeeByRtcid(rtcid, { speaking: speaking });
     };
 
     ConferenceState.prototype.updateMuteFromIndex = function(index, mute) {
       this.updateAttendeeByIndex(index, { mute: mute });
     };
 
-    ConferenceState.prototype.updateMuteFromEasyrtcid = function(easyrtcid, mute) {
-      this.updateAttendeeByEasyrtcid(easyrtcid, { mute: mute });
+    ConferenceState.prototype.updateMuteFromRtcid = function(rtcid, mute) {
+      this.updateAttendeeByRtcid(rtcid, { mute: mute });
     };
 
     ConferenceState.prototype.updateMuteVideoFromIndex = function(index, mute) {
@@ -131,8 +131,8 @@ angular.module('op.live-conference')
       this.updateAttendeeByIndex(index, { timezoneOffset: timezoneOffset });
     };
 
-    ConferenceState.prototype.updateMuteVideoFromEasyrtcid = function(easyrtcid, mute) {
-      this.updateAttendeeByEasyrtcid(easyrtcid, { muteVideo: mute });
+    ConferenceState.prototype.updateMuteVideoFromRtcid = function(rtcid, mute) {
+      this.updateAttendeeByRtcid(rtcid, { muteVideo: mute });
     };
 
     ConferenceState.prototype.getAvatarImageByIndex = function(index, callback) {
@@ -155,8 +155,8 @@ angular.module('op.live-conference')
       }
     };
 
-    ConferenceState.prototype.updateLocalMuteFromEasyrtcid = function(easyrtcid, mute) {
-      this.updateAttendeeByEasyrtcid(easyrtcid, {localmute: mute});
+    ConferenceState.prototype.updateLocalMuteFromRtcid = function(rtcid, mute) {
+      this.updateAttendeeByRtcid(rtcid, {localmute: mute});
     };
 
     ConferenceState.prototype.getAttendees = function() {

@@ -167,8 +167,8 @@ angular.module('op.live-conference')
 
         scope.toggleAttendeeMute = function() {
           var mute = scope.attendee.localmute;
-          webRTCService.muteRemoteMicrophone(scope.attendee.easyrtcid, !mute);
-          currentConferenceState.updateLocalMuteFromEasyrtcid(scope.attendee.easyrtcid, !mute);
+          webRTCService.muteRemoteMicrophone(scope.attendee.rtcid, !mute);
+          currentConferenceState.updateLocalMuteFromRtcid(scope.attendee.rtcid, !mute);
         };
 
         scope.isDesktop = matchmedia.isDesktop();
@@ -379,11 +379,11 @@ angular.module('op.live-conference')
           detector = null;
         });
         detector.on('speaking', function() {
-          currentConferenceState.updateSpeaking(webRTCService.myEasyrtcid(), true);
+          currentConferenceState.updateSpeaking(webRTCService.myRtcid(), true);
           webRTCService.broadcastMe();
         });
         detector.on('stopped_speaking', function() {
-          currentConferenceState.updateSpeaking(webRTCService.myEasyrtcid(), false);
+          currentConferenceState.updateSpeaking(webRTCService.myRtcid(), false);
           webRTCService.broadcastMe();
         });
       }

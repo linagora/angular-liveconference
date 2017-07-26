@@ -16,7 +16,7 @@ angular.module('op.live-conference')
         isVideoEnabled: adapter.isVideoEnabled,
         configureBandwidth: adapter.configureBandwidth,
         setPeerListener: adapter.setPeerListener,
-        myEasyrtcid: adapter.myEasyrtcid,
+        myRtcid: adapter.myRtcid,
         broadcastData: adapter.broadcastData,
         broadcastMe: adapter.broadcastMe,
         addDisconnectCallback: adapter.addDisconnectCallback,

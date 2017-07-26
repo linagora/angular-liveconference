@@ -45,7 +45,7 @@ module.exports = function(grunt) {
         jshintrc: '.jshintrc',
         ignores: ['test/frontend/karma-include/*', 'src/js/templates.js'],
         reporter: CI && 'checkstyle',
-        reporterOutput: CI && 'jshint.xml'
+        reporterOutput: CI ? CI : 'jshint.xml'
       },
       all: {
         src: [
