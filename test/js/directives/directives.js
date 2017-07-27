@@ -66,9 +66,13 @@ describe('Directives', function() {
     it('should change attendee.mute when mute', function() {
       var attendee = {};
       var localVideoId = 'video1';
+      var mainVideo = [{muted: false}];
 
       conferenceState.getAttendeeByVideoId = function() {
         return attendee;
+      };
+      conferenceState.getVideoElementById = function() {
+        return mainVideo;
       };
 
       scope.$emit('localVideoId:ready', localVideoId);
