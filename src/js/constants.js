@@ -12,6 +12,11 @@ angular.module('op.live-conference')
     },
     nolimit: null
   })
+  .constant('janusBitRates', {
+    low: 64000,
+    medium: 96000,
+    nolimit: 300000
+  })
   .constant('RTCBitRates', {
     low: null,
     medium: null,
