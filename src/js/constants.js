@@ -1,7 +1,7 @@
 'use strict';
 
 angular.module('op.live-conference')
-  .constant('EASYRTCBITRATES', {
+  .constant('EASYRTC_BITRATES', {
     low: {
       audio: 20,
       video: 30
@@ -12,17 +12,17 @@ angular.module('op.live-conference')
     },
     nolimit: null
   })
-  .constant('JANUSBITRATES', {
+  .constant('JANUS_BITRATES', {
     low: 64000,
     medium: 96000,
     nolimit: 300000
   })
-  .constant('RTCBITRATES', {
+  .constant('RTC_BITRATES', {
     low: null,
     medium: null,
     nolimit: null
   })
-  .constant('RTCDEFAULTBITRATE', 'medium')
+  .constant('RTC_DEFAULT_BITRATE', 'medium')
   .constant('EASYRTC_APPLICATION_NAME', 'LiveConference')
   .constant('MAX_ATTENDEES', 9)
   .constant('LOCAL_VIDEO_ID', 'video-thumb0')
