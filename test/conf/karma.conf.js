@@ -19,7 +19,7 @@ module.exports = function(config) {
       'bower_components/moment/min/moment.min.js',
       'bower_components/angular-moment/angular-moment.min.js',
       'bower_components/moment-timezone/builds/moment-timezone-with-data.min.js',
-      'node_modules/om-webrtc-backend/node_modules/easyrtc/api/easyrtc.js',
+      'node_modules/linagora.esn.webrtc/node_modules/easyrtc/api/easyrtc.js',
       'test/module.js',
       'src/**/*.js',
       'test/**/*.js',

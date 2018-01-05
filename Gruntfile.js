@@ -153,7 +153,7 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-html2js');
   grunt.loadNpmTasks('grunt-gjslint');
   grunt.loadNpmTasks('grunt-lint-pattern');
-  grunt.loadNpmTasks('grunt-run-grunt');
+  grunt.loadNpmTasks('@linagora/grunt-run-grunt');
 
   grunt.loadTasks('tasks');
 
