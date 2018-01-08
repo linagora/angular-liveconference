@@ -1,0 +1,13 @@
+image: linagora/node-test-base:6
+
+stages:
+  - test
+
+test:
+  stage: test
+  tags:
+    - docker
+  script:
+    - npm i
+    - bower i --allow-root
+    - grunt --chunk=1
