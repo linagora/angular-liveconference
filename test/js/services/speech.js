@@ -39,7 +39,7 @@ describe('The speech module', function() {
     });
 
     it('should call onSpeech if speaking is true', function(done) {
-      autoVideoSwitchService.onSpeech = function(event, data) {
+      autoVideoSwitchService.onSpeech = function() {
         done();
       };
       autoVideoSwitchService.onSpeechEnd = function() {
@@ -52,7 +52,7 @@ describe('The speech module', function() {
       autoVideoSwitchService.onSpeech = function() {
         throw new Error('should not be here');
       };
-      autoVideoSwitchService.onSpeechEnd = function(event, data) {
+      autoVideoSwitchService.onSpeechEnd = function() {
         done();
       };
       $rootScope.$broadcast('conferencestate:speaking', {speaking: false});

@@ -15,7 +15,7 @@ describe('Directives', function() {
 
   describe('conferenceUserVideo', function() {
 
-    var element, scope, conferenceState, $modal, matchmedia, callback;
+    var scope, conferenceState, $modal, matchmedia, callback;
 
     beforeEach(module(function($provide) {
       conferenceState = {
@@ -43,7 +43,7 @@ describe('Directives', function() {
 
     beforeEach(inject(function($compile, $rootScope) {
       scope = $rootScope.$new();
-      element = $compile('<conference-user-video/>')(scope);
+      $compile('<conference-user-video/>')(scope);
       $rootScope.$digest();
     }));
 
@@ -147,7 +147,7 @@ describe('Directives', function() {
 
   describe('conferenceMobileVideo directive', function() {
 
-    var element, scope, drawVideo, $timeout;
+    var scope, drawVideo, $timeout;
     window.$ = function() {
       return [{
         getContext: function() {
@@ -171,7 +171,7 @@ describe('Directives', function() {
     beforeEach(inject(function($compile, _$timeout_, $rootScope) {
       $timeout = _$timeout_;
       scope = $rootScope.$new();
-      element = $compile('<conference-mobile-video/>')(scope);
+      $compile('<conference-mobile-video/>')(scope);
       $rootScope.$digest();
       $timeout.flush();
     }));
