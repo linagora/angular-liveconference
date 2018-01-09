@@ -35,7 +35,7 @@ module.exports = function(grunt) {
 
     child.stdout.on('data', function(chunk) { grunt.log.write(chunk); });
     child.stderr.on('data', function(chunk) { grunt.log.error(chunk); });
-    child.on('close', function(code) { done(code ? false : true); });
+    child.on('close', function(code) { done(!code); });
   });
 
   grunt.registerTask('test-frontend-all', 'run the FrontEnd tests on all possible browsers', function() {
@@ -45,7 +45,7 @@ module.exports = function(grunt) {
 
     child.stdout.on('data', function(chunk) { grunt.log.write(chunk); });
     child.stderr.on('data', function(chunk) { grunt.log.error(chunk); });
-    child.on('close', function(code) { done(code ? false : true); });
+    child.on('close', function(code) { done(!code); });
   });
   grunt.registerTask('test', ['test-frontend']);
   grunt.registerTask('default', ['test']);

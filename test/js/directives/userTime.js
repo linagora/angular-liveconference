@@ -7,7 +7,7 @@ var expect = chai.expect;
 
 describe('Directives', function() {
   var momentInjection = angular.noop();
-  var currentConferenceState, LOCAL_VIDEO_ID, $rootScope, $compile;
+  var currentConferenceState, $rootScope, $compile;
   var htmlTemplate = '<div user-time>{{remoteHour}}</div>';
 
   beforeEach(function() {
@@ -31,9 +31,8 @@ describe('Directives', function() {
 
         $provide.value('$interval', self.$interval);
       });
-      inject(function(_currentConferenceState_, _LOCAL_VIDEO_ID_, _$rootScope_, _$compile_) {
+      inject(function(_currentConferenceState_, _$rootScope_, _$compile_) {
         currentConferenceState = _currentConferenceState_;
-        LOCAL_VIDEO_ID = _LOCAL_VIDEO_ID_;
         $rootScope = _$rootScope_;
         $compile = _$compile_;
       });
@@ -80,10 +79,10 @@ describe('Directives', function() {
     });
 
     describe('conferencestate:localVideoId:update event handler', function() {
-      var element, scope;
+      var scope;
       beforeEach(function() {
         scope = $rootScope.$new();
-        element = $compile(htmlTemplate)(scope);
+        $compile(htmlTemplate)(scope);
       });
 
       describe('when timezones are the same for all attendees', function() {

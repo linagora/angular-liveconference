@@ -22,9 +22,13 @@ describe('The draw factory collection', function() {
       var arg1Expected = 'arg1';
       var arg2Expected = 'arg2';
       var arg3Expected = 'arg3';
+      var context = {
+        drawImage: drawImage
+      };
+
+      drawHelper.drawImage(context, arg1Expected, arg2Expected, arg3Expected);
 
       function drawImage(arg1, arg2, arg3, arg4) {
-        /* jshint validthis: true */
         expect(this).to.deep.equal(context);
         expect(arg1).to.deep.equal(arg1Expected);
         expect(arg2).to.deep.equal(arg2Expected);
@@ -32,14 +36,7 @@ describe('The draw factory collection', function() {
         expect(arg4).to.be.undefined;
         done();
       }
-
-      var context = {
-        drawImage: drawImage
-      };
-
-      drawHelper.drawImage(context, arg1Expected, arg2Expected, arg3Expected);
     });
-
   });
 
   describe('The drawAvatarIfVideoMuted function', function() {
@@ -162,13 +159,13 @@ describe('The draw factory collection', function() {
       var context = {
         canvas: {},
         called: [],
-        clearRect: function(x, y, width, height) {
+        clearRect: function() {
           this.called.push('clearRect');
         },
-        fillRect: function(x, y, width, height) {
+        fillRect: function() {
           this.called.push('fillRect');
         },
-        drawImage: function(image, x, y, width, height) {
+        drawImage: function() {
           this.called.push('drawImage');
         }
       };

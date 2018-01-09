@@ -642,7 +642,7 @@ angular.module('op.live-conference')
       $window.msRequestAnimationFrame ||
       $window.webkitRequestAnimationFrame;
 
-    function link(scope, element, attrs) {
+    function link(scope, element) {
 
       var widgets = [];
       var toggleAnim = false;
@@ -680,6 +680,7 @@ angular.module('op.live-conference')
       }, 100, 1, false);
 
       function onAnimationFrame() {
+        /* eslint no-cond-assign: "warn" */
         if ((toggleAnim = !toggleAnim)) {
           widgets.forEach(videoToCanvas);
         }
@@ -806,7 +807,7 @@ angular.module('op.live-conference')
     };
   }])
   .directive('userTime', ['attendeeColorsService', '$interval', 'currentConferenceState', 'LOCAL_VIDEO_ID', 'moment', function(attendeeColorsService, $interval, currentConferenceState, LOCAL_VIDEO_ID, moment) {
-    function link(scope, element) {
+    function link(scope) {
       function formatRemoteTime() {
 
         var DEFAULT_COLOR = 'black';
