@@ -1,23 +1,25 @@
 # OpenPaas Angular Live Conference
 
+[![Build Status](https://ci.linagora.com/linagora/lgs/openpaas/angular-liveconference/badges/master/build.svg)](https://ci.linagora.com/linagora/lgs/openpaas/angular-liveconference/)
+
 ## Installation
 
 1. clone the repository
 
-        git clone https://ci.open-paas.org/stash/scm/opangmod/angular-liveconference.git
+        git clone https://github.com/linagora/angular-liveconference.git
 
 2. install node.js
 
 3. install the npm dependencies
 
         npm install -g mocha grunt-cli bower karma-cli
-    
+
 4. install the gjslint dependency
 
         easy_install http://closure-linter.googlecode.com/files/closure_linter-latest.tar.gz
 
     more informations [can be found here](https://developers.google.com/closure/utilities/docs/linter_howto)
-    
+
 5. Go into the project directory and install project dependencies
 
         npm install
