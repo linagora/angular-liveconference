@@ -11,7 +11,7 @@ module.exports = function(config) {
       'bower_components/angular/angular.js',
       'bower_components/angular-route/angular-route.js',
       'bower_components/angular-mocks/angular-mocks.js',
-      'bower_components/underscore/underscore.js',
+      'bower_components/lodash/dist/lodash.js',
       'bower_components/restangular/dist/restangular.js',
       'bower_components/chai/chai.js',
       'bower_components/chai-spies/chai-spies.js',

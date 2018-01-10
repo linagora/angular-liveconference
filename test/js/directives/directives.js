@@ -155,7 +155,9 @@ describe('Directives', function() {
     };
 
     beforeEach(module(function($provide) {
-      drawVideo = function() {};
+      drawVideo = function() {
+        return angular.noop;
+      };
       $provide.value('session', {});
       $provide.value('webRTCService', {});
       $provide.value('currentConferenceState', {
