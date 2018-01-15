@@ -1351,9 +1351,12 @@ angular.module('op.live-conference')
   angular.module('op.live-conference')
     .factory('webRTCService', webRTCService);
 
-  function webRTCService(webRTCAdapterRegistry) {
-    // TODO: Use config from somewhere to get activated one...
-    var adapter = webRTCAdapterRegistry.get('janus');
+  function webRTCService($log, webRTCAdapterRegistry, WEBRTC_CONNECTOR) {
+    var adapter = webRTCAdapterRegistry.get(WEBRTC_CONNECTOR);
+
+    if (!adapter) {
+      $log.warn(WEBRTC_CONNECTOR, 'webrtc connector has not been found, things will not work as expected');
+    }
 
     return {
       leaveRoom: adapter.leaveRoom,
